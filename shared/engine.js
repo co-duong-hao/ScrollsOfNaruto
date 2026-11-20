@@ -5,6 +5,56 @@ export const EDO_HP = 1e9;
 
 export const needTarget = (c) => !!(c.d || c.h || c.ms || c.rv || c.dt || c.heal);
 
+export function previewReaction(existingMarks, incomingEl) {
+  if (!incomingEl || !Array.isArray(existingMarks) || existingMarks.length !== 1) return null;
+  const a = existingMarks[0];
+  const b = incomingEl;
+  if (a === 'phong' || b === 'phong') {
+    const other = a === 'phong' ? b : a;
+    if (other === 'phong') {
+      return { key: 'phong+phong', name: 'Tiêu thụ Phong', desc: 'Xóa 2 ấn Phong' };
+    }
+    return {
+      key: `phong+${other}`,
+      name: `Khuếch tán (${other})`,
+      desc: `Lan ấn ${other} sang 2 người cạnh bên`,
+    };
+  }
+  const key = [a, b].sort().join('+');
+  const rx = REACTIONS[key];
+  return rx ? { key, ...rx } : null;
+}
+
+export function calcExpectedDamage(G, actorIdx, card, targetIdx = -1) {
+  const p = G?.ps?.[actorIdx];
+  if (!p || !card) return { dmg: 0, isCrit: false, mult: 1 };
+
+  let mult = 1 + p.buffs.reduce((a, b) => a + b.m + (b.hy && card.s === CLANS.HYUGA ? b.hy : 0), 0);
+  if (p.edo) mult *= 0.5;
+
+  let base = 0;
+  if (card.h) {
+    base = card.h.reduce((a, b) => a + b, 0);
+  } else if (card.a) {
+    base = card.a;
+  } else if (card.split) {
+    const foes = aliveIndices(G).filter((x) => x !== actorIdx);
+    base = foes.length ? Math.round(card.split / foes.length) : 0;
+  } else if (card.splitSelf) {
+    const all = aliveIndices(G);
+    base = all.length ? Math.round(card.splitSelf / all.length) : 0;
+  } else if (card.d) {
+    base = card.d;
+  }
+
+  let dmg = Math.round(base * mult);
+  const target = targetIdx >= 0 ? G.ps[targetIdx] : null;
+  const isCrit = !!(card.crit && target && target.stun > 0);
+  if (isCrit) dmg *= 2;
+
+  return { dmg, isCrit, mult };
+}
+
 // Precompute rank multipliers so drawable cards match ~20% C, 30% B, 28% A, 22% S
 const DRAWABLE_CARDS = CARDS.filter((c) => !HIDDEN_CLANS.includes(c.s) || c.n === 'rinnengan');
 const CLAN_COUNTS = DRAWABLE_CARDS.reduce((acc, c) => {
@@ -63,6 +113,14 @@ export function createPlayer(name, bot, index, uid = null) {
     destiny: pickDestiny(),
     dead: 0,
     destroyed: 0,
+    stats: {
+      dmgDealt: 0,
+      dmgTaken: 0,
+      reactions: 0,
+      cardsUsed: 0,
+      kos: 0,
+      healed: 0,
+    },
   };
 }
 
@@ -169,7 +227,7 @@ async function askAuto(G, player, card, info) {
   }
 }
 
-async function checkDeath(G, p) {
+async function checkDeath(G, p, killer = null) {
   if (p.hp > 0 || p.dead) return;
   const k = p.hand.findIndex((c) => c.au === 'rev');
   if (k >= 0) {
@@ -191,22 +249,30 @@ async function checkDeath(G, p) {
   p.hand = [];
   p.pets = [];
   p.marks = [];
+  if (killer && killer !== p && killer.stats) killer.stats.kos++;
   addLog(G, `💀 ${p.name} đã bị kết liễu!`);
   pushFloat(G, p, '💀 KẾT LIỄU!', 'ko');
 }
 
-async function directDamage(G, p, dmg, emitFloat = true) {
+async function directDamage(G, p, dmg, emitFloat = true, creditSource = null) {
   if (p.hp >= EDO_HP) return;
   dmg = Math.round(dmg);
-  p.hp -= dmg;
-  if (emitFloat && dmg > 0) pushFloat(G, p, `-${dmg}`, 'hp');
-  await checkDeath(G, p);
+  if (dmg > 0) {
+    p.hp -= dmg;
+    if (p.stats) p.stats.dmgTaken += dmg;
+    if (creditSource && creditSource !== p && creditSource.stats) {
+      creditSource.stats.dmgDealt += dmg;
+    }
+    if (emitFloat) pushFloat(G, p, `-${dmg}`, 'hp');
+  }
+  await checkDeath(G, p, creditSource);
 }
 
-async function applyHit(G, source, target, dmg, card, ignoreEvasion = false) {
+async function applyHit(G, source, target, dmg, card, ignoreEvasion = false, statCredit = null) {
   dmg = Math.round(dmg);
   if (target.dead) return 0;
   if (source && source !== target) target.last = G.ps.indexOf(source);
+  const credit = statCredit || source;
 
   if (!ignoreEvasion) {
     const matches = target.hand.filter(
@@ -234,10 +300,11 @@ async function applyHit(G, source, target, dmg, card, ignoreEvasion = false) {
       if (x.au === 'kr') target.armor += 150;
       if (x.au === 'gq' && target.hp < EDO_HP) {
         target.hp += dmg;
+        if (target.stats) target.stats.healed += dmg;
         pushFloat(G, target, `+${dmg} ❤`, 'au');
       }
       if (x.au === 'trap' && source) {
-        await directDamage(G, source, dmg, true);
+        await directDamage(G, source, dmg, true, target);
         adjustSp(G, source, -1);
       }
       if (x.au === 'izm') {
@@ -266,6 +333,7 @@ async function applyHit(G, source, target, dmg, card, ignoreEvasion = false) {
   if (target.pets.length) {
     const pet = target.pets[0];
     pet.hp -= dmg;
+    if (credit && credit !== target && credit.stats) credit.stats.dmgDealt += dmg;
     addLog(G, `🐾 Pet của ${target.name} đỡ ${dmg} sát thương`);
     pushFloat(G, target, `🐾 -${dmg}`, 'pt');
     if (pet.hp <= 0) {
@@ -284,18 +352,19 @@ async function applyHit(G, source, target, dmg, card, ignoreEvasion = false) {
   if (absorbed > 0) {
     target.armor -= absorbed;
     dmg -= absorbed;
+    if (credit && credit !== target && credit.stats) credit.stats.dmgDealt += absorbed;
     const rfBuff = target.buffs.find((b) => b.rf);
     if (source && !source.dead && rfBuff) {
       const rfAmt = typeof rfBuff.rf === 'number' ? rfBuff.rf : 20;
       addLog(G, `🛡 Giáp của ${target.name} phản ${rfAmt} sát thương lên ${source.name}`);
-      await directDamage(G, source, rfAmt, true);
+      await directDamage(G, source, rfAmt, true, target);
     }
   }
   if (target.armor <= 0) {
     target.armor = 0;
     target.buffs = target.buffs.filter((b) => !b.ua);
   }
-  if (dmg > 0) await directDamage(G, target, dmg, false);
+  if (dmg > 0) await directDamage(G, target, dmg, false, credit);
 
   addLog(G, `⚔ ${target.name} nhận ${dmg + absorbed} sát thương${absorbed ? ` (giáp chặn ${absorbed})` : ''}`);
   if (dmg > 0) pushFloat(G, target, `-${dmg}`, 'hp');
@@ -303,17 +372,19 @@ async function applyHit(G, source, target, dmg, card, ignoreEvasion = false) {
   return 1;
 }
 
-async function applyMark(G, target, el) {
+async function applyMark(G, target, el, actor = null) {
   if (target.dead || target.immune > 0) return;
   target.marks.push(el);
   if (target.marks.length < 2) return;
 
+  const credit = actor || G.ps[G.cur] || null;
   const [a, b] = target.marks;
   target.marks = [];
   const key = [a, b].sort().join('+');
   const neighbors = adjacentIndices(G, G.ps.indexOf(target)).map((i) => G.ps[i]);
   const rxName = REACTIONS[key]?.name || 'Khuếch tán nguyên tố';
 
+  if (credit?.stats) credit.stats.reactions++;
   addLog(G, `⚗ Phản ứng [${rxName}] (${key}) trên ${target.name}`);
   pushFloat(G, target, `⚗ ${rxName}`, 'rx');
 
@@ -321,22 +392,22 @@ async function applyMark(G, target, el) {
     const other = a === 'phong' ? b : a;
     if (other !== 'phong') {
       target.marks = [other];
-      for (const n of neighbors) await applyMark(G, n, other);
+      for (const n of neighbors) await applyMark(G, n, other, credit);
     }
     return;
   }
 
   if (key === 'lôi+thủy') {
-    for (const n of [target, ...neighbors]) await applyHit(G, null, n, 50, null, true);
+    for (const n of [target, ...neighbors]) await applyHit(G, null, n, 50, null, true, credit);
   } else if (key === 'hỏa+thủy') {
-    await applyHit(G, null, target, 100, null, true);
+    await applyHit(G, null, target, 100, null, true, credit);
   } else if (key === 'hỏa+hỏa') {
     if (target.immune <= 0) target.bleed += 150;
   } else if (key === 'thủy+thủy') {
     target.dodge = Math.max(0, target.dodge - 30);
   } else if (key === 'lôi+lôi') {
     adjustSp(G, target, -1);
-    await directDamage(G, target, 30, true);
+    await directDamage(G, target, 30, true, credit);
   } else if (key === 'hỏa+lôi') {
     if (target.immune <= 0) target.stun = Math.max(target.stun, 1);
   }
@@ -361,7 +432,7 @@ export function checkWin(G) {
   return false;
 }
 
-export async function startTurn(G) {
+export async function startTurn(G, _chained = false) {
   if (checkWin(G)) return;
   let guard = 0;
   while (G.ps[G.cur].dead && guard < G.ps.length) {
@@ -370,7 +441,7 @@ export async function startTurn(G) {
   }
   const p = G.ps[G.cur];
   G.used = [];
-  G.q = [];
+  if (!_chained) G.q = [];
   G.showTurn = 1;
   addLog(G, `— Lượt ${p.name} —`);
 
@@ -385,6 +456,7 @@ export async function startTurn(G) {
       const healAmt = Math.round(missing * (rg.pct / 100));
       if (healAmt > 0) {
         p.hp = Math.min(4000, p.hp + healAmt);
+        if (p.stats) p.stats.healed += healAmt;
         addLog(G, `💚 ${p.name} hồi ${healAmt} máu (Sáng tạo diêm sinh)`);
         pushFloat(G, p, `+${healAmt} ❤`, 'au');
       }
@@ -395,7 +467,7 @@ export async function startTurn(G) {
   if (p.armorT && --p.armorT === 0) p.armor = 0;
 
   if (p.dead) {
-    return nextTurn(G);
+    return nextTurn(G, true);
   }
 
   const aoePets = p.pets.filter((q) => q.aoeTurn);
@@ -410,14 +482,14 @@ export async function startTurn(G) {
 
   if (p.pets.some((q) => q.lock)) {
     addLog(G, `💤 ${p.name} bị khóa chủ động bởi Mộng Nhất Vĩ`);
-    return endTurn(G, false);
+    return endTurn(G, false, true);
   }
 
   if (p.stun > 0) {
     p.stun--;
     addLog(G, `💫 ${p.name} bị Choáng, mất lượt`);
     pushFloat(G, p, '💫 CHOÁNG', 'au');
-    return endTurn(G, true);
+    return endTurn(G, true, true);
   }
   if (p.izm) {
     p.izm = 0;
@@ -426,15 +498,16 @@ export async function startTurn(G) {
   }
 }
 
-export async function nextTurn(G) {
+export async function nextTurn(G, _chained = false) {
   if (checkWin(G)) return;
   G.cur = (G.cur + 1) % G.ps.length;
   G.turnCount++;
-  await startTurn(G);
+  await startTurn(G, _chained);
 }
 
-export async function endTurn(G, skipDraw = false) {
-  if (checkWin(G)) return;
+export async function endTurn(G, skipDraw = false, _chained = false) {
+  if (!_chained) G.q = [];
+  if (checkWin(G)) return { events: [...G.q] };
   if (G.snap && G.snapFor === G.cur) {
     G.ps = G.snap;
     G.snap = null;
@@ -462,7 +535,8 @@ export async function endTurn(G, skipDraw = false) {
       drawCard(p);
     }
   }
-  await nextTurn(G);
+  await nextTurn(G, true);
+  return { events: [...G.q] };
 }
 
 export async function useCard(G, handIndex, targetIdx = -1, hitList = null) {
@@ -482,6 +556,7 @@ export async function useCard(G, handIndex, targetIdx = -1, hitList = null) {
   }
 
   p.hand.splice(handIndex, 1);
+  if (p.stats) p.stats.cardsUsed++;
   const T = G.ps[targetIdx];
   G.used.push(c.s);
   G.q = [];
@@ -508,11 +583,13 @@ export async function useCard(G, handIndex, targetIdx = -1, hitList = null) {
   }
   if (c.heal && T && !T.dead && T.hp < EDO_HP) {
     T.hp += c.heal;
+    if (p.stats) p.stats.healed += c.heal;
     addLog(G, `💚 ${T.name} hồi ${c.heal} máu`);
     pushFloat(G, T, `+${c.heal} ❤`, 'au');
   }
   if (c.healSelf && p.hp < EDO_HP) {
     p.hp += c.healSelf;
+    if (p.stats) p.stats.healed += c.healSelf;
     addLog(G, `💚 ${p.name} hồi ${c.healSelf} máu`);
     pushFloat(G, p, `+${c.healSelf} ❤`, 'au');
   }
@@ -628,7 +705,7 @@ export async function useCard(G, handIndex, targetIdx = -1, hitList = null) {
   for (const k of Object.keys(landed)) {
     const t = G.ps[k];
     if (!t || t.dead || !landed[k]) continue;
-    if (c.el) await applyMark(G, t, c.el);
+    if (c.el) await applyMark(G, t, c.el, p);
     if (c.st && t.immune <= 0) t.stun = Math.max(t.stun, c.st);
     if (c.ms) adjustSp(G, t, -c.ms);
     if (c.ma) adjustSp(G, t, -c.ma);
@@ -658,20 +735,29 @@ export function pickBotAction(G) {
   const p = G.ps[G.cur];
   if (p.pets.some((q) => q.lock)) return { type: 'end' };
 
-  const targets = aliveIndices(G).filter((x) => x !== G.cur && !G.ps[x].corpse);
-  const allTargets = aliveIndices(G).filter((x) => x !== G.cur);
-  const hasCorpse = aliveIndices(G).some((x) => x !== G.cur && G.ps[x].corpse);
+  const isEnemy = (x) => x !== G.cur && (!G.teams || G.ps[x].team !== p.team);
+  const allTargets = aliveIndices(G).filter(isEnemy);
+  const targets = allTargets.filter((x) => !G.ps[x].corpse);
+  const hasCorpse = allTargets.some((x) => G.ps[x].corpse);
 
-  const chooseTarget = (preferCorpse = false) => {
+  const chooseTarget = (preferCorpse = false, incomingEl = null) => {
     if (preferCorpse) {
       const cIdx = allTargets.find((x) => G.ps[x].corpse);
       if (cIdx != null) return cIdx;
     }
     const pool = targets.length ? targets : allTargets;
+    if (!pool.length) return -1;
+    if (incomingEl) {
+      const rxTarget = pool.find((x) => {
+        const q = G.ps[x];
+        if (q.immune > 0) return false;
+        const rx = previewReaction(q.marks, incomingEl);
+        return rx && rx.key !== 'phong+phong';
+      });
+      if (rxTarget != null) return rxTarget;
+    }
     const l = p.last;
-    return l != null && l !== G.cur && G.ps[l] && !G.ps[l].dead && !G.ps[l].corpse
-      ? l
-      : pool[Math.floor(Math.random() * pool.length)];
+    return l != null && pool.includes(l) ? l : pool[Math.floor(Math.random() * pool.length)];
   };
 
   const options = [];
@@ -691,27 +777,46 @@ export function pickBotAction(G) {
       (c.b ? 150 : 0) +
       (c.dg || 0) * 0.5 +
       (c.ms || 0) * 30 +
+      (c.st ? 90 : 0) +
+      (c.ba && targets.some((x) => G.ps[x].armor > 0) ? 140 : 0) +
+      (c.kp && targets.some((x) => G.ps[x].pets.length > 0) ? 120 : 0) +
       20;
     if (p.hp < 1200 && c.ar) sc += 200;
     if (c.ds && hasCorpse) sc += 900;
-    sc *= 0.7 + Math.random() * 0.6;
+
     if (!needTarget(c)) {
+      if (c.el && targets.some((x) => G.ps[x].immune <= 0 && previewReaction(G.ps[x].marks, c.el))) {
+        sc += 140;
+      }
+      sc *= 0.7 + Math.random() * 0.6;
       options.push([sc, i, -1]);
       return;
     }
     if (c.heal && c.ally) {
+      sc *= 0.7 + Math.random() * 0.6;
       options.push([sc, i, G.cur]);
       return;
     }
     if (c.rv) {
+      sc *= 0.7 + Math.random() * 0.6;
       G.ps.forEach((q, x) => {
-        if (q.dead && !q.destroyed && (!G.teams || !c.edo || q.team === p.team)) {
+        if (q.dead && !q.destroyed && (!G.teams || q.team === p.team)) {
           options.push([sc, i, x]);
         }
       });
       return;
     }
-    if (allTargets.length) options.push([sc, i, chooseTarget(!!c.ds)]);
+    if (allTargets.length) {
+      const tgt = chooseTarget(!!c.ds, c.el || null);
+      if (tgt >= 0) {
+        if (c.el && G.ps[tgt].immune <= 0) {
+          const rx = previewReaction(G.ps[tgt].marks, c.el);
+          if (rx && rx.key !== 'phong+phong') sc += 160;
+        }
+        sc *= 0.7 + Math.random() * 0.6;
+        options.push([sc, i, tgt]);
+      }
+    }
   });
 
   options.sort((a, b) => b[0] - a[0]);
@@ -722,7 +827,7 @@ export function pickBotAction(G) {
     type: 'use',
     index,
     target,
-    hitList: card.h ? card.h.map(() => chooseTarget(false)) : null,
+    hitList: card.h ? card.h.map(() => chooseTarget(false, card.el || null)) : null,
   };
 }
 
@@ -756,12 +861,12 @@ export function sanitizeStateFor(G, viewerUid) {
         regen: p.regen,
         edo: p.edo,
         corpse: p.corpse,
-        izm: p.izm,
         dead: p.dead,
         destroyed: p.destroyed,
         destiny: isMe ? p.destiny : null,
         handCount: p.hand.length,
         hand: isMe ? p.hand : [],
+        stats: p.stats,
       };
     }),
   };

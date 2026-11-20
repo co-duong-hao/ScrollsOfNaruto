@@ -213,9 +213,9 @@ input, select {
 .tm.t0 { background: #c0392b; }
 .tm.t1 { background: #2471c8; }
 
-.hp { position: relative; height: 22px; background: #0007; border-radius: 10px; margin: 6px 0; overflow: hidden; }
-.hp i { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, #e2503a, #b52513); transition: width 0.35s ease; }
-.hp span { position: relative; font-size: 12.5px; font-weight: 700; line-height: 22px; display: block; text-align: center; }
+.hp:not(.fl) { position: relative; height: 22px; background: #0007; border-radius: 10px; margin: 6px 0; overflow: hidden; }
+.hp:not(.fl) i { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, #e2503a, #b52513); transition: width 0.35s ease; }
+.hp:not(.fl) span { position: relative; font-size: 12.5px; font-weight: 700; line-height: 22px; display: block; text-align: center; }
 
 .st-stats { display: flex; justify-content: center; gap: 14px; font-size: 13px; margin-bottom: 4px; }
 
@@ -355,9 +355,13 @@ input, select {
   color: #fff;
   background: #dc2626e8;
   border: 2px solid #fff;
-  padding: 2px 10px;
+  padding: 3px 11px;
   border-radius: 999px;
-  font-size: 24px;
+  font-size: 22px;
+  line-height: 1.15;
+  height: auto;
+  margin: 0;
+  overflow: visible;
   box-shadow: 0 4px 12px #0008;
 }
 .fl.ar { color: #8fcbff; }
@@ -464,9 +468,130 @@ td, th { border: 1px solid var(--bd); padding: 6px 9px; text-align: left; }
 .rb-table th { background: var(--s2); font-weight: 700; }
 .rb-table td, .rb-table th { border: 1px solid var(--bd); padding: 6px 10px; }
 
+/* Live Tactical Preview on Target Seats */
+.tg-preview {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+  margin: -4px 0 6px;
+}
+.tg-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 999px;
+  color: #fff;
+  box-shadow: 0 2px 8px #0006;
+}
+.tg-dmg { background: #dc2626; }
+.tg-crit { background: linear-gradient(135deg, #b91c1c, #f59e0b); }
+.tg-rx {
+  background: linear-gradient(135deg, #7c3aed, #ec4899);
+  animation: rxPulse 0.85s ease-in-out infinite alternate;
+}
+.tg-heal { background: #16a34a; }
+.tg-break { background: #0284c7; }
+.tg-el { background: #334155; border: 1px solid #ffffff44; }
+@keyframes rxPulse {
+  from { transform: scale(1); box-shadow: 0 0 8px #c084fc88; }
+  to { transform: scale(1.06); box-shadow: 0 0 16px #f472b6cc; }
+}
+
+/* Hotkey Tags & Hints */
+.cd-left-tags { display: flex; align-items: center; gap: 4px; }
+.hk-tag {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: #1d1a16cc;
+  color: #fde68a;
+  font-family: ui-monospace, SFMono-Regular, monospace;
+}
+.hk-hint {
+  margin-left: auto;
+  align-self: center;
+  font-size: 12px;
+  color: #ffffffb8;
+}
+
+/* Quick Reactions Modal */
+.rx-quick-modal { max-width: 680px; }
+.rx-quick-list { display: flex; flex-direction: column; gap: 8px; margin: 12px 0; }
+.rx-quick-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--s2);
+  border: 1px solid var(--bd);
+  border-radius: 10px;
+  padding: 8px 12px;
+}
+.rx-combo {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 175px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.rx-pill {
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  color: #fff;
+}
+.rx-el-hỏa { background: #ea580c; }
+.rx-el-thủy { background: #0284c7; }
+.rx-el-lôi { background: #ca8a04; }
+.rx-el-phong { background: #16a34a; }
+.rx-el-any { background: #6366f1; }
+.rx-info { display: flex; flex-direction: column; gap: 2px; font-size: 13px; }
+.rx-info span { color: var(--m); font-size: 12.5px; }
+.rx-pipeline, .rx-shortcuts {
+  background: var(--s2);
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 12.5px;
+  margin-top: 8px;
+}
+.rx-shortcuts kbd {
+  background: var(--s);
+  border: 1px solid var(--bd);
+  border-radius: 5px;
+  padding: 1px 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+/* Victory Stats & Rematch */
+.win-box.win-wide { max-width: 640px; }
+.stats-wrap { overflow-x: auto; margin: 12px 0 18px; }
+.stats-table { font-size: 13.5px; }
+.stats-table th { background: var(--s2); text-align: center; }
+.stats-table th:first-child, .stats-table td:first-child { text-align: left; }
+.stats-table td { text-align: center; }
+.stats-table tr.row-dead td { opacity: 0.72; }
+.mvp-badge {
+  display: inline-block;
+  margin-left: 4px;
+  font-size: 11px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #d97706, #f59e0b);
+  color: #fff;
+  padding: 1px 7px;
+  border-radius: 999px;
+}
+.win-actions { justify-content: center; gap: 12px; }
+
 @media (max-width: 860px) {
   .mine { flex-direction: column; align-items: stretch; }
   .st.me { flex: none; width: 100%; }
   .st { width: 47%; min-width: 155px; }
   .cd { flex: 0 0 148px; height: 228px; }
+  .hk-tag, .hk-hint { display: none; }
+  .rx-quick-item { flex-direction: column; align-items: flex-start; gap: 6px; }
 }

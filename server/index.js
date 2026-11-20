@@ -63,6 +63,7 @@ function broadcastState(room, fx = null) {
       state: sanitizeStateFor(G, p.uid),
       fx,
       you: p.uid,
+      isHost: p.uid === room.hostId,
     });
   });
 }
@@ -110,9 +111,11 @@ function scheduleBotIfNeeded(room) {
     try {
       const act = pickBotAction(room.game);
       if (act.type === 'end') {
-        await endTurn(room.game);
-        broadcastState(room, null);
-        scheduleBotIfNeeded(room);
+        const endRes = await endTurn(room.game);
+        const ev = endRes?.events?.length ? endRes.events : null;
+        broadcastState(room, ev);
+        if (ev) setTimeout(() => scheduleBotIfNeeded(room), 1500);
+        else scheduleBotIfNeeded(room);
       } else {
         const res = await useCard(room.game, act.index, act.target, act.hitList);
         if (res.ok) {
@@ -120,9 +123,11 @@ function scheduleBotIfNeeded(room) {
           const hasCast = res.events.some((e) => e.k === 'cast');
           setTimeout(() => scheduleBotIfNeeded(room), hasCast ? 2900 : 1400);
         } else {
-          await endTurn(room.game);
-          broadcastState(room, null);
-          scheduleBotIfNeeded(room);
+          const endRes = await endTurn(room.game);
+          const ev = endRes?.events?.length ? endRes.events : null;
+          broadcastState(room, ev);
+          if (ev) setTimeout(() => scheduleBotIfNeeded(room), 1500);
+          else scheduleBotIfNeeded(room);
         }
       }
     } finally {
@@ -262,12 +267,33 @@ io.on('connection', (socket) => {
 
     room.resolving = true;
     try {
-      await endTurn(G);
-      broadcastState(room, null);
-      scheduleBotIfNeeded(room);
+      const endRes = await endTurn(G);
+      const ev = endRes?.events?.length ? endRes.events : null;
+      broadcastState(room, ev);
+      if (ev) setTimeout(() => scheduleBotIfNeeded(room), 1500);
+      else scheduleBotIfNeeded(room);
     } finally {
       room.resolving = false;
     }
+  });
+
+  socket.on('room:rematch', async () => {
+    const room = rooms.get(currentRoomCode);
+    if (!room || room.hostId !== uid || !room.game || !room.game.over || room.resolving) return;
+    const total = room.players.length + room.bots;
+    if (total < 2 || total > 6) return;
+
+    if (room.botTimer) clearTimeout(room.botTimer);
+    const humans = room.players.map((p) => ({ uid: p.uid, name: p.name, bot: false }));
+    const bots = Array.from({ length: room.bots }, (_, i) => ({ name: `Bot ${i + 1}`, bot: true }));
+    const all = [...humans, ...bots].sort(() => Math.random() - 0.5);
+
+    room.game = await createGame(all, {
+      online: true,
+      onAskAuto: (playerIdx, card, info) => askOnlineAuto(room, playerIdx, card, info),
+    });
+    broadcastState(room, null);
+    scheduleBotIfNeeded(room);
   });
 
   socket.on('room:leave', leaveCurrentRoom);

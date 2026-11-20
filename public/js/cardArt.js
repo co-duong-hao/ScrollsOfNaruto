@@ -109,16 +109,19 @@ function motifSvg(c, c1, c2) {
     <path d="M38 36 L50 22 L62 36 L50 50 Z" fill="${c2}"/>`;
 }
 
+let artUid = 0;
+
 export function cardArtSvg(c) {
   const [c1, c2] = getPalette(c);
+  const gid = `g_${c.id}_${++artUid}`;
   return `<svg class="cd-art" viewBox="0 0 100 68" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
     <defs>
-      <linearGradient id="g_${c.id}" x1="0" y1="0" x2="1" y2="1">
+      <linearGradient id="${gid}" x1="0" y1="0" x2="1" y2="1">
         <stop offset="0%" stop-color="${c1}" stop-opacity="0.35"/>
         <stop offset="100%" stop-color="${c2}" stop-opacity="0.12"/>
       </linearGradient>
     </defs>
-    <rect x="2" y="2" width="96" height="64" rx="7" fill="url(#g_${c.id})" stroke="${c2}" stroke-opacity="0.45"/>
+    <rect x="2" y="2" width="96" height="64" rx="7" fill="url(#${gid})" stroke="${c2}" stroke-opacity="0.45"/>
     ${motifSvg(c, c1, c2)}
   </svg>`;
 }

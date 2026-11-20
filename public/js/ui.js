@@ -1,5 +1,11 @@
 import { CARDS, describeCard, TYPE_LABELS, REACTIONS } from '/shared/cards.js';
-import { isValidTarget, TEAM_NAMES, EDO_HP } from '/shared/engine.js';
+import {
+  isValidTarget,
+  TEAM_NAMES,
+  EDO_HP,
+  previewReaction,
+  calcExpectedDamage,
+} from '/shared/engine.js';
 import { cardArtSvg } from './cardArt.js';
 
 export const esc = (s) =>
@@ -26,20 +32,21 @@ export const EL_BADGE = {
   phong: '🌪 Phong',
 };
 
-export function renderCard(c, i, { selected = false, dim = false, interactive = true } = {}) {
+export function renderCard(c, i, { selected = false, dim = false, interactive = true, hotkey = null } = {}) {
   const elTag = c.el ? `<span class="el-tag el-${c.el}">${EL_BADGE[c.el]}</span>` : '';
   const rem = 3 - (c.age || 0);
   const ageTag =
     interactive && !c.au
       ? `<span class="age-tag ${rem <= 1 ? 'age-warn' : ''}" title="Còn ${rem} lượt trước khi tự hủy">⏳ ${rem}</span>`
       : '';
+  const hkTag = interactive && hotkey ? `<span class="hk-tag" title="Phím tắt ${hotkey}">${hotkey}</span>` : '';
   return `
     <div class="cd ${c.r} ${c.au ? 'au' : ''} ${selected ? 'sel' : ''} ${dim ? 'dim' : ''}"
          data-card-idx="${i}"
          ${interactive ? `onclick="appActions.pickCard(${i})"` : ''}
          title="${esc(describeCard(c))}">
       <div class="cd-top">
-        <span class="rk rk-${c.r}">${c.r}</span>
+        <div class="cd-left-tags"><span class="rk rk-${c.r}">${c.r}</span>${hkTag}</div>
         <div class="cd-badges">${ageTag}${elTag}</div>
       </div>
       ${cardArtSvg(c)}
@@ -116,10 +123,52 @@ export function renderSeat(G, p, i, cur, showSecret, isMe, flList = []) {
     .join(' ');
   const orbs = p.marks.map((m) => `<span class="mark-orb orb-${m}" title="Ấn ${m}"></span>`).join('');
 
+  let targetPreviewHtml = '';
+  if (canTarget && selCard) {
+    const badges = [];
+    if (selCard.heal) {
+      badges.push(`<span class="tg-badge tg-heal">💚 +${selCard.heal} máu</span>`);
+    } else if (selCard.rv) {
+      badges.push(`<span class="tg-badge tg-heal">${selCard.edo ? '🧟 Uế Thổ (∞)' : '♻ Hồi sinh 1000'}</span>`);
+    } else {
+      const est = calcExpectedDamage(G, G.cur, selCard, i);
+      if (est.dmg > 0) {
+        if (selCard.h) {
+          const hitIdx = (G.hl || []).length;
+          const hitBase = selCard.h[hitIdx] || 0;
+          const hitDmg = Math.round(hitBase * est.mult);
+          badges.push(`<span class="tg-badge tg-dmg">⚔️ Đòn ${hitIdx + 1}: ~${hitDmg}</span>`);
+        } else {
+          badges.push(
+            `<span class="tg-badge ${est.isCrit ? 'tg-crit' : 'tg-dmg'}">${est.isCrit ? '💥 CHÍ MẠNG' : '⚔️'} ~${est.dmg}</span>`
+          );
+        }
+      }
+      if (selCard.ba && p.armor > 0) {
+        badges.push(`<span class="tg-badge tg-break">💥 Phá ${p.armor} giáp</span>`);
+      }
+      if (selCard.ds && (p.dead || p.corpse)) {
+        badges.push(`<span class="tg-badge tg-crit">🔥 Tiêu diệt thi thể</span>`);
+      }
+      if (selCard.el && p.immune <= 0) {
+        const rx = previewReaction(p.marks, selCard.el);
+        if (rx) {
+          badges.push(`<span class="tg-badge tg-rx" title="${esc(rx.desc)}">⚗️ ${esc(rx.name)}</span>`);
+        } else if (p.marks.length === 0) {
+          badges.push(`<span class="tg-badge tg-el">${EL_BADGE[selCard.el]}</span>`);
+        }
+      }
+    }
+    if (badges.length) {
+      targetPreviewHtml = `<div class="tg-preview">${badges.join('')}</div>`;
+    }
+  }
+
   return `
     <div class="st ${isMe ? 'me' : ''} ${i === G.cur ? 'cur' : ''} ${p.dead ? 'dead' : ''} ${canTarget ? 'tg' : ''} ${statusClasses} ${
     fl.some((e) => e.c === 'hp') ? 'hit' : ''
   } ${fl.some((e) => e.c === 'ko') ? 'ko-flash' : ''}" data-seat-idx="${i}" onclick="appActions.targetPlayer(${i})">
+      ${targetPreviewHtml}
       ${fl
         .map((e, j) => {
           const dx = ((j % 3) - 1) * 38;
@@ -308,6 +357,113 @@ export function renderCodexModal(filterRank = 'ALL', search = '') {
         </div>
         <div class="codex-grid">
           ${list.map((c, i) => renderCard(c, i, { interactive: false })).join('')}
+        </div>
+      </div>
+    </div>`;
+}
+
+export function renderQuickReactionsModal() {
+  const pill = (el) => `<span class="rx-pill rx-el-${el}">${EL_BADGE[el]}</span>`;
+  const rows = [
+    [pill('lôi') + ' + ' + pill('hỏa'), REACTIONS['hỏa+lôi'].name, REACTIONS['hỏa+lôi'].desc],
+    [pill('hỏa') + ' + ' + pill('thủy'), REACTIONS['hỏa+thủy'].name, REACTIONS['hỏa+thủy'].desc],
+    [pill('lôi') + ' + ' + pill('thủy'), REACTIONS['lôi+thủy'].name, REACTIONS['lôi+thủy'].desc],
+    [pill('hỏa') + ' + ' + pill('hỏa'), REACTIONS['hỏa+hỏa'].name, REACTIONS['hỏa+hỏa'].desc],
+    [pill('thủy') + ' + ' + pill('thủy'), REACTIONS['thủy+thủy'].name, REACTIONS['thủy+thủy'].desc],
+    [pill('lôi') + ' + ' + pill('lôi'), REACTIONS['lôi+lôi'].name, REACTIONS['lôi+lôi'].desc],
+    [
+      pill('phong') + ' + <span class="rx-pill rx-el-any">✨ Ấn bất kỳ</span>',
+      'Khuếch tán nguyên tố',
+      'Lan ấn kia cho 2 người cạnh bên, xóa ấn Phong và giữ lại ấn gốc trên mục tiêu',
+    ],
+  ];
+
+  return `
+    <div class="modal" onclick="if(event.target===this)appActions.closeModal()">
+      <div class="modal-card rx-quick-modal">
+        <div class="modal-head">
+          <h2>⚗️ Tra Cứu Nhanh Phản Ứng Nguyên Tố</h2>
+          <button onclick="appActions.closeModal()">✕</button>
+        </div>
+        <p class="hint">Đủ <b>2 ấn</b> trên mục tiêu sẽ kích nổ phản ứng ngay lập tức và tiêu thụ ấn.</p>
+        <div class="rx-quick-list">
+          ${rows
+            .map(
+              ([combo, name, desc]) => `
+            <div class="rx-quick-item">
+              <div class="rx-combo">${combo}</div>
+              <div class="rx-info">
+                <b>${esc(name)}</b>
+                <span>${esc(desc)}</span>
+              </div>
+            </div>`
+            )
+            .join('')}
+        </div>
+        <div class="rx-pipeline">
+          <b>Thứ tự nhận sát thương:</b>
+          <span>1. Tự kích hoạt / Né</span> → <span>2. Pet đỡ (FIFO)</span> → <span>3. Giáp</span> → <span>4. Máu</span>
+        </div>
+        <div class="rx-shortcuts">
+          <b>Phím tắt (Desktop):</b>
+          <kbd>1</kbd>–<kbd>9</kbd> Chọn thẻ · <kbd>Space</kbd>/<kbd>Enter</kbd> Kết thúc lượt · <kbd>Esc</kbd> Hủy / Đóng · <kbd>R</kbd> Bảng phản ứng
+        </div>
+      </div>
+    </div>`;
+}
+
+export function renderVictoryOverlay(G, { canRematch = true, isOnline = false } = {}) {
+  const maxDmg = Math.max(0, ...G.ps.map((p) => p.stats?.dmgDealt || 0));
+  const sorted = [...G.ps].sort((a, b) => (b.stats?.dmgDealt || 0) - (a.stats?.dmgDealt || 0));
+
+  return `
+    <div class="ov-win">
+      <div class="win-box win-wide">
+        <div class="win-trophy">🏆</div>
+        <h1>${esc(G.over)} chiến thắng!</h1>
+        <p class="hint">Tổng số lượt: <b>${G.turnCount || 1}</b></p>
+        <div class="stats-wrap">
+          <table class="stats-table">
+            <thead>
+              <tr>
+                <th>Ninja</th>
+                <th>⚔️ Sát thương</th>
+                <th>⚗️ Phản ứng</th>
+                <th>🃏 Số thẻ</th>
+                <th>💀 Hạ gục</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${sorted
+                .map((p) => {
+                  const st = p.stats || { dmgDealt: 0, reactions: 0, cardsUsed: 0, kos: 0 };
+                  const isMvp = maxDmg > 0 && st.dmgDealt === maxDmg;
+                  return `
+                  <tr class="${p.dead ? 'row-dead' : 'row-alive'}">
+                    <td>
+                      <b>${esc(p.name)}</b>${p.bot ? ' 🤖' : ''}
+                      ${G.teams ? `<span class="tm t${p.team}">${TEAM_NAMES[p.team]}</span>` : ''}
+                      ${isMvp ? '<span class="mvp-badge">🏅 MVP</span>' : ''}
+                    </td>
+                    <td><b>${st.dmgDealt}</b></td>
+                    <td>${st.reactions}</td>
+                    <td>${st.cardsUsed}</td>
+                    <td>${st.kos}</td>
+                  </tr>`;
+                })
+                .join('')}
+            </tbody>
+          </table>
+        </div>
+        <div class="row win-actions">
+          ${
+            canRematch
+              ? '<button class="go btn-lg" onclick="appActions.rematch()">🔄 Chơi lại ngay</button>'
+              : isOnline
+                ? '<span class="hint">⏳ Chờ chủ phòng bấm Chơi lại...</span>'
+                : ''
+          }
+          <button class="btn-lg" onclick="appActions.leaveGame()">🏠 Về Menu</button>
         </div>
       </div>
     </div>`;

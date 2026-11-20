@@ -18,6 +18,8 @@ import {
   renderRulesModal,
   renderCodexModal,
   renderAutoPromptModal,
+  renderQuickReactionsModal,
+  renderVictoryOverlay,
 } from './ui.js';
 
 const $ = (id) => document.getElementById(id);
@@ -27,10 +29,12 @@ const state = {
   G: null,
   socket: null,
   you: null,
+  isOnlineHost: false,
   lobby: null,
   offlineCount: 4,
+  lastOfflinePlayers: null,
   nick: localStorage.getItem('son_nick') || 'Ninja',
-  modal: null, // null | 'rules' | 'codex'
+  modal: null, // null | 'rules' | 'codex' | 'reactions'
   codexRank: 'ALL',
   codexSearch: '',
   busy: false,
@@ -60,6 +64,7 @@ function topBarHtml(showLeave = false) {
       </div>
       <div class="top-actions">
         ${showLeave ? '<button class="btn-sm" onclick="appActions.leaveGame()">🚪 Thoát</button>' : ''}
+        <button class="btn-sm" onclick="appActions.openModal(\'reactions\')" title="Tra cứu nhanh phản ứng nguyên tố (Phím R)">⚗️ Phản ứng</button>
         <button class="btn-sm" onclick="appActions.openModal(\'codex\')">🃏 Nhẫn thuật</button>
         <button class="btn-sm" onclick="appActions.openModal(\'rules\')">📖 Luật</button>
         <button class="btn-sm" onclick="appActions.toggleSound()">${SFX.muted ? '🔇 Tắt âm' : '🔊 Âm thanh'}</button>
@@ -139,10 +144,16 @@ function runOfflineBotStep() {
     if (!state.G || state.G.over || state.G !== G) return;
     const act = pickBotAction(G);
     if (act.type === 'end') {
-      await endTurn(G);
+      const endRes = await endTurn(G);
       SFX.play('draw');
-      render();
-      runOfflineBotStep();
+      if (endRes?.events?.length) {
+        playFxEvents(endRes.events, () => {
+          if (state.G === G && !G.over && G.ps[G.cur]?.bot) runOfflineBotStep();
+        });
+      } else {
+        render();
+        runOfflineBotStep();
+      }
       return;
     }
     const res = await useCard(G, act.index, act.target, act.hitList);
@@ -153,9 +164,15 @@ function runOfflineBotStep() {
         }
       });
     } else {
-      await endTurn(G);
-      render();
-      runOfflineBotStep();
+      const endRes = await endTurn(G);
+      if (endRes?.events?.length) {
+        playFxEvents(endRes.events, () => {
+          if (state.G === G && !G.over && G.ps[G.cur]?.bot) runOfflineBotStep();
+        });
+      } else {
+        render();
+        runOfflineBotStep();
+      }
     }
   }, 1500);
 }
@@ -177,9 +194,10 @@ function connectSocket() {
     render();
   });
 
-  s.on('game:state', ({ state: srvState, fx, you }) => {
+  s.on('game:state', ({ state: srvState, fx, you, isHost }) => {
     const prevCur = state.G ? state.G.cur : -1;
     state.you = you;
+    state.isOnlineHost = !!isHost;
     state.G = srvState;
     state.G.sel = null;
     state.G.hl = null;
@@ -233,6 +251,7 @@ function renderModal() {
   if (state.autoPrompt) return renderAutoPromptModal(state.autoPrompt);
   if (state.modal === 'rules') return renderRulesModal(state.rulebookText);
   if (state.modal === 'codex') return renderCodexModal(state.codexRank, state.codexSearch);
+  if (state.modal === 'reactions') return renderQuickReactionsModal();
   return '';
 }
 
@@ -243,7 +262,7 @@ function renderMenu() {
       <div class="hero-card">
         <div class="hero-badge">⚔️ TACTICAL ELEMENTAL TCG</div>
         <h1>Scrolls of Naruto</h1>
-        <p class="hero-sub">Đấu thẻ bài chiến thuật 4 nguyên tố <b>Phong · Thủy · Hỏa · Lôi</b> với 64 nhẫn thuật, Pet hộ thể, Né tránh ẩn và 7 Phản ứng Nguyên tố.</p>
+        <p class="hero-sub">Đấu thẻ bài chiến thuật 4 nguyên tố <b>Phong · Thủy · Hỏa · Lôi</b> với 96 nhẫn thuật, Pet hộ thể, Né tránh ẩn và 7 Phản ứng Nguyên tố.</p>
         <div class="hero-btns">
           <button class="go btn-lg btn-online" onclick="appActions.openOnlineMenu()">🌐 Chơi Online</button>
           <button class="go btn-lg" onclick="appActions.openOfflineSetup()">🎮 Chơi Offline</button>
@@ -401,15 +420,10 @@ function renderSandboxBar(G) {
 function renderGame() {
   const G = state.G;
   if (G.over) {
+    const canRematch = !G.online || state.isOnlineHost;
     return `
       ${topBarHtml(true)}
-      <div class="ov-win">
-        <div class="win-box">
-          <div class="win-trophy">🏆</div>
-          <h1>${esc(G.over)} chiến thắng!</h1>
-          <button class="go btn-lg" onclick="appActions.leaveGame()">Về Menu</button>
-        </div>
-      </div>`;
+      ${renderVictoryOverlay(G, { canRematch, isOnline: !!G.online })}`;
   }
 
   const cur = G.ps[G.cur];
@@ -447,13 +461,21 @@ function renderGame() {
     ? `<div class="acts">
          <button class="go" onclick="appActions.endTurn()">⏭ Kết thúc lượt</button>
          ${selCard ? '<button onclick="appActions.cancelSelect()">✕ Hủy chọn</button>' : ''}
+         <span class="hk-hint">Phím tắt: <b>1-9</b> chọn · <b>Space</b> hết lượt · <b>R</b> phản ứng</span>
        </div>`
     : '';
 
   const handHtml = showSecret
     ? `<div class="hand">
          ${V.hand
-           .map((c, i) => renderCard(c, i, { selected: G.sel === i, dim: !canAct, interactive: true }))
+           .map((c, i) =>
+             renderCard(c, i, {
+               selected: G.sel === i,
+               dim: !canAct,
+               interactive: true,
+               hotkey: canAct && i < 9 ? i + 1 : null,
+             })
+           )
            .join('')}
        </div>`
     : '';
@@ -585,11 +607,37 @@ window.appActions = {
       name: ($('nm' + i)?.value || `Người chơi ${i + 1}`).trim().slice(0, 16),
       bot: $('ty' + i)?.value === '1',
     }));
+    state.lastOfflinePlayers = players;
     state.G = await createGame(players, { online: false, onAskAuto: askLocalAuto });
     state.G.sel = null;
     state.G.hl = null;
     state.G.ready = false;
     state.mode = 'game';
+    state.msg = '';
+    SFX.play('turn');
+    render();
+    runOfflineBotStep();
+  },
+  async rematch() {
+    const G = state.G;
+    if (!G) return;
+    if (G.online) {
+      state.waitOnline = true;
+      state.socket?.emit('room:rematch');
+      render();
+      return;
+    }
+    if (G.sandbox) {
+      return this.startSandbox();
+    }
+    const players =
+      state.lastOfflinePlayers ||
+      G.ps.map((p) => ({ name: p.name.replace(/\s*\(Bot\)$/, ''), bot: !!p.bot }));
+    state.G = await createGame(players, { online: false, onAskAuto: askLocalAuto });
+    state.G.sel = null;
+    state.G.hl = null;
+    state.G.ready = false;
+    state.busy = false;
     state.msg = '';
     SFX.play('turn');
     render();
@@ -859,21 +907,75 @@ window.appActions = {
       state.socket?.emit('game:end');
       render();
     } else {
-      await endTurn(G);
+      const endRes = await endTurn(G);
+      let events = endRes?.events || [];
       if (G.sandbox) {
         let guard = 0;
         while (!G.over && G.cur !== 0 && guard < G.ps.length) {
-          await endTurn(G, true);
+          const r = await endTurn(G, true);
+          if (r?.events?.length) events = events.concat(r.events);
           guard++;
         }
       } else {
         G.ready = false;
       }
-      render();
-      if (!G.sandbox) runOfflineBotStep();
+      if (events.length) {
+        playFxEvents(events, () => {
+          if (!G.sandbox && state.G === G && !G.over && G.ps[G.cur]?.bot) {
+            runOfflineBotStep();
+          }
+        });
+      } else {
+        render();
+        if (!G.sandbox) runOfflineBotStep();
+      }
     }
   },
 };
+
+document.addEventListener('keydown', (e) => {
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  const tag = e.target?.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+  if (state.autoPrompt) return;
+
+  if (e.key === 'Escape') {
+    if (state.modal) {
+      window.appActions.closeModal();
+    } else if (state.G?.sel != null) {
+      window.appActions.cancelSelect();
+    }
+    return;
+  }
+
+  if (e.key === 'r' || e.key === 'R') {
+    if (state.modal === 'reactions') window.appActions.closeModal();
+    else if (!state.modal) window.appActions.openModal('reactions');
+    return;
+  }
+
+  if (state.mode !== 'game' || !state.G || state.G.over || state.modal || state.busy || state.waitOnline) return;
+  const G = state.G;
+  const cur = G.ps[G.cur];
+  if (!cur || cur.bot) return;
+  if (G.online && cur.uid !== state.you) return;
+  const humCount = G.ps.filter((p) => !p.bot).length;
+  if (!G.online && humCount >= 2 && !G.ready) return;
+
+  if (e.key >= '1' && e.key <= '9') {
+    const idx = Number(e.key) - 1;
+    if (idx < cur.hand.length) {
+      e.preventDefault();
+      window.appActions.pickCard(idx);
+    }
+    return;
+  }
+
+  if ((e.key === ' ' || e.key === 'Enter') && G.sel == null) {
+    e.preventDefault();
+    window.appActions.endTurn();
+  }
+});
 
 document.addEventListener(
   'wheel',
