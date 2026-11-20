@@ -1,0 +1,18 @@
+{
+  "name": "scrolls-of-naruto",
+  "version": "1.0.0",
+  "description": "Naruto Card Game - Tactical Elemental TCG with Offline & Real-time Online Multiplayer",
+  "type": "module",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "test": "node --test tests/engine.test.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "socket.io": "^4.8.1"
+  }
+}

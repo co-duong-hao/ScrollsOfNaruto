@@ -1,0 +1,282 @@
+<!DOCTYPE html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>Naruto Card Game</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;800&family=Noto+Serif:wght@600;800&display=swap"><style>
+:root{--bg:#f1ece0;--s:#fffaf0;--t:#1d1a16;--m:#6d665a;--ac:#c8391f;--bd:#cfc6b2;box-sizing:border-box;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#12151d;--s:#1c212d;--t:#ece8dd;--m:#97a0b3;--ac:#ff6a3d;--bd:#323a4d}}
+:root[data-theme=dark]{--bg:#12151d;--s:#1c212d;--t:#ece8dd;--m:#97a0b3;--ac:#ff6a3d;--bd:#323a4d}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--t);font:15px/1.4 system-ui,sans-serif}
+#app{max-width:1000px;margin:auto;padding:8px}h1{font:700 26px Georgia,serif;margin:6px 0}
+.tb{background:radial-gradient(ellipse at 50% 45%,#23704d,#0e3b29 75%);border-radius:16px;padding:10px;display:flex;flex-direction:column;gap:8px;min-height:calc(100vh - 250px);color:#f4f0e2;box-shadow:inset 0 0 40px #0008}
+.opp{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.st{background:#06201699;border:2px solid #ffffff30;border-radius:12px;padding:7px 10px;width:170px;text-align:center;font-size:12px}
+.st b{display:block;font-size:14px}.st.me{width:auto;min-width:240px;align-self:center}
+.st.cur{border-color:#ffd24a;box-shadow:0 0 14px #ffd24a99}.st.dead{opacity:.4}.st.tg{cursor:pointer;border-color:#ff5d3d;box-shadow:0 0 16px #ff5d3d;animation:pu 1s infinite alternate}
+@keyframes pu{to{transform:scale(1.04)}}
+.hp{position:relative;height:16px;background:#0006;border-radius:8px;margin:4px 0;overflow:hidden}.hp i{position:absolute;inset:0 auto 0 0;background:linear-gradient(#e2503a,#a82a18)}.hp span{position:relative;font-size:11px;line-height:16px}
+.fx{display:flex;flex-wrap:wrap;gap:3px;justify-content:center;min-height:16px}.fx em{font-style:normal;background:#ffffff22;border-radius:8px;padding:0 6px;font-size:11px}
+.mid{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
+.ban{font:700 18px Georgia,serif;text-align:center}.msg{color:#ffd24a;min-height:18px;font-size:13px}
+.lg{width:100%;max-width:560px;height:84px;overflow:auto;font-size:12px;text-align:center;opacity:.85;background:#0003;border-radius:8px;padding:4px}
+.acts{display:flex;gap:8px;justify-content:center;margin:8px 0}
+.hand{display:flex;justify-content:safe center;padding:30px 14px 8px;overflow-x:auto;overflow-y:hidden;min-height:215px}
+.cd{flex:0 0 122px;height:172px;margin-left:-30px;background:#f1e6c8;color:#241d12;border:3px solid #7a6a45;border-radius:10px;padding:6px;font:11px/1.25 Georgia,serif;cursor:pointer;position:relative;transition:transform .15s;box-shadow:0 3px 8px #0006;overflow:hidden}
+.cd:first-child{margin-left:0}.cd:hover,.cd.sel{transform:translateY(-24px);z-index:3}.cd.sel{outline:3px solid var(--ac)}
+.cd b{display:block;font-size:13px;margin-bottom:2px;padding-right:18px}.cd .rk{position:absolute;top:4px;right:5px;font:700 13px system-ui}
+.cd small{display:block;font:10px system-ui;color:#6d5f40;margin-bottom:3px}
+.cd.A{border-color:#7b3fb0}.cd.B{border-color:#2f6fb3}.cd.C{border-color:#888}.cd.S{border-color:#d19a00;box-shadow:0 0 0 2px #d19a0088,0 3px 8px #0006}
+.cd.au{opacity:.75}.cd.dim{cursor:default;filter:saturate(.6)}
+button{font:inherit;padding:8px 14px;border:2px solid var(--t);background:var(--s);color:var(--t);border-radius:6px;cursor:pointer}select,input{font:inherit;padding:7px 10px;border:2px solid var(--t);background:var(--s);color:var(--t);border-radius:6px}
+button.go{background:var(--ac);color:#fff;border-color:var(--ac)}
+.ov{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;gap:14px;align-items:center;justify-content:center;text-align:center;z-index:5;padding:20px}
+.row{display:flex;gap:8px;margin:5px 0;flex-wrap:wrap;align-items:center}
+.tb{position:relative}.st{position:relative}
+.cast{position:absolute;left:0;right:0;top:32%;text-align:center;z-index:6;pointer-events:none;animation:ci 1.1s ease-out forwards}
+.cast h2{display:inline-block;margin:0;padding:10px 40px;font:900 clamp(26px,7vw,54px) Georgia,serif;letter-spacing:2px;color:#fff;text-shadow:0 2px 8px #000a;background:linear-gradient(100deg,transparent,var(--c) 15%,var(--c) 85%,transparent)}
+.cast small{display:block;margin-top:4px;font:600 14px system-ui;color:#fff;text-shadow:0 1px 4px #000}
+@keyframes ci{0%{opacity:0;transform:scale(2.2)}18%{opacity:1;transform:scale(1)}85%{opacity:1}100%{opacity:0;transform:scale(.96)}}
+.tb.shake{animation:sh .35s 2}@keyframes sh{25%{transform:translate(-5px,2px)}75%{transform:translate(5px,-2px)}}
+.fl{position:absolute;left:50%;top:22%;font:800 22px system-ui;pointer-events:none;animation:fu 1.2s ease-out both;white-space:nowrap;text-shadow:0 1px 4px #000;z-index:4}
+@keyframes fu{0%{opacity:0;transform:translate(-50%,10px) scale(.6)}15%{opacity:1;transform:translate(-50%,-6px) scale(1.2)}100%{opacity:0;transform:translate(-50%,-48px)}}
+.fl.hp{color:#ff5448;font-size:30px}.fl.ar{color:#8fcbff}.fl.pt{color:#ffb36b}.fl.dg{color:#fff;font-size:26px}.fl.au{color:#ffd24a;font-size:19px}.fl.rx{color:#e0b3ff;font-size:16px}
+.st.hit{animation:hh .6s}@keyframes hh{30%{background:#d4301f}}
+.turn{position:fixed;left:0;right:0;top:38%;text-align:center;z-index:7;pointer-events:none;font:800 30px Georgia,serif;color:#fff;text-shadow:0 2px 12px #000;animation:ci 1s forwards}
+.rw{font-size:11px;text-align:left;margin-top:2px}.rw i{font-style:normal;opacity:.7;margin-right:3px}.sum{font-size:12px;margin-top:4px;opacity:.9}
+.ch{display:inline-block;position:relative;overflow:hidden;border-radius:8px;padding:0 6px;margin:1px;font-size:11px;border:1px solid;cursor:pointer}
+.ch.bad{background:#7a1d1466;border-color:#ff6a5a;color:#ffd6d0}.ch.good{background:#12552e77;border-color:#5be08e}.ch.pet{background:#6a3d0a66;border-color:#ffb36b}
+.ch.pet u{position:absolute;left:0;bottom:0;height:3px;background:#ffb36b}
+.top{display:flex;justify-content:flex-end}.modal{position:fixed;inset:0;background:#000b;z-index:9;display:flex;align-items:center;justify-content:center;padding:14px}
+.modal>div{background:var(--s);color:var(--t);max-width:640px;max-height:88vh;overflow:auto;border-radius:12px;padding:16px;font-size:14px}
+table{border-collapse:collapse;width:100%;margin:6px 0}td,th{border:1px solid var(--bd);padding:4px 7px;text-align:left}
+.cd.au small:last-child{color:#a03a00;font-weight:700}
+body{font:16px/1.45 'Be Vietnam Pro',system-ui,sans-serif}#app{max-width:1360px}
+.cd,h1,.ban,.cast h2,.turn{font-family:'Noto Serif','Be Vietnam Pro',serif}
+.tb{min-height:calc(100vh - 120px);padding:16px;gap:14px}
+.st{width:250px;font-size:14.5px;padding:10px 12px}.st b{font-size:17px}.st.me{min-width:340px}.hp{height:24px}.hp span{font-size:14px;line-height:24px}
+.ch{font-size:13px;padding:1px 8px}.rw{font-size:13px}
+.ban{font-size:26px}.msg{font-size:16px}.lg{max-width:780px;height:120px;font-size:14px}
+.hand{min-height:310px;padding-top:44px}.cd{flex:0 0 170px;height:250px;font-size:14px;padding:9px;margin-left:-24px}.cd:first-child{margin-left:0}.cd b{font-size:16px}.cd small{font-size:12px}.cd .rk{font-size:16px}
+.cast h2{font-size:clamp(32px,8vw,72px)}.cast small{font-size:18px}.fl{font-size:28px}.fl.hp{font-size:42px}
+button{font-size:16px;padding:10px 18px}.lob{max-width:640px}
+.tm{font-size:11px;border-radius:6px;padding:1px 6px;margin-left:5px;color:#fff}.tm.t0{background:#c0392b}.tm.t1{background:#2471c8}
+.mine{display:flex;gap:14px;align-items:flex-end}.mine .st.me{flex:0 0 300px;width:300px;min-width:0;align-self:flex-end}
+.hw{flex:1;min-width:0;display:flex;flex-direction:column}.hw .acts{justify-content:flex-start;margin:0 0 4px}
+.hw .hand{min-height:300px;padding:40px 10px 8px;scrollbar-width:thin}
+@media(max-width:820px){.mine{flex-direction:column;align-items:stretch}.mine .st.me{flex:none;width:auto}}
+</style></head><body><div id="app"></div><script>
+const K=(n,r,t,s,e={})=>({n,r,t,s,...e}),R='nghệ thuật rối',H='hyuga',U='uchiha',T='thường',M='mangakyo',RN='rinnegan';
+const D=[
+K('sharingan','A','s',U,{dg:70,sf:-1,b:{m:.3,t:5}}),K('rasengan','A','a',T,{d:200}),
+K('ném kunai','C','a','nhẫn cụ',{d:50}),K('ném shuriken','C','a','nhẫn cụ',{d:60}),
+K('hỏa độn','B','a',T,{d:100,el:'hỏa'}),K('thủy độn','B','a',T,{d:110,el:'thủy'}),
+K('bạch nhãn','A','s',H,{dg:55,b:{m:.15,hy:.5,t:5}}),K('thuật triệu hồi','A','s',T,{pet:[1,200,30]}),
+K('izanagi','S','x',U,{au:'rev'}),K('phi lôi thần thuật','S','a',T,{a:140,dg:100,el:'lôi'}),
+K('phong độn','B','a',T,{a:30,el:'phong'}),
+K('bom c4 nhện','B','a','bom nghệ thuật',{d:80,j:10,el:'hỏa'}),K('bom c4 chim','B','a','bom nghệ thuật',{d:90,j:10,el:'hỏa'}),
+K('karasu','B','a',R,{d:100,crit:1}),K('kuroari','B','a',R,{d:50,st:1}),K('kanshouo','B','d',R,{ar:50}),
+K('hiruko','A','s',R,{ar:150,b:{m:.05,ua:1,rf:1}}),K('rối kage đệ tam','S','a',R,{d:300,bl:200}),
+K('thập rối chikamatsu','S','a',R,{a:250}),K('bách rối thuật','S','a',R,{a:300}),
+K('thủy lao thuật','B','a','cá mập và sóng',{d:20,st:1,el:'thủy'}),K('ngũ thực giảo','B','a','cá mập và sóng',{d:150,el:'thủy'}),
+K('thiên thực giảo','A','a','cá mập và sóng',{a:220,dg:30,el:'thủy'}),K('thủy đạn thuật','B','a','cá mập và sóng',{d:150,dg:40,el:'thủy'}),
+K('thủy phân thân','A','s',T,{pet:[1,200,20]}),K('odama rasengan','S','a',T,{d:300,el:'phong'}),
+K('đa phân thân thuật','S','s',T,{pet:[2,150,20]}),K('hỏa long viêm đạn','A','a',T,{d:200,el:'hỏa'}),
+K('chidori','A','a',T,{d:220,dg:10,el:'lôi'}),K('thi quỷ phong tận','S','a','phong ấn',{hpl:80,d:20,st:4}),
+K('cổng thần đạo','A','a','phong ấn',{d:150,kp:1}),K('kim sa ấn','S','a','phong ấn',{d:200,st:1,ds:1}),
+K('ngũ trùng la sinh môn','A','d',T,{ar:300,at:3}),K('thuẫn cát','B','d','sa mạc và máu',{ar:50}),
+K('hồi thiên','B','d',H,{dg:90,a:30}),K('nhu quyền','C','a',H,{d:30,dt:20}),
+K('lục thập tứ chưởng','A','a',H,{h:[8,16,32,64]}),K('bát quái không chưởng','B','a',H,{d:180}),
+K('nhu bộ song sư kích','B','a',H,{h:[40,40]}),K('bách nhị thập tứ chưởng','A','a',H,{h:[8,16,32,64,128]}),
+K('susanoo','S','s',M,{ar:250,b:{m:.6,ua:1}}),K('hỏa cầu chi thuật','B','a',U,{d:130,el:'hỏa'}),
+K('phụng liên đạn','S','a',U,{h:[30,30,30],el:'hỏa'}),K('chiếu bản chi thuật','A','a','ảo thuật',{d:30,ms:2,bl:200}),
+K('hống trương cấm thính','B','a','ảo thuật',{a:100,ma:1}),K('bẫy ảo thuật','A','x','ảo thuật',{au:'trap'}),
+K('mangakyo sharingan','S','s',U,{sf:-2,b:{m:.6,t:3},gv:'m'}),K('thiên chiếu','S','a',M,{d:50,bl:Infinity}),
+K('stukuyomi','S','a',M,{d:150,ms:3,bl:200}),K('kamui trái','S','x',M,{au:'kl'}),K('kamui phải','S','x',M,{au:'kr'}),
+K('rinnengan','S','x',RN,{gv:'r'}),K('thiên đạo đẩy','S','a',RN,{d:50,rd:1}),K('thiên đạo hút','S','a',RN,{d:50,rs:1}),
+K('atula đạo tên lửa','B','a',RN,{a:100}),K('atula đạo lưỡi cưa','B','a',RN,{d:200}),
+K('súc sinh đạo','A','s',RN,{pet:[1,300,50]}),K('ngạ quỷ đạo','A','x',RN,{au:'gq'}),
+K('nhân gian đạo','A','a',RN,{ms:5}),K('địa ngục đạo','S','x',RN,{rv:1}),
+K('địa bộc thiên tinh','S','a',RN,{d:500,st:2}),K('tengai shinsei','S','a',RN,{a:400}),
+K('ngoại đạo ma tượng','S','a',RN,{a:600,hpl:40,kpa:1}),K('izanami','S','x',M,{au:'izm'})];
+const HID=[M,RN],AUD={rev:'tự hồi sinh 500 máu',kl:'miễn đòn, nhận lại thẻ tấn công',kr:'miễn đòn cấp A+, +150 giáp',trap:'phản 100% sát thương, -1 tinh thần',gq:'miễn đòn, hồi máu bằng sát thương',izm:'khi bị đòn cấp A: đánh dấu kẻ đó, mọi hành động lượt sau của họ bị xóa'};
+const RX={'lôi+thủy':'Sốc điện lan truyền','hỏa+thủy':'Hơi nước bốc hơi','hỏa+hỏa':'Quá tải nhiệt','thủy+thủy':'Đóng băng','lôi+lôi':'Sấm sét giật cục','hỏa+lôi':'Điện-Nhiệt: Choáng'},
+ F=(t,tx,c)=>G.q.push({t:G.ps.indexOf(t),tx,c}),
+ later=f=>{if(G.busy)G.w=f;else setTimeout(f,600)};
+const esc=s=>String(s).replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';'),TN=['Phe Đỏ','Phe Xanh'];
+let DB=null,US=null,UID=null,subs=[],ROOM=null;const lastN={};
+const rnd=a=>a[Math.floor(Math.random()*a.length)],$=id=>document.getElementById(id);
+const needT=c=>!!(c.d||c.h||c.ms||c.rv||c.dt);
+let G=null;
+function desc(c){const o=[];if(c.au)return'(tự kích hoạt) '+AUD[c.au];
+ if(c.hpl)o.push('mất '+c.hpl+'% máu');if(c.d)o.push(c.d+' sát thương');if(c.a)o.push(c.a+' lên cả bàn');if(c.h)o.push('đánh '+c.h.join('/'));
+ if(c.j)o.push(c.j+' hai bên');if(c.crit)o.push('chí mạng nếu choáng');if(c.el)o.push('ấn '+c.el);if(c.bl)o.push('chảy máu '+(c.bl>1e9?'vô hạn':c.bl));
+ if(c.st)o.push('choáng '+c.st);if(c.ms)o.push('-'+c.ms+' tinh thần');if(c.ma)o.push('-'+c.ma+' tinh thần cả bàn');if(c.dt)o.push('-'+c.dt+' né địch');
+ if(c.dg)o.push('+'+c.dg+' né');if(c.sf)o.push(c.sf+' tinh thần bản thân');if(c.ar)o.push('+'+c.ar+' giáp'+(c.at?' '+c.at+' lượt':''));
+ if(c.pet)o.push('pet x'+c.pet[0]+': '+c.pet[1]+' máu, '+c.pet[2]+' dmg');if(c.b)o.push('buff +'+Math.round(c.b.m*100)+'% dmg'+(c.b.hy?' (+'+c.b.hy*100+'% hyuga)':'')+(c.b.t?', '+c.b.t+' lượt':', tới hết giáp'));
+ if(c.kp)o.push('diệt pet mục tiêu');if(c.kpa)o.push('diệt mọi pet');if(c.rd)o.push('hủy 1 thẻ địch');if(c.rs)o.push('cướp 1 thẻ địch');
+ if(c.gv)o.push('nhận thẻ '+(c.gv=='m'?'mangakyo':'rinnegan'));if(c.rv)o.push('hồi sinh 1 người chết với 1000 máu');if(c.ds)o.push('thi thể bị tiêu diệt');return o.join(', ')}
+const L=s=>G.log.push(s),al=()=>G.ps.map((p,i)=>i).filter(i=>!G.ps[i].dead);
+function adj(i){const a=al(),k=a.indexOf(i),n=a.length;if(k<0)return[];return[...new Set([a[(k+1)%n],a[(k-1+n)%n]])].filter(x=>x!==i)}
+function draw(p){const x=Math.random()*100,r=x<40?'C':x<65?'B':x<85?'A':'S',po=D.filter(c=>c.r===r&&!HID.includes(c.s));
+ const w=po.map(c=>p.aff[c.s]||1);let y=Math.random()*w.reduce((a,b)=>a+b);for(let i=0;i<po.length;i++){y-=w[i];if(y<=0)return p.hand.push(po[i])}p.hand.push(po[0])}
+function sp(p,n){p.sp=Math.min(10,p.sp+n);if(p.sp<=0){p.sp=5;p.stun=Math.max(p.stun,1);L(p.name+' cạn tinh thần: hồi 5, bị Choáng')}}
+function chk(p){if(p.hp>0||p.dead)return;const k=p.hand.findIndex(c=>c.au==='rev');
+ if(k>=0){p.hand.splice(k,1);p.hp=500;p.armor=500;p.armorT=1;L('✨ '+p.name+' dùng Izanagi hồi sinh (500 máu, 500 giáp)')}
+ else{p.dead=1;p.hp=0;p.hand=[];p.pets=[];p.marks=[];L('💀 '+p.name+' gục ngã')}}
+const dir=(p,n)=>{p.hp-=n;chk(p)};
+function hit(s,t,dmg,c,ne){dmg=Math.round(dmg);if(t.dead)return 0;if(s&&s!==t)t.last=G.ps.indexOf(s);
+ if(!ne){const ok=x=>x.au==='kl'||x.au==='gq'||x.au==='trap'||(c&&(x.au==='kr'&&'AS'.includes(c.r)||x.au==='izm'&&c.r==='A')),k=t.hand.findIndex(ok);
+  if(k>=0){const x=t.hand.splice(k,1)[0];L('🛡 '+t.name+' kích hoạt '+x.n);F(t,'🛡 '+x.n+'!','au');
+   if(x.au==='kl'&&c&&c.t==='a')t.hand.push(c);if(x.au==='kr')t.armor+=150;if(x.au==='gq')t.hp+=dmg;
+   if(x.au==='trap'&&s){dir(s,dmg);sp(s,-1)}if(x.au==='izm'){if(s)s.izm=1}else return 0}
+  const d=t.dodge;if(d>0&&(d>=100||Math.random()*100<d)){t.dodge=Math.max(0,d-100);L('💨 '+t.name+' né thành công');F(t,'NÉ!','dg');return 0}}
+ if(t.pets.length){const q=t.pets[0];q.hp-=dmg;L('🐾 pet của '+t.name+' đỡ '+dmg);F(t,'🐾 -'+dmg,'pt');if(q.hp<=0){t.pets.shift();L('pet bị diệt')}return 1}
+ const a=Math.min(t.armor,dmg);if(a>0){t.armor-=a;dmg-=a;if(s&&!s.dead&&t.buffs.some(b=>b.rf)){dir(s,20);L('phản 20 sát thương')}}
+ if(t.armor<=0){t.armor=0;t.buffs=t.buffs.filter(b=>!b.ua)}
+ if(dmg>0)dir(t,dmg);L('⚔ '+t.name+' nhận '+(dmg+a)+' (giáp chặn '+a+')');if(dmg>0)F(t,'-'+dmg,'hp');if(a>0)F(t,'🛡 -'+a,'ar');return 1}
+function mark(t,e){if(t.dead)return;t.marks.push(e);if(t.marks.length<2)return;const[a,b]=t.marks;t.marks=[];
+ const k=[a,b].sort().join('+'),N=adj(G.ps.indexOf(t)).map(i=>G.ps[i]);L('⚗ Phản ứng '+k+' lên '+t.name);F(t,'⚗ '+(RX[k]||'Khuếch tán nguyên tố'),'rx');
+ if(a==='phong'||b==='phong'){const x=a==='phong'?b:a;if(x!=='phong'){t.marks=[x];N.forEach(n=>mark(n,x))}return}
+ if(k==='lôi+thủy')[t,...N].forEach(n=>hit(null,n,50,null,1));else if(k==='hỏa+thủy')hit(null,t,100,null,1);
+ else if(k==='hỏa+hỏa')t.bleed+=150;else if(k==='thủy+thủy')t.dodge=Math.max(0,t.dodge-30);
+ else if(k==='lôi+lôi'){sp(t,-1);dir(t,30)}else if(k==='hỏa+lôi')t.stun=Math.max(t.stun,1)}
+const valid=(c,x,me)=>{const q=G.ps[x];if(x===me)return false;return c.rv?q.dead&&!q.destroyed:c.ds?!q.destroyed:!q.dead};
+function use(i,ti,hl){const p=G.ps[G.cur],c=p.hand.splice(i,1)[0],T=G.ps[ti];G.used.push(c.s);G.sel=null;G.hl=null;G.q.push({k:'cast',n:c.n,r:c.r,el:c.el,who:p.name,sub:c.a?'lên cả bàn':c.h?'':T&&needT(c)?'→ '+T.name:''});
+ L(p.name+' dùng '+c.n+(c.h?'':T&&!c.a&&needT(c)?' → '+T.name:''));
+ if(c.hpl)p.hp=Math.max(1,Math.floor(p.hp*(1-c.hpl/100)));if(c.sf)sp(p,c.sf);if(c.dg)p.dodge+=c.dg;
+ if(c.ar){p.armor+=c.ar;if(c.at)p.armorT=c.at}
+ if(c.pet)for(let k=0;k<c.pet[0];k++){p.pets.push({hp:c.pet[1],mx:c.pet[1],atk:c.pet[2]});if(p.pets.length>3)p.pets.shift()}
+ if(c.b){p.buffs.push({n:c.n,...c.b,t:c.b.t||99});if(p.buffs.length>2)p.buffs.shift()}
+ if(c.gv==='m')p.hand.push(rnd(D.filter(x=>x.s===M)));if(c.gv==='r')for(let k=0;k<3;k++)p.hand.push(rnd(D.filter(x=>x.s===RN&&x.n!=='rinnengan')));
+ if(c.kpa)G.ps.forEach(q=>q.pets=[]);
+ if(c.rv){T.dead=0;T.hp=1000;L('♻ '+T.name+' được hồi sinh');for(let k=0;k<3;k++)draw(T)}
+ if(c.ds&&T.dead){T.destroyed=1;L('thi thể '+T.name+' bị tiêu diệt vĩnh viễn')}
+ const m=1+p.buffs.reduce((a,b)=>a+b.m+(b.hy&&c.s===H?b.hy:0),0),ln={},
+  plan=c.h?hl.map((x,k)=>[x,c.h[k]]):c.a?al().filter(x=>x!==G.cur).map(x=>[x,c.a]):needT(c)&&!c.rv?[[ti,c.d||0]]:[];
+ plan.forEach(([x,d0])=>{const t=G.ps[x];if(t.dead||p.dead)return;
+  if(!d0){ln[x]=1;return}let d=d0*m;if(c.crit&&t.stun>0){d*=2;L('chí mạng!')}
+  ln[x]=(ln[x]||0)+hit(p,t,d,c);if(c.j)adj(x).forEach(y=>hit(p,G.ps[y],c.j*m,c));[...p.pets].forEach(q=>hit(p,t,q.atk,null))});
+ Object.keys(ln).forEach(k=>{const t=G.ps[k];if(t.dead||!ln[k])return;
+  if(c.el)mark(t,c.el);if(c.st)t.stun=Math.max(t.stun,c.st);if(c.ms)sp(t,-c.ms);if(c.ma)sp(t,-c.ma);
+  if(c.dt)t.dodge=Math.max(0,t.dodge-c.dt);if(c.bl)t.bleed+=c.bl;if(c.kp)t.pets=[];
+  if(c.rd&&t.hand.length)L('hủy '+t.hand.splice(Math.floor(Math.random()*t.hand.length),1)[0].n);
+  if(c.rs&&t.hand.length){const q=t.hand.splice(Math.floor(Math.random()*t.hand.length),1)[0];p.hand.push(q);L('cướp thẻ từ '+t.name)}});
+ if(win())return;if(p.dead)return endT();fxRun()}
+function win(){const a=al();let w=null;
+ if(G.teams){const t=[...new Set(a.map(i=>G.ps[i].team))];if(t.length<=1)w=t.length?TN[t[0]]+' ('+a.map(i=>G.ps[i].name).join(', ')+')':'Không ai'}
+ else if(a.length<=1)w=a.length?G.ps[a[0]].name:'Không ai';
+ if(w){G.over=w;sync();render();return true}return false}
+function start(){if(win())return;const p=G.ps[G.cur];
+ if(p.dead){G.cur=(G.cur+1)%G.ps.length;return start()}
+ G.used=[];G.ready=false;G.hl=null;G.q=[];G.showTurn=1;L('— Lượt '+p.name+' —');
+ if(p.bleed>0){dir(p,50);p.bleed-=50;L('🩸 '+p.name+' chảy máu −50')}
+ if(p.armorT&&--p.armorT===0)p.armor=0;
+ if(p.dead)return next();
+ if(p.stun>0){p.stun--;L(p.name+' bị Choáng, mất lượt');return endT(1)}
+ if(p.izm){p.izm=0;G.snap=structuredClone(G.ps);G.snapFor=G.cur}
+ sync();render();if(p.bot)setTimeout(bot,1100)}
+function next(){if(win())return;G.cur=(G.cur+1)%G.ps.length;start()}
+function endT(skip){if(win())return;if(G.snap&&G.snapFor===G.cur){G.ps=G.snap;G.snap=null;L('🌀 Izanami: mọi hành động của '+G.ps[G.cur].name+' bị xóa sạch!')}const p=G.ps[G.cur];
+ if(!p.dead){[...new Set(G.used)].forEach(s=>p.aff[s]=(p.aff[s]||1)*1.5);p.buffs.forEach(b=>b.t--);p.buffs=p.buffs.filter(b=>b.t>0);if(!skip){draw(p);draw(p)}}
+ next()}
+function bot(){if(!G||G.over)return;const p=G.ps[G.cur],os=[],ts=al().filter(x=>x!==G.cur);
+ const ch=()=>{const l=p.last;return l!=null&&l!==G.cur&&G.ps[l]&&!G.ps[l].dead?l:rnd(ts)};
+ p.hand.forEach((c,i)=>{if(c.au||(c.hpl&&p.hp<2000))return;
+  let sc=(c.d||0)+(c.a||0)*ts.length+(c.h||[]).reduce((a,b)=>a+b,0)+(c.ar||0)*.8+(c.pet?c.pet[0]*c.pet[1]*.6:0)+(c.b?150:0)+(c.dg||0)*.5+(c.ms||0)*30+20;
+  if(p.hp<1200&&c.ar)sc+=200;sc*=.7+Math.random()*.6;
+  if(!needT(c))return os.push([sc,i,-1]);
+  if(c.rv)return G.ps.forEach((q,x)=>q.dead&&!q.destroyed&&os.push([sc,i,x]));
+  if(ts.length)os.push([sc,i,ch()])});
+ os.sort((a,b)=>b[0]-a[0]);if(!os.length){L(p.name+' kết thúc lượt');return endT()}
+ const o=os[0],c=p.hand[o[1]];use(o[1],o[2],c.h?c.h.map(ch):null);
+ if(!G.over&&G.ps[G.cur]===p&&!p.dead)later(bot)}
+function pick(i){const p=G.ps[G.cur],c=p.hand[i];if(p.bot||!c||G.over||G.busy||G.wait)return;
+ if(G.sel===i){G.sel=null;G.hl=null;return render()}
+ if(c.au){G.msg='Thẻ này tự kích hoạt khi bị tấn công hoặc hấp hối.';return render()}
+ if(c.rv&&!G.ps.some(q=>q.dead&&!q.destroyed)){G.msg='Chưa có ai để hồi sinh.';return render()}
+ if(needT(c)){G.sel=i;G.hl=[];return render()}doUse(i,-1)}
+function tgt(x){if(G.sel==null||G.busy||G.wait)return;const c=G.ps[G.cur].hand[G.sel];if(!valid(c,x,G.cur))return;
+ if(c.h){G.hl.push(x);if(G.hl.length<c.h.length)return render();return doUse(G.sel,x,G.hl)}doUse(G.sel,x)}
+const ECOL={hỏa:'#ff5a1f',thủy:'#2a8cff',lôi:'#c9a300',phong:'#27b866'},RCOL={C:'#777',B:'#2f6fb3',A:'#7b3fb0',S:'#c98a00'};
+function fxRun(){const q=G.q,cs=q.find(e=>e.k==='cast'),fl=q.filter(e=>!e.k);G.q=[];
+ if(G.online&&G.host){G.fx={n:((G.fx&&G.fx.n)||0)+1,cast:cs||null,fl};sync()}
+ if(!cs&&!fl.length)return render();fxPlay(cs,fl)}
+function fxPlay(cs,fl){const g=G;G.busy=1;G.cast=cs;G.fl=null;render();
+ setTimeout(()=>{if(G!==g)return;G.cast=null;G.fl=fl;render()},cs?1100:0);
+ setTimeout(()=>{if(G!==g)return;G.fl=null;G.busy=0;render();const f=G.w;G.w=null;if(f)setTimeout(f,350)},cs?2000:900)}
+function endBtn(){if(G.busy||G.wait)return;doEnd()}
+function chips(p,me){const bad=[...p.marks.map(e=>['ấn '+e,'Ấn nguyên tố: thêm 1 ấn nữa sẽ gây phản ứng']),p.bleed?['🩸 chảy máu '+(p.bleed>1e9?'∞':p.bleed),'Mất 50 máu đầu mỗi lượt, bỏ qua giáp và pet']:0,p.stun?['💫 choáng','Mất lượt kế tiếp, không rút bài, vẫn chịu sát thương']:0,p.izm?['🌀 Izanami','Mọi hành động lượt sau bị xóa ở cuối lượt']:0].filter(Boolean),
+ au=p.hand.filter(c=>c.au).length,
+ good=[...p.buffs.map(b=>['✦ '+b.n+' +'+Math.round(b.m*100)+'%'+(b.t<90?' · '+b.t+' lượt':''),'Tăng sát thương']),p.armor?['🛡 giáp '+p.armor+(p.armorT?' · '+p.armorT+' lượt':''),'Giáp chặn sát thương sau khi qua pet']:0,me?['💨 né '+p.dodge,'Điểm né ẩn: dưới 100 là % né, né xong trừ 100']:0,me&&au?['👁 canh phòng ×'+au,'Thẻ tự kích hoạt đang trên tay']:0].filter(Boolean);
+ const ch=(a,k)=>a.map(([t,d])=>`<span class="ch ${k}" title="${d}" onclick="event.stopPropagation();G.msg='${t}: ${d}';render()">${t}</span>`).join('')||'—';
+ return{bad,html:`<div class="rw"><i>⚠</i>${ch(bad,'bad')}</div><div class="rw"><i>✦</i>${ch(good,'good')}</div><div class="rw"><i>🐾</i>${p.pets.map(q=>`<span class="ch pet" title="Pet: đỡ đòn, đánh ${q.atk} mỗi hit">${q.hp}<u style="width:${Math.max(0,q.hp/q.mx*100)}%"></u></span>`).join('')||'—'}</div>`}}
+function seat(p,i,cur,show,me){const c=G.sel!=null?cur.hand[G.sel]:null,tg=c&&valid(c,i,G.cur),fl=(G.fl||[]).filter(e=>e.t===i),ch=chips(p,me&&show);
+ return `<div class="st ${me?'me':''} ${i==G.cur?'cur':''} ${p.dead?'dead':''} ${tg?'tg':''} ${fl.some(e=>e.c==='hp')?'hit':''}" onclick="tgt(${i})">${fl.map((e,j)=>`<span class="fl ${e.c}" style="animation-delay:${j*.2}s">${e.tx}</span>`).join('')}<b>${p.name}${p.bot?' 🤖':''}${p.dead?' 💀':''}${G.teams?`<span class="tm t${p.team}">${TN[p.team]}</span>`:''}</b><div class="hp"><i style="width:${Math.min(100,p.hp/40)}%"></i><span>❤ ${p.hp}</span></div>🧠 ${p.sp} · 🃏 ${p.hand.length}${ch.html}${me&&show?'<div class="sum">'+(ch.bad.length?'Đang dính: '+ch.bad.map(x=>x[0]).join(', '):'Không dính hiệu ứng xấu')+'</div>':''}</div>`}
+const RULES='<h3>Phản ứng nguyên tố (đủ 2 ấn là nổ)</h3><table><tr><td>Lôi + Thủy</td><td>50 sát thương cho mục tiêu và 2 người bên cạnh</td></tr><tr><td>Thủy + Hỏa</td><td>100 sát thương</td></tr><tr><td>Hỏa + Hỏa</td><td>Chảy máu 150</td></tr><tr><td>Thủy + Thủy</td><td>−30 điểm né</td></tr><tr><td>Lôi + Lôi</td><td>−1 tinh thần, 30 sát thương</td></tr><tr><td>Lôi + Hỏa</td><td>Choáng vòng kế tiếp</td></tr><tr><td>Phong + ấn khác</td><td>Lan ấn đó sang 2 người bên cạnh, ấn Phong biến mất</td></tr></table><h3>Luật nhanh</h3><p>4000 máu, tinh thần tối đa 10 (về 0: hồi 5 và bị choáng). Đánh tùy ý số thẻ, bấm "Kết thúc lượt" để rút 2 thẻ. Sát thương đi qua: né → pet (FIFO, dư mất) → giáp → máu. Tối đa 3 pet, tối đa 2 trạng thái buff. Thẻ tự kích hoạt (Kamui, Izanagi, Izanami, bẫy ảo thuật, ngạ quỷ đạo) tự dùng khi bị đánh và bị tiêu hao.</p><button onclick="G.rules=0;render()">Đóng</button>';
+function render(){const A=$('app');if(!G)return;
+ const cur=G.ps[G.cur],hum=G.ps.filter(p=>!p.bot).length;
+ if(G.over){A.innerHTML='<div class="ov"><h1>🏆 '+G.over+' chiến thắng!</h1><button class="go" onclick="leave()">Về menu</button></div>';return}
+ const on=G.online;let v=on?Math.max(0,G.ps.findIndex(p=>p.uid===UID)):hum<2?Math.max(0,G.ps.findIndex(p=>!p.bot)):G.cur;if(!on&&hum<2&&G.ps[v].bot)v=G.cur;
+ const V=G.ps[v],mine=v===G.cur&&!cur.bot,show=on?true:mine?(hum<2||G.ready):hum<2&&!V.bot,act=mine&&show&&!G.busy&&!G.wait,sc=G.sel!=null?cur.hand[G.sel]:null;
+ const order=G.ps.map((p,i)=>i).filter(i=>i!==v),ro=[...order.filter(i=>i>v),...order.filter(i=>i<v)];
+ let ban=cur.bot?'🤖 '+cur.name+' đang đánh…':on&&mine?'Đến lượt bạn!':'Lượt của '+cur.name,ms=G.msg||'';
+ if(sc)ms=sc.h?'Đòn '+((G.hl||[]).length+1)+'/'+sc.h.length+' của '+sc.n+': chọn mục tiêu':'Chọn mục tiêu cho '+sc.n;
+ const ca=G.cast,col=ca?(ECOL[ca.el]||RCOL[ca.r]):'';
+ let h=(G.showTurn?'<div class="turn">Lượt của '+cur.name+'</div>':'')+'<div class="top"><button onclick="G.rules=1;render()">📖 Luật</button></div><div class="tb '+(ca&&ca.r==='S'?'shake':'')+'"><div class="opp">'+ro.map(i=>seat(G.ps[i],i,cur,show,0)).join('')+'</div>'+(ca?'<div class="cast"><h2 style="--c:'+col+'">'+ca.n.toUpperCase()+'!</h2><small>'+ca.who+' · cấp '+ca.r+' '+ca.sub+'</small></div>':'')+'<div class="mid"><div class="ban">'+ban+'</div><div class="msg">'+ms+'</div><div class="lg" id="lg">'+G.log.slice(-40).join('<br>')+'</div></div>'+'<div class="mine">'+seat(V,v,cur,show,1)+'<div class="hw">@@A@@@@H@@</div></div></div>';
+ let ac='',hd='';if(act)ac='<div class="acts"><button class="go" onclick="endBtn()">Kết thúc lượt</button>'+(sc?'<button onclick="G.sel=null;G.hl=null;render()">Hủy chọn</button>':'')+'</div>';
+ if(show)hd='<div class="hand">'+V.hand.map((c,i)=>`<div class="cd ${c.r} ${c.au?'au':''} ${G.sel===i?'sel':''} ${act?'':'dim'}" title="${desc(c)}" onclick="pick(${i})"><span class="rk">${c.r}</span><b>${c.n}</b><small>${{a:'tấn công',s:'trạng thái',d:'đỡ đòn',x:'đặc biệt'}[c.t]} · ${c.s}</small>${desc(c)}${c.au?'<small>🛡 đang canh phòng</small>':''}</div>`).join('')+'</div>';
+ else if(!on&&!cur.bot)h+='<div class="ov"><h1>Lượt của '+cur.name+'</h1><div>Đưa máy cho '+cur.name+', rồi bấm nút để xem bài.</div><button class="go" onclick="G.ready=true;render()">Sẵn sàng</button></div>';
+ h=h.replace('@@A@@',()=>ac).replace('@@H@@',()=>hd);
+ if(G.rules)h+='<div class="modal"><div>'+RULES+'</div></div>';
+ const oh=document.querySelector?.('.hand'),sl=oh?oh.scrollLeft:0;A.innerHTML=h;const nh=document.querySelector?.('.hand');if(nh)nh.scrollLeft=sl;const l=$('lg');if(l)l.scrollTop=1e5;G.msg='';G.showTurn=0}
+const mkp=(name,bot,i,uid)=>({name,bot,uid,team:i%2,hp:4000,sp:10,dodge:0,armor:0,armorT:0,pets:[],buffs:[],marks:[],bleed:0,stun:0,hand:[],aff:{},dead:0});
+function leave(){subs.forEach(u=>{try{u()}catch(e){}});subs=[];ROOM=null;menu()}
+function menu(){G=null;$('app').innerHTML='<h1>Naruto Card Game</h1><div class="row"><button class="go" onclick="setup()">Chơi offline</button><button class="go" onclick="onl()">Chơi online</button></div><p style="color:var(--m)">Offline: chơi với bot hoặc nhiều người chung một máy. Online: tạo phòng và mời bạn bè.</p>'}
+function setup(){window.n=4;const A=$('app');
+ const f=()=>{A.innerHTML='<h1>Chơi offline</h1><div class="row">Số người chơi: <select onchange="n=+this.value;f()">'+[2,3,4,5,6].map(k=>'<option '+(k==n?'selected':'')+'>'+k+'</option>').join('')+'</select></div>'+
+ Array.from({length:n},(_,i)=>`<div class="row"><input id="nm${i}" value="Người chơi ${i+1}" size="14" maxlength="16"><select id="ty${i}"><option value="0">Người</option><option value="1" ${i?'selected':''}>Bot</option></select></div>`).join('')+'<p style="color:var(--m)">'+(n>=4&&n%2==0?'Số người chẵn: chia 2 phe (Đỏ/Xanh), phe chỉ để biết ai thắng.':'')+'</p><div class="row"><button class="go" onclick="go()">Bắt đầu</button><button onclick="menu()">Quay lại</button></div>'};
+ window.f=f;window.go=()=>{G={teams:n>=4&&n%2===0,ps:Array.from({length:n},(_,i)=>mkp(esc($('nm'+i).value||'P'+(i+1)),$('ty'+i).value=='1',i)),cur:0,log:['Trận đấu bắt đầu!'],used:[],sel:null,over:null,q:[]};
+  G.ps.forEach(p=>{draw(p);draw(p);draw(p)});start()};f()}
+// ---------- ONLINE ----------
+function ser(){return JSON.parse(JSON.stringify({seq:++G.seq,cur:G.cur,over:G.over,teams:G.teams,log:G.log.slice(-30),fx:G.fx||null,ps:G.ps.map(p=>({...p,aff:undefined,hand:p.hand.map(c=>D.indexOf(c)),bleed:Math.min(p.bleed,1e12)}))}))}
+function sync(){if(!(G&&G.online&&G.host))return;DB.doc(`rooms/${ROOM.code}/state/cur`).set(ser()).catch(()=>{})}
+async function onl(){const A=$('app');
+ if(typeof claude==='undefined'){A.innerHTML='<h1>Chơi online</h1><p>Chế độ online chỉ chạy khi mở trang trong claude.ai.</p><button onclick="menu()">Quay lại</button>';return}
+ A.innerHTML='<h1>Chơi online</h1><p>Đang kết nối…</p>';
+ try{DB=await claude.use('db');US=await claude.use('user');UID=US?await US.id():null}catch(e){}
+ if(!DB||!US||!UID){A.innerHTML='<h1>Chơi online</h1><p>Không kết nối được. Hãy mở trang này trong claude.ai khi đã đăng nhập.</p><button onclick="menu()">Quay lại</button>';return}
+ const me=await US.me();
+ A.innerHTML=`<h1>Chơi online</h1><div class="row">Tên của bạn: <input id="nick" value="${esc(me.name||'')}" maxlength="16"></div><div class="row"><button class="go" onclick="mk()">Tạo phòng</button></div><div class="row"><input id="cd" placeholder="Mã phòng" size="6" maxlength="4" style="text-transform:uppercase"><button onclick="jn()">Vào phòng</button></div><p id="er" style="color:var(--ac)"></p><button onclick="menu()">Quay lại</button>`}
+async function me2(code,host,hostId){ROOM={code,host,hostId,name:($('nick').value.trim()||'Ninja').slice(0,16),bots:0,pl:[]};
+ try{await DB.doc(`rooms/${code}/players/${UID}`).set({name:ROOM.name,t:Date.now()})}catch(e){$('er').textContent='Không ghi được dữ liệu phòng (cần quyền Contributor trở lên).';return}
+ subs.push(DB.collection(`rooms/${code}/players`).onSnapshot(sn=>{ROOM.pl=sn.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>a.t-b.t);lobby()}));
+ subs.push(DB.doc(`rooms/${code}/state/cur`).onSnapshot(sn=>{if(sn.exists)onState(sn.data())}));lobby()}
+async function mk(){const code=Array.from({length:4},()=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*32)]).join('');
+ try{await DB.doc('rooms/'+code).set({host:UID,t:Date.now()})}catch(e){$('er').textContent='Không tạo được phòng (cần quyền Contributor trở lên).';return}me2(code,true,UID)}
+async function jn(){const code=$('cd').value.trim().toUpperCase();
+ try{const sn=await DB.doc('rooms/'+code).get();if(!sn.exists){$('er').textContent='Không có phòng này.';return}me2(code,false,sn.data().host)}catch(e){$('er').textContent='Không vào được phòng.'}}
+function lobby(){if(!ROOM||(G&&G.online))return;const R=ROOM,pl=R.pl||[],nb=R.bots||0,tot=pl.length+nb;
+ $('app').innerHTML=`<h1>Phòng ${R.code}</h1><div class="lob"><p>Người chơi (${pl.length}):</p><ul>${pl.map(p=>`<li>${esc(p.name)}${p.id===R.hostId?' (chủ phòng)':''}${p.id===UID?' – bạn':''}</li>`).join('')}</ul>`+
+ (R.host?`<div class="row">Số bot: <select onchange="ROOM.bots=+this.value;lobby()">${[0,1,2,3,4,5].filter(k=>pl.length+k<=6).map(k=>`<option ${k==nb?'selected':''}>${k}</option>`).join('')}</select> Tổng ${tot} người ${tot>=4&&tot%2==0?'· chia 2 phe':''}</div><button class="go" ${tot<2||tot>6?'disabled':''} onclick="startOnline()">Bắt đầu</button>`:'<p>Đang chờ chủ phòng bắt đầu…</p>')+
+ `<h3>Mời bạn bè</h3><ol><li>Bấm nút Chia sẻ (Share) của trang này, mời email bạn bè với quyền <b>Contributor</b> (có thể tương tác) trở lên.</li><li>Gửi họ mã phòng <b>${R.code}</b>.</li><li>Họ mở trang, chọn <b>Chơi online → Vào phòng</b> và nhập mã.</li></ol><button onclick="leave()">Thoát</button></div>`}
+function startOnline(){const R=ROOM,hs=R.pl.map(p=>({uid:p.id,name:esc(p.name),bot:false})),bs=Array.from({length:R.bots},(_,i)=>({name:'Bot '+(i+1),bot:true})),all=[...hs,...bs].sort(()=>Math.random()-.5),n=all.length;if(n<2||n>6)return;
+ G={online:1,host:1,seq:0,teams:n>=4&&n%2===0,ps:all.map((p,i)=>mkp(p.name,p.bot,i,p.uid)),cur:0,log:['Trận đấu bắt đầu!'],used:[],sel:null,over:null,q:[]};
+ G.ps.forEach(p=>{draw(p);draw(p);draw(p)});
+ subs.push(DB.collection(`rooms/${R.code}/acts`).onSnapshot(sn=>sn.docChanges().forEach(c=>{if(c.type!=='removed')handleAct(c.doc.id,c.doc.data())})));start()}
+function onState(d){if(!ROOM||ROOM.host)return;
+ const ps=d.ps.map(p=>({...p,hand:p.hand.map(i=>D[i])}));
+ if(!G||!G.online)G={online:1,host:0,log:[],q:[],sel:null,hl:null,lastFx:0,prev:-1};
+ if(d.cur!==G.prev){G.showTurn=1;G.prev=d.cur}
+ const nf=d.fx&&d.fx.n!==G.lastFx?d.fx:null;if(nf)G.lastFx=nf.n;
+ Object.assign(G,{ps,cur:d.cur,over:d.over,teams:d.teams,log:d.log,wait:0,seq:d.seq});
+ if(nf&&(nf.cast||(nf.fl||[]).length))fxPlay(nf.cast,nf.fl||[]);else render()}
+function sendAct(a){DB.doc(`rooms/${ROOM.code}/acts/${UID}`).set({n:Date.now(),a:JSON.parse(JSON.stringify(a))}).catch(()=>{G.wait=0;render()})}
+function doUse(i,ti,hl){if(G.online&&!G.host){sendAct({t:'use',i,ti,hl:hl||null});G.sel=null;G.hl=null;G.wait=1;render()}else use(i,ti,hl)}
+function doEnd(){if(G.online&&!G.host){sendAct({t:'end'});G.sel=null;G.hl=null;G.wait=1;render()}else{G.sel=null;G.hl=null;endT()}}
+function handleAct(uid,d){if(!G||!G.host||!d||!d.a||(lastN[uid]||0)>=d.n)return;
+ if(G.busy){return setTimeout(()=>handleAct(uid,d),400)}
+ lastN[uid]=d.n;if(G.over)return;const s=G.ps.findIndex(p=>p.uid===uid),a=d.a;
+ if(s<0||s!==G.cur||G.ps[s].bot)return;
+ if(a.t==='end')return endT();
+ const c=G.ps[s].hand[a.i];if(a.t!=='use'||!c||c.au)return;
+ if(needT(c)){if(c.h){if(!Array.isArray(a.hl)||a.hl.length!==c.h.length||!a.hl.every(x=>valid(c,x,s)))return}else if(!valid(c,a.ti,s))return}
+ use(a.i,a.ti,a.hl)}
+document.addEventListener&&document.addEventListener('wheel',e=>{const h=e.target.closest&&e.target.closest('.hand');if(h&&h.scrollWidth>h.clientWidth&&Math.abs(e.deltaY)>Math.abs(e.deltaX)){h.scrollLeft+=e.deltaY;e.preventDefault()}},{passive:false});
+menu();
+</script></body></html>
