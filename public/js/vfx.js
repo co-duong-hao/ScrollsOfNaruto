@@ -108,6 +108,24 @@ class VfxEngine {
     if (n.includes('chidori') || n.includes('lôi thiết') || el === 'lôi') {
       return { kind: 'lightning', colors: ['#fde047', '#fef08a', '#38bdf8'], glow: '#facc15', size: 18 };
     }
+    if (s === 'cửu vĩ') {
+      return { kind: 'fire', colors: ['#dc2626', '#f97316', '#facc15'], glow: '#ef4444', size: 26 };
+    }
+    if (s === 'ma kính băng tinh') {
+      return { kind: 'water', colors: ['#bae6fd', '#38bdf8', '#ffffff'], glow: '#7dd3fc', size: 20 };
+    }
+    if (s === 'mộc độn' || s === 'côn trùng') {
+      return { kind: 'wind', colors: ['#22c55e', '#84cc16', '#dcfce7'], glow: '#22c55e', size: 20 };
+    }
+    if (s === 'gió và cánh quạt') {
+      return { kind: 'wind', colors: ['#34d399', '#a7f3d0', '#ffffff'], glow: '#10b981', size: 20 };
+    }
+    if (s === 'bộ rắn') {
+      return { kind: 'gravity', colors: ['#9333ea', '#c084fc', '#facc15'], glow: '#a855f7', size: 20 };
+    }
+    if (s === 'bộ cóc') {
+      return { kind: 'fire', colors: ['#f97316', '#fbbf24', '#86efac'], glow: '#ea580c', size: 20 };
+    }
     if (el === 'hỏa' || n.includes('bom') || n.includes('bộc giấy')) {
       return { kind: 'fire', colors: ['#ff5a1f', '#fb923c', '#fde047'], glow: '#ff5a1f', size: 20 };
     }

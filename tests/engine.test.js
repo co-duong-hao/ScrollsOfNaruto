@@ -9,11 +9,15 @@ import {
   pickBotAction,
   previewReaction,
   calcExpectedDamage,
+  isValidTarget,
+  needTarget,
   EDO_HP,
 } from '../shared/engine.js';
 
-test('CARDS has all 96 cards', () => {
-  assert.equal(CARDS.length, 96);
+test('CARDS has all 139 cards with unique sequential IDs', () => {
+  assert.equal(CARDS.length, 139);
+  const ids = new Set(CARDS.map((c) => c.id));
+  assert.equal(ids.size, 139);
 });
 
 test('createGame initializes players with 4000 HP, 10 SP, and 3 cards', async () => {
@@ -297,4 +301,191 @@ test('player stats track dmgDealt, reactions, cardsUsed, and kos', async () => {
   assert.equal(G.ps[0].stats.dmgDealt, 310); // 100 + 110 + 100 reaction
   assert.equal(G.ps[0].stats.kos, 1);
   assert.equal(G.ps[1].stats.dmgTaken, 310);
+});
+
+test('Bom Khói grants stealth blocking single-target selection until next turn', async () => {
+  const G = await createGame([
+    { name: 'P1', bot: false },
+    { name: 'P2', bot: false },
+  ]);
+  const rasengan = CARDS.find((c) => c.n === 'rasengan');
+  G.ps[0].hand = [{ ...CARDS.find((c) => c.n === 'Bom Khói'), age: 0 }];
+  await useCard(G, 0);
+  assert.equal(G.ps[0].stealth, 1);
+  assert.equal(isValidTarget(G, rasengan, 0, 1), false);
+  await endTurn(G, true); // P2 turn
+  assert.equal(isValidTarget(G, rasengan, 0, 1), false);
+  await endTurn(G, true); // back to P1 -> stealth wears off
+  assert.equal(G.ps[0].stealth, 0);
+  assert.equal(isValidTarget(G, rasengan, 0, 1), true);
+});
+
+test('Hồng Hồ Lô secretly marks target and stuns them if they attack marker', async () => {
+  const G = await createGame([
+    { name: 'P1', bot: false, uid: 'u1' },
+    { name: 'P2', bot: false, uid: 'u2' },
+  ]);
+  G.ps[0].hand = [{ ...CARDS.find((c) => c.n === 'hồng hồ lô'), age: 0 }];
+  await useCard(G, 0, 1);
+  const view = sanitizeStateFor(G, 'u2');
+  assert.equal('gourd' in view.ps[1], false);
+
+  await endTurn(G, true);
+  G.ps[0].dodge = 0;
+  G.ps[0].hand = [];
+  G.ps[1].hand = [{ ...CARDS.find((c) => c.n === 'rasengan'), age: 0 }];
+  await useCard(G, 0, 0);
+  assert.equal(G.ps[1].stun, 1);
+});
+
+test('Trùng Bám Đuổi deals 50 dmg per action and Bí Thuật: Trùng Bạo heals 50 per target hit', async () => {
+  const G = await createGame([
+    { name: 'P1', bot: false },
+    { name: 'P2', bot: false },
+    { name: 'P3', bot: false },
+  ]);
+  G.ps.forEach((p) => {
+    p.dodge = 0;
+    p.hand = [];
+  });
+  G.ps[0].hp = 3000;
+  G.ps[0].hand = [
+    { ...CARDS.find((c) => c.n === 'Trùng Bám Đuổi'), age: 0 },
+    { ...CARDS.find((c) => c.n === 'Bí Thuật: Trùng Bạo'), age: 0 },
+  ];
+  await useCard(G, 0, 1);
+  assert.equal(G.ps[1].bugMark.t, 2);
+  await useCard(G, 0); // Trùng Bạo hits P2 and P3 -> +100 heal
+  assert.equal(G.ps[0].hp, 3100);
+
+  await endTurn(G, true); // P2 turn
+  const hpBefore = G.ps[1].hp;
+  G.ps[1].hand = [{ ...CARDS.find((c) => c.n === 'Thế Thân Chi Thuật'), age: 0 }];
+  await useCard(G, 0);
+  assert.equal(G.ps[1].hp, hpBefore - 50);
+});
+
+test('Nghệ Thuật: Đất Sét Nổ stacks on bomb cards and explodes when buff expires', async () => {
+  const G = await createGame([
+    { name: 'P1', bot: false },
+    { name: 'P2', bot: false },
+  ]);
+  G.ps[1].dodge = 0;
+  G.ps[1].hand = [];
+  G.ps[0].hand = [
+    { ...CARDS.find((c) => c.n === 'Nghệ Thuật: Đất Sét Nổ'), age: 0 },
+    { ...CARDS.find((c) => c.n === 'Bom C1 Đất Sét'), age: 0 },
+    { ...CARDS.find((c) => c.n === 'Nhện Đất Sét Nhỏ'), age: 0 },
+  ];
+  await useCard(G, 0);
+  await useCard(G, 0, 1);
+  await useCard(G, 0, 1);
+  assert.equal(G.ps[0].buffs[0].stacks, 2);
+  // Bom C1 + Nhện Đất Sét Nhỏ also triggers Hỏa+Hỏa (150 bleed)
+  assert.equal(G.ps[1].bleed, 150);
+  G.ps[1].bleed = 0;
+  const hpBeforeBoom = G.ps[1].hp;
+  // Advance 3 of P1's turns
+  await endTurn(G, true);
+  await endTurn(G, true);
+  await endTurn(G, true);
+  await endTurn(G, true);
+  await endTurn(G, true); // 3rd endTurn of P1 -> buff expires and deals 200 dmg!
+  assert.equal(G.ps[1].hp, hpBeforeBoom - 200);
+});
+
+test('Tự Bạo C0 sacrifices 99% HP and deals 80% of lost HP to enemies', async () => {
+  const G = await createGame([
+    { name: 'P1', bot: false },
+    { name: 'P2', bot: false },
+  ]);
+  G.ps[1].dodge = 0;
+  G.ps[1].hand = [];
+  G.ps[0].hp = 1000;
+  G.ps[0].hand = [{ ...CARDS.find((c) => c.n === 'Nghệ Thuật Chân Chính: Tự Bạo C0'), age: 0 }];
+  await useCard(G, 0);
+  assert.equal(G.ps[0].hp, 10); // lost 990
+  assert.equal(G.ps[1].hp, 4000 - Math.round(990 * 0.8)); // 4000 - 792 = 3208
+});
+
+test('Bí Thuật: Bách Cơ Thao Diễn revives dead player as 500 HP puppet controlled by caster', async () => {
+  const G = await createGame([
+    { name: 'P1', bot: false, uid: 'u1' },
+    { name: 'P2', bot: true, uid: 'u2' },
+    { name: 'P3', bot: false, uid: 'u3' },
+  ]);
+  G.ps[1].dead = 1;
+  G.ps[1].hp = 0;
+  G.ps[0].hand = [{ ...CARDS.find((c) => c.n === 'Bí Thuật: Bách Cơ Thao Diễn'), age: 0 }];
+  await useCard(G, 0, 1);
+  assert.equal(G.ps[1].dead, 0);
+  assert.equal(G.ps[1].hp, 500);
+  assert.equal(G.ps[1].corpse, 1);
+  assert.equal(G.ps[1].weak, 1);
+  assert.equal(G.ps[1].uid, 'u1');
+  assert.equal(G.ps[1].bot, false);
+  // Puppet deals 50% damage
+  assert.equal(calcExpectedDamage(G, 1, CARDS.find((c) => c.n === 'rasengan'), 2).dmg, 100);
+});
+
+test('Phong Độn: Cuồng Phong is AoE (does not require single target) and reduces enemy dodge', async () => {
+  const card = CARDS.find((c) => c.n === 'Phong Độn: Cuồng Phong');
+  assert.equal(needTarget(card), false);
+  const G = await createGame([
+    { name: 'P1', bot: false },
+    { name: 'P2', bot: false },
+  ]);
+  G.ps[1].dodge = 40;
+  G.ps[1].hand = [];
+  // Force hit by setting dodge below threshold or mocking Math.random
+  const origRand = Math.random;
+  Math.random = () => 0.99;
+  try {
+    G.ps[0].hand = [{ ...card, age: 0 }];
+    await useCard(G, 0);
+    assert.equal(G.ps[1].dodge, 10);
+    assert.equal(G.ps[1].hp, 3880);
+  } finally {
+    Math.random = origRand;
+  }
+});
+
+test('Chú Ấn drains 200 HP per turn and removes 1 SP when expired', async () => {
+  const G = await createGame([
+    { name: 'P1', bot: false },
+    { name: 'P2', bot: false },
+  ]);
+  G.ps[0].hand = [{ ...CARDS.find((c) => c.n === 'chú ấn'), age: 0 }];
+  await useCard(G, 0);
+  assert.equal(G.ps[0].dodge, 80);
+  // Turn 1 end -> P2 -> P1 start (drains 200)
+  await endTurn(G, true);
+  await endTurn(G, true);
+  assert.equal(G.ps[0].hp, 3800);
+  // Finish remaining 2 turns so buff expires
+  await endTurn(G, true);
+  await endTurn(G, true);
+  assert.equal(G.ps[0].hp, 3600);
+  await endTurn(G, true); // 3rd endTurn of P1 -> buff expires -> -1 SP
+  assert.equal(G.ps[0].sp, 9);
+});
+
+test('Kotoamatsukami redirects offensive attack onto teammate in team mode', async () => {
+  const G = await createGame([
+    { name: 'P0', bot: false },
+    { name: 'P1', bot: false },
+    { name: 'P2', bot: false },
+    { name: 'P3', bot: false },
+  ]);
+  G.ps.forEach((p) => {
+    p.dodge = 0;
+    p.hand = [];
+  });
+  G.ps[0].hand = [{ ...CARDS.find((c) => c.n === 'kotoamatsukami'), age: 0 }];
+  await useCard(G, 0, 1); // P0 (team 0) casts koto on P1 (team 1)
+  await endTurn(G, true); // P1's turn
+  G.ps[1].hand = [{ ...CARDS.find((c) => c.n === 'rasengan'), age: 0 }];
+  await useCard(G, 0, 0); // P1 tries to attack P0, redirected to P3 (teammate, team 1)!
+  assert.equal(G.ps[0].hp, 4000);
+  assert.equal(G.ps[3].hp, 3800);
 });

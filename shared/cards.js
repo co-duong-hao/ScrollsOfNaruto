@@ -17,6 +17,13 @@ export const CLANS = {
   SHADOW: 'khiển bóng',
   COPY_NINJA: 'ninja sao chép',
   PAPER_ANGEL: 'thiên thần giấy',
+  WOOD: 'mộc độn',
+  ICE_MIRROR: 'ma kính băng tinh',
+  TOAD: 'bộ cóc',
+  SNAKE: 'bộ rắn',
+  NINE_TAILS: 'cửu vĩ',
+  INSECT: 'côn trùng',
+  WIND_FAN: 'gió và cánh quạt',
 };
 
 export const HIDDEN_CLANS = [CLANS.MANGEKYO, CLANS.RINNEGAN];
@@ -60,6 +67,7 @@ const {
   PUPPET: R, HYUGA: H, UCHIHA: U, NORMAL: T, MANGEKYO: M, RINNEGAN: RN,
   TOOLS: TL, BOMB: BM, SHARK: SH, SEAL: SL, SAND: SD, GENJUTSU: GJ,
   YELLOW_FLASH: YF, TAIJUTSU: TJ, SAKURA: SK, SHADOW: SW, COPY_NINJA: CN, PAPER_ANGEL: PA,
+  WOOD: WD, ICE_MIRROR: IM, TOAD: TD, SNAKE: SN, NINE_TAILS: NT, INSECT: IN, WIND_FAN: WF,
 } = CLANS;
 
 export const CARDS = [
@@ -160,12 +168,57 @@ export const CARDS = [
   card(93, 'vũ dịch chi thuật', 'B', 'd', PA, { dg: 80 }),
   card(94, 'thần chi giấy giả thuật', 'B', 'a', PA, { d: 180, ba: 1 }),
   card(95, 'thiên sứ chi dực', 'S', 'd', PA, { ar: 400, at: 1 }),
+  // 43 New cards from docs/narutoskill.xlsx
+  card(96, 'Siêu Gia Trọng Nham Thuật', 'A', 'a', T, { d: 240, dt: 40 }),
+  card(97, 'Mộc Độn Thụ Giới Giáng Lâm', 'S', 'a', WD, { a: 260, ar: 200 }),
+  card(98, 'Lôi Thú Truy Hồn', 'A', 'a', CN, { d: 290, el: 'lôi' }),
+  card(99, 'Bom C1 Đất Sét', 'C', 'a', BM, { d: 60, el: 'hỏa' }),
+  card(100, 'C4 Garuda', 'S', 'a', BM, { a: 280, bl: 250 }),
+  card(101, 'Bùa Nổ', 'C', 'a', TL, { d: 120, j: 20, el: 'hỏa' }),
+  card(102, 'Kim Châm Độc Rối', 'C', 'a', TL, { d: 60, bl: 100 }),
+  card(103, 'Nhện Đất Sét Nhỏ', 'C', 'a', BM, { d: 80, el: 'hỏa' }),
+  card(104, 'Thế Thân Chi Thuật', 'C', 'd', T, { dg: 50 }),
+  card(105, 'Bom Khói', 'C', 'x', TL, { stealth: 1 }),
+  card(106, 'Mộc Độn Mộc Đĩnh Bích', 'C', 'd', WD, { ar: 100 }),
+  card(107, 'Mộc Phân Thân Thuật', 'B', 's', WD, { pet: [1, 120, 15] }),
+  card(108, 'Mộc Độn Tứ Trụ Gia', 'B', 'h', WD, { healSelf: 250, ar: 50 }),
+  card(109, 'Thiên Sát Thủy Tường', 'C', 'a', IM, { d: 50, dg: 15, el: 'thủy' }),
+  card(110, 'Băng Độn: Nhất Giác Bạch Kình', 'B', 'a', IM, { d: 120, dt: 25, el: 'thủy' }),
+  card(111, 'Băng Độn: Băng Lao', 'B', 'a', IM, { d: 40, st: 1, el: 'thủy' }),
+  card(112, 'Bí Thuật: Ma Kính Băng Tinh', 'S', 's', IM, { dg: 80, b: { m: 0, t: 3, extraHit: 100, extraEl: 'thủy' } }),
+  card(113, 'Băng Độn: Băng Nham Đường Vô', 'A', 'd', IM, { ar: 220, at: 2, b: { m: 0, rf: 30, rfAlways: 1, t: 2 } }),
+  card(114, 'tiên nhân cóc', 'A', 's', TD, { dg: 60, b: { m: 0.35, t: 3, healTurn: 100 } }),
+  card(115, 'xà tiên nhân chi thuật', 'S', 's', SN, { dg: 110, b: { m: 0.55, t: 3, healTurn: 150 } }),
+  card(116, 'Cửu Vĩ Bạo Động', 'S', 's', NT, { hpl: 50, pet: [1, 1000, 200, 1, 1, 'Cửu Vĩ'] }),
+  card(117, 'kotoamatsukami', 'S', 'x', M, { koto: 3 }),
+  card(118, 'ba tiêu phiến', 'S', 'a', TL, { a: 260 }),
+  card(119, 'hồng hồ lô', 'S', 'x', TL, { gourdMark: 1 }),
+  card(120, 'Dầu Cóc', 'B', 'a', TD, { d: 120, dt: 30 }),
+  card(121, 'Triệu Hồi Gamabunta', 'A', 's', TD, { pet: [1, 200, 30] }),
+  card(122, 'Tiên Pháp: Goemon', 'A', 'a', TD, { a: 250, el: 'hỏa' }),
+  card(123, 'Trùng Độc', 'C', 'a', IN, { d: 50, bl: 100 }),
+  card(124, 'Ký Sinh Trùng', 'B', 'a', IN, { d: 100, healSelf: 100 }),
+  card(125, 'Trùng Bám Đuổi', 'A', 'a', IN, { d: 180, bugMark: { dmg: 50, t: 2 } }),
+  card(126, 'Trùng Vũ', 'A', 's', IN, { pet: [1, 50, 150] }),
+  card(127, 'Bí Thuật: Trùng Bạo', 'S', 'a', IN, { a: 350, healPerHit: 50 }),
+  card(128, 'Phong Nhận', 'C', 'a', WF, { d: 70, dt: 20, el: 'phong' }),
+  card(129, 'Đại Liêm Phong', 'B', 'a', WF, { d: 140, j: 50, el: 'phong' }),
+  card(130, 'Phong Độn: Cuồng Phong', 'B', 'a', WF, { a: 120, dt: 30, el: 'phong' }),
+  card(131, 'Triệu Hồi Kamatari', 'A', 's', WF, { pet: [1, 200, 60] }),
+  card(132, 'Tam Đại Phong Ảnh', 'S', 's', WF, { dg: 100, b: { m: 0, t: 5, clanM: { clan: WF, m: 0.5 }, clanDr: { clan: WF, dr: 0.5 } } }),
+  card(133, 'chú ấn', 'A', 's', T, { dg: 80, b: { m: 0.4, t: 3, maxHpDrain: 5, endSp: -1 } }),
+  card(134, 'Thủy Độn: Thủy Giao Đạn Thuật', 'A', 's', SH, { b: { m: 0, clanM: { clan: SH, m: 0.3 }, clanHeal: { clan: SH, amt: 100 } } }),
+  card(135, 'Nghệ Thuật: Đất Sét Nổ', 'S', 's', BM, { b: { m: 0, t: 3, stackClan: BM, stackDmg: 100 } }),
+  card(136, 'Nghệ Thuật Chân Chính: Tự Bạo C0', 'S', 'a', BM, { c0: { lossPct: 99, dmgPct: 80 } }),
+  card(137, 'Bí Thuật: Bách Cơ Thao Diễn', 'S', 'x', R, { rv: 1, puppetRevive: 1 }),
+  card(138, 'Sa Chiến: Sa Mạc Bảo Hộ', 'A', 's', SD, { ar: 100, b: { m: 0, clanM: { clan: SD, m: 0.3 }, clanArmor: { clan: SD, amt: 50 } } }),
 ];
 
 export function describeCard(c) {
   if (c.au) return `(tự kích hoạt) ${AUTO_DESC[c.au]}`;
   const o = [];
   if (c.hpl) o.push(`mất ${c.hpl}% máu`);
+  if (c.c0) o.push(`mất ${c.c0.lossPct}% máu hiện tại, gây ${c.c0.dmgPct}% lượng máu mất lên mọi kẻ địch`);
   if (c.d) o.push(`${c.d} sát thương`);
   if (c.a) o.push(`${c.a} lên cả bàn`);
   if (c.split) o.push(`chia đều ${c.split} lên đối thủ`);
@@ -181,16 +234,22 @@ export function describeCard(c) {
   if (c.ma) o.push(`-${c.ma} tinh thần cả bàn`);
   if (c.dt) o.push(`-${c.dt} né địch`);
   if (c.dg) o.push(`+${c.dg} né`);
+  if (c.stealth) o.push(`ẩn thân ${c.stealth} lượt (không thể bị chọn làm mục tiêu)`);
+  if (c.koto) o.push(`điều khiển mục tiêu tấn công đồng đội trong ${c.koto} vòng`);
+  if (c.gourdMark) o.push('đánh dấu bí mật: lượt sau nếu mục tiêu đánh bạn sẽ bị choáng 1 vòng');
+  if (c.bugMark) o.push(`đánh dấu ${c.bugMark.t} lượt: mỗi lần mục tiêu hành động mất ${c.bugMark.dmg} máu`);
   if (c.sf) o.push(`${c.sf} tinh thần bản thân`);
   if (c.ar) o.push(`+${c.ar} giáp${c.at ? ` (${c.at} lượt)` : ''}`);
   if (c.heal) o.push(`hồi ${c.heal} máu (bản thân hoặc mục tiêu)`);
   if (c.healSelf) o.push(`hồi ${c.healSelf} máu bản thân`);
+  if (c.healPerHit) o.push(`mỗi mục tiêu trúng đòn hồi ${c.healPerHit} máu`);
   if (c.cleanse) o.push('giải toàn bộ hiệu ứng xấu');
   if (c.immune) o.push(`miễn hiệu ứng xấu ${c.immune} lượt`);
   if (c.regen) o.push(`hồi ${c.regen.pct}% máu đã mất mỗi lượt (${c.regen.t} lượt)`);
   if (c.pet) {
     if (c.pet[3]) {
-      o.push(`triệu hồi Shukaku (${c.pet[1]} máu, ${c.pet[2]} dmg cả bàn/lượt, khóa chủ động)`);
+      const pName = c.pet[5] || 'Shukaku';
+      o.push(`triệu hồi ${pName} (${c.pet[1]} máu, ${c.pet[2]} dmg cả bàn/lượt, khóa chủ động)`);
     } else {
       o.push(`pet x${c.pet[0]}: ${c.pet[1]} máu, ${c.pet[2]} dmg`);
     }
@@ -199,9 +258,19 @@ export function describeCard(c) {
     const parts = [];
     if (c.b.m) parts.push(`+${Math.round(c.b.m * 100)}% dmg`);
     if (c.b.hy) parts.push(`+${c.b.hy * 100}% hyuga`);
+    if (c.b.clanM) parts.push(`+${Math.round(c.b.clanM.m * 100)}% dmg ${c.b.clanM.clan}`);
+    if (c.b.clanDr) parts.push(`giảm ${Math.round(c.b.clanDr.dr * 100)}% dmg từ ${c.b.clanDr.clan}`);
+    if (c.b.clanHeal) parts.push(`dùng thẻ ${c.b.clanHeal.clan} hồi ${c.b.clanHeal.amt} máu`);
+    if (c.b.clanArmor) parts.push(`dùng thẻ ${c.b.clanArmor.clan} +${c.b.clanArmor.amt} giáp`);
+    if (c.b.stackClan) parts.push(`dùng ${c.b.stackClan} tích điểm, hết trạng thái nổ ${c.b.stackDmg} dmg/điểm cả bàn`);
+    if (c.b.extraHit) parts.push(`mỗi lượt đánh gây thêm ${c.b.extraHit} dmg${c.b.extraEl ? ` + ấn ${c.b.extraEl}` : ''}`);
+    if (c.b.healTurn) parts.push(`hồi ${c.b.healTurn} máu/lượt`);
+    if (c.b.maxHpDrain) parts.push(`mất ${c.b.maxHpDrain}% máu tối đa/lượt`);
+    if (c.b.endSp) parts.push(`hết hiệu lực ${c.b.endSp} tinh thần`);
     if (c.b.rf) parts.push(`phản ${c.b.rf} dmg`);
     if (c.b.dr) parts.push(`giảm ${Math.round(c.b.dr * 100)}% dmg nhận`);
-    o.push(`buff ${parts.join(', ')}${c.b.t ? `, ${c.b.t} lượt` : ', tới hết giáp'}`);
+    const durText = c.b.t ? `, ${c.b.t} lượt` : c.b.ua ? ', tới hết giáp' : ', duy trì';
+    o.push(`buff ${parts.join(', ')}${durText}`);
   }
   if (c.kp) o.push('diệt pet mục tiêu');
   if (c.kpa) o.push('diệt mọi pet');
@@ -209,7 +278,13 @@ export function describeCard(c) {
   if (c.rs) o.push('cướp 1 thẻ địch');
   if (c.gv) o.push(`nhận thẻ ${c.gv === 'm' ? 'mangakyo' : 'rinnegan'}`);
   if (c.rv) {
-    o.push(c.edo ? 'hồi sinh 1 người chết với máu ∞ (-50% dmg, là thi thể)' : 'hồi sinh 1 người chết với 1000 máu');
+    o.push(
+      c.edo
+        ? 'hồi sinh 1 người chết với máu ∞ (-50% dmg, là thi thể)'
+        : c.puppetRevive
+          ? 'biến 1 người chết thành con rối 500 máu (-50% dmg, bạn điều khiển)'
+          : 'hồi sinh 1 người chết với 1000 máu'
+    );
   }
   if (c.ds) o.push('thi thể bị tiêu diệt');
   return o.join(', ');

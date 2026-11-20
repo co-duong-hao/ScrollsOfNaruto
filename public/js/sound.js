@@ -1,31 +1,65 @@
 class SoundEngine {
   constructor() {
     this.ctx = null;
+    this.master = null;
     this.muted = localStorage.getItem('son_muted') === '1';
+    const savedVol = Number(localStorage.getItem('son_sfx_vol'));
+    this.volume = Number.isFinite(savedVol) && savedVol >= 0 && savedVol <= 100 ? savedVol : 35;
+  }
+
+  getEffectiveGain() {
+    if (this.muted || this.volume <= 0) return 0;
+    // Perceptual curve + gentle ceiling so SFX never feels harsh
+    return Math.pow(this.volume / 100, 1.7) * 0.72;
   }
 
   ensure() {
-    if (this.muted) return null;
+    if (this.muted || this.volume <= 0) return null;
     if (!this.ctx) {
       const AC = window.AudioContext || window.webkitAudioContext;
       if (!AC) return null;
       this.ctx = new AC();
+      this.master = this.ctx.createGain();
+      this.master.gain.setValueAtTime(this.getEffectiveGain(), this.ctx.currentTime);
+      this.master.connect(this.ctx.destination);
     }
     if (this.ctx.state === 'suspended') {
       this.ctx.resume().catch(() => {});
     }
+    if (this.master) {
+      this.master.gain.setValueAtTime(this.getEffectiveGain(), this.ctx.currentTime);
+    }
     return this.ctx;
+  }
+
+  setVolume(val) {
+    const v = Math.max(0, Math.min(100, Math.round(Number(val) || 0)));
+    this.volume = v;
+    this.muted = v === 0;
+    localStorage.setItem('son_sfx_vol', String(v));
+    localStorage.setItem('son_muted', this.muted ? '1' : '0');
+    if (this.ctx && this.master) {
+      this.master.gain.setTargetAtTime(this.getEffectiveGain(), this.ctx.currentTime, 0.015);
+    }
+    return v;
   }
 
   toggle() {
     this.muted = !this.muted;
+    if (!this.muted && this.volume === 0) {
+      this.volume = 35;
+      localStorage.setItem('son_sfx_vol', '35');
+    }
     localStorage.setItem('son_muted', this.muted ? '1' : '0');
+    if (this.ctx && this.master) {
+      this.master.gain.setTargetAtTime(this.getEffectiveGain(), this.ctx.currentTime, 0.015);
+    }
     return this.muted;
   }
 
   tone(freq, dur = 0.15, type = 'sine', gain = 0.14, delay = 0, slideTo = null) {
     const ctx = this.ensure();
-    if (!ctx) return;
+    if (!ctx || !this.master) return;
     const t0 = ctx.currentTime + delay;
     const osc = ctx.createOscillator();
     const g = ctx.createGain();
@@ -36,14 +70,14 @@ class SoundEngine {
     g.gain.linearRampToValueAtTime(gain, t0 + 0.015);
     g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
     osc.connect(g);
-    g.connect(ctx.destination);
+    g.connect(this.master);
     osc.start(t0);
     osc.stop(t0 + dur + 0.02);
   }
 
   noise(dur = 0.15, gain = 0.1, filterFreq = 1200, delay = 0) {
     const ctx = this.ensure();
-    if (!ctx) return;
+    if (!ctx || !this.master) return;
     const t0 = ctx.currentTime + delay;
     const size = Math.floor(ctx.sampleRate * dur);
     const buf = ctx.createBuffer(1, size, ctx.sampleRate);
@@ -59,7 +93,7 @@ class SoundEngine {
     g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
     src.connect(filter);
     filter.connect(g);
-    g.connect(ctx.destination);
+    g.connect(this.master);
     src.start(t0);
   }
 

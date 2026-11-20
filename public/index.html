@@ -7,9 +7,55 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700;800&family=Noto+Serif:wght@600;800&display=swap">
   <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/holo-cards.css">
 </head>
 <body>
+  <div class="bg-video-wrap" aria-hidden="true">
+    <video id="bgVideo" autoplay loop muted playsinline preload="auto">
+      <source src="/assets/video/konoha-from-naruto.1920x1080.mp4" type="video/mp4">
+    </video>
+    <div class="bg-video-scrim"></div>
+  </div>
   <div id="app"></div>
+  <aside id="bgmDock" class="bgm-dock" aria-label="Nhạc nền Naruto">
+    <div class="bgm-dock-head">
+      <span id="bgmDockTitle">🎵 Nhạc nền · Morning</span>
+      <div class="bgm-head-actions">
+        <a id="bgmAppleLink" class="bgm-apple-link" href="https://music.apple.com/us/album/morning/1584791969?i=1584791972" target="_blank" rel="noopener noreferrer" title="Mở trên Apple Music">Apple Music ↗</a>
+        <button type="button" class="btn-sm bgm-close-btn" onclick="appActions.toggleBgmDock()" title="Thu gọn (nhạc vẫn phát nền)">—</button>
+      </div>
+    </div>
+    <div class="bgm-dock-body">
+      <div class="bgm-player">
+        <div class="bgm-track">
+          <img id="bgmArt" class="bgm-art" src="https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/fe/b1/ef/feb1ef00-89f2-6b9e-d961-2ffebfc55b7f/4534530133762.jpg/100x100bb.jpg" alt="NARUTO ORIGINAL SOUNDTRACK" width="50" height="50">
+          <div class="bgm-meta">
+            <b id="bgmTrackName">Morning</b>
+            <small id="bgmTrackArtist">MUSASHI PROJECT · Naruto OST</small>
+          </div>
+          <div class="bgm-transport">
+            <button type="button" class="bgm-icon-btn" onclick="appActions.bgmStepTrack(-1)" title="Bài trước">⏮</button>
+            <button type="button" id="bgmPlayBtn" class="bgm-play-btn go" onclick="appActions.bgmTogglePlay()" title="Phát / Tạm dừng">▶</button>
+            <button type="button" class="bgm-icon-btn" onclick="appActions.bgmStepTrack(1)" title="Bài tiếp theo">⏭</button>
+          </div>
+        </div>
+        <div id="bgmPlaylist" class="bgm-playlist" aria-label="Chọn bài nhạc nền"></div>
+        <div class="bgm-progress-row">
+          <span id="bgmCurTime" class="bgm-time">0:00</span>
+          <input id="bgmSeek" class="bgm-seek" type="range" min="0" max="100" step="0.1" value="0" aria-label="Tiến độ bài hát" oninput="appActions.bgmSeek(this.value)">
+          <span id="bgmDurTime" class="bgm-time">0:30</span>
+          <button type="button" id="bgmLoopBtn" class="bgm-icon-btn is-on" onclick="appActions.bgmToggleLoop()" title="Lặp lại bài hiện tại (tắt để tự chuyển bài)">🔁</button>
+        </div>
+        <div class="bgm-vol-row">
+          <button type="button" id="bgmMuteBtn" class="bgm-icon-btn" onclick="appActions.bgmToggleMute()" title="Tắt / Bật tiếng nhạc nền">🔉</button>
+          <span class="bgm-vol-label">Âm lượng nhạc</span>
+          <input id="bgmVolSlider" class="bgm-vol-slider" type="range" min="0" max="100" value="20" aria-label="Âm lượng nhạc nền" oninput="appActions.bgmSetVolume(this.value)">
+          <span id="bgmVolPct" class="vol-pct">20%</span>
+        </div>
+      </div>
+      <audio id="bgmAudio" loop preload="metadata"></audio>
+    </div>
+  </aside>
   <script src="/socket.io/socket.io.js"></script>
   <script type="module" src="/js/main.js"></script>
 </body>

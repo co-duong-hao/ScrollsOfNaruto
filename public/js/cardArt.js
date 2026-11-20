@@ -24,6 +24,13 @@ const CLAN_COLORS = {
   'khiển bóng': ['#1f2937', '#9ca3af'],
   'ninja sao chép': ['#0f766e', '#5eead4'],
   'thiên thần giấy': ['#6366f1', '#e0e7ff'],
+  'mộc độn': ['#166534', '#86efac'],
+  'ma kính băng tinh': ['#0369a1', '#bae6fd'],
+  'bộ cóc': ['#c2410c', '#fdba74'],
+  'bộ rắn': ['#6b21a8', '#d8b4fe'],
+  'cửu vĩ': ['#dc2626', '#fbbf24'],
+  'côn trùng': ['#3f6212', '#bef264'],
+  'gió và cánh quạt': ['#047857', '#6ee7b7'],
 };
 
 function getPalette(c) {
@@ -93,6 +100,39 @@ function motifSvg(c, c1, c2) {
       <rect x="35" y="18" width="30" height="36" rx="8" fill="${c1}" stroke="${c2}" stroke-width="2"/>
       <circle cx="44" cy="32" r="3" fill="#fff"/><circle cx="56" cy="32" r="3" fill="#fff"/>
       <path d="M42 44 L58 44 M46 41 L46 47 M50 41 L50 47 M54 41 L54 47" stroke="#fff" stroke-width="1.5"/>`;
+  }
+  if (c.s === 'mộc độn') {
+    return `
+      <path d="M50 58 L50 20 M50 38 L34 26 M50 34 L66 22 M50 48 L32 42 M50 46 L68 40" stroke="${c2}" stroke-width="3" stroke-linecap="round"/>
+      <circle cx="50" cy="18" r="10" fill="${c1}99" stroke="${c2}" stroke-width="1.8"/>
+      <circle cx="32" cy="26" r="7" fill="${c2}55"/><circle cx="68" cy="22" r="7" fill="${c2}55"/>`;
+  }
+  if (c.s === 'ma kính băng tinh') {
+    return `
+      <polygon points="50,10 66,24 62,52 50,60 38,52 34,24" fill="${c1}88" stroke="#e0f2fe" stroke-width="2"/>
+      <path d="M50 10 L50 60 M34 24 L66 24 M38 52 L62 24" stroke="#ffffffaa" stroke-width="1.2"/>`;
+  }
+  if (c.s === 'cửu vĩ') {
+    return `
+      <circle cx="50" cy="36" r="20" fill="${c1}aa" stroke="${c2}" stroke-width="2.2"/>
+      <path d="M36 32 L46 35 L38 40 Z M64 32 L54 35 L62 40 Z" fill="#fef08a"/>
+      <path d="M22 52 Q36 42 50 48 T78 52" fill="none" stroke="${c2}" stroke-width="2.2"/>`;
+  }
+  if (c.s === 'côn trùng') {
+    return `
+      <ellipse cx="50" cy="38" rx="11" ry="15" fill="${c1}" stroke="${c2}" stroke-width="2"/>
+      <path d="M39 30 C24 20 22 44 39 42 M61 30 C76 20 78 44 61 42" fill="${c2}44" stroke="${c2}" stroke-width="1.6"/>
+      <path d="M45 23 L40 14 M55 23 L60 14" stroke="${c2}" stroke-width="1.6" stroke-linecap="round"/>`;
+  }
+  if (c.s === 'gió và cánh quạt') {
+    return `
+      <path d="M50 56 L22 24 A34 34 0 0 1 78 24 Z" fill="${c1}99" stroke="${c2}" stroke-width="2"/>
+      <circle cx="38" cy="28" r="3.2" fill="#fff"/><circle cx="50" cy="24" r="3.2" fill="#fff"/><circle cx="62" cy="28" r="3.2" fill="#fff"/>`;
+  }
+  if (c.s === 'bộ cóc' || c.s === 'bộ rắn') {
+    return `
+      <circle cx="50" cy="36" r="20" fill="${c1}88" stroke="${c2}" stroke-width="2"/>
+      <ellipse cx="50" cy="36" rx="${c.s === 'bộ cóc' ? '13' : '5'}" ry="${c.s === 'bộ cóc' ? '5' : '14'}" fill="#fde047" stroke="#111" stroke-width="1.5"/>`;
   }
   if (c.pet) {
     return `

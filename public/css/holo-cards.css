@@ -1,0 +1,819 @@
+/* ==========================================================================
+   Scrolls of Naruto — Holographic 3D Cards CSS
+   Adapted from simeydotme/pokemon-cards-css (MIT/GPL-inspired CSS foil architecture)
+   ========================================================================== */
+
+:root {
+  --card-radius: 12px;
+  --card-edge: hsl(47, 100%, 78%);
+  --card-glow: hsl(45, 95%, 68%);
+
+  --sunpillar-1: hsl(2, 100%, 73%);
+  --sunpillar-2: hsl(53, 100%, 69%);
+  --sunpillar-3: hsl(93, 100%, 69%);
+  --sunpillar-4: hsl(176, 100%, 76%);
+  --sunpillar-5: hsl(228, 100%, 74%);
+  --sunpillar-6: hsl(283, 100%, 73%);
+
+  --sunpillar-clr-1: var(--sunpillar-1);
+  --sunpillar-clr-2: var(--sunpillar-2);
+  --sunpillar-clr-3: var(--sunpillar-3);
+  --sunpillar-clr-4: var(--sunpillar-4);
+  --sunpillar-clr-5: var(--sunpillar-5);
+  --sunpillar-clr-6: var(--sunpillar-6);
+
+  --holo-red: #f80e35;
+  --holo-yellow: #eedf10;
+  --holo-green: #21e985;
+  --holo-blue: #0dbde9;
+  --holo-violet: #c929f1;
+
+  /* Self-contained lightweight SVG foil & glitter textures (zero external asset deps) */
+  --glitter: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Cg fill='%23fff'%3E%3Ccircle cx='8' cy='10' r='1.1' opacity='.9'/%3E%3Ccircle cx='28' cy='6' r='.8' opacity='.7'/%3E%3Ccircle cx='50' cy='14' r='1.2' opacity='.85'/%3E%3Ccircle cx='18' cy='26' r='.9' opacity='.65'/%3E%3Ccircle cx='40' cy='28' r='1.3' opacity='.95'/%3E%3Ccircle cx='58' cy='34' r='.8' opacity='.7'/%3E%3Ccircle cx='12' cy='46' r='1.2' opacity='.85'/%3E%3Ccircle cx='32' cy='48' r='.9' opacity='.75'/%3E%3Ccircle cx='52' cy='56' r='1.1' opacity='.9'/%3E%3Ccircle cx='22' cy='58' r='.7' opacity='.6'/%3E%3Cpath d='M44 10l1 3 3 1-3 1-1 3-1-3-3-1 3-1z' opacity='.85'/%3E%3Cpath d='M14 34l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z' opacity='.75'/%3E%3C/g%3E%3C/svg%3E");
+  --foil-geo: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='.24' stroke-width='1'%3E%3Cpath d='M20 0L40 20L20 40L0 20Z'/%3E%3Cpath d='M20 8L32 20L20 32L8 20Z'/%3E%3Ccircle cx='20' cy='20' r='3'/%3E%3C/g%3E%3C/svg%3E");
+  --glittersize: 64px;
+}
+
+/* Override base .cd to act as 3D perspective container */
+.cd.cd-holo {
+  --pointer-x: 50%;
+  --pointer-y: 50%;
+  --pointer-from-center: 0;
+  --pointer-from-top: 0.5;
+  --pointer-from-left: 0.5;
+  --background-x: 50%;
+  --background-y: 50%;
+  --rotate-x: 0deg;
+  --rotate-y: 0deg;
+  --card-opacity: 0;
+  --card-glow: hsl(45, 92%, 62%);
+
+  background: transparent;
+  border: none;
+  padding: 0;
+  box-shadow: none;
+  overflow: visible;
+  perspective: 750px;
+  transform-style: preserve-3d;
+}
+
+/* Element & Clan Glow Palettes */
+.cd.cd-holo[data-el="hỏa"] { --card-glow: hsl(14, 95%, 58%); }
+.cd.cd-holo[data-el="thủy"] { --card-glow: hsl(200, 95%, 58%); }
+.cd.cd-holo[data-el="lôi"] { --card-glow: hsl(48, 98%, 58%); }
+.cd.cd-holo[data-el="phong"] { --card-glow: hsl(146, 80%, 55%); }
+.cd.cd-holo[data-clan="mangakyo"] { --card-glow: hsl(352, 95%, 56%); }
+.cd.cd-holo[data-clan="rinnegan"] { --card-glow: hsl(274, 92%, 68%); }
+.cd.cd-holo[data-clan="uchiha"] { --card-glow: hsl(4, 88%, 55%); }
+.cd.cd-holo[data-clan="hyuga"] { --card-glow: hsl(204, 55%, 76%); }
+.cd.cd-holo[data-clan="hoa anh đào"] { --card-glow: hsl(330, 88%, 72%); }
+.cd.cd-holo[data-clan="tia chớp vàng"] { --card-glow: hsl(46, 100%, 62%); }
+.cd.cd-holo[data-clan="mộc độn"] { --card-glow: hsl(142, 76%, 48%); }
+.cd.cd-holo[data-clan="ma kính băng tinh"] { --card-glow: hsl(196, 96%, 72%); }
+.cd.cd-holo[data-clan="bộ cóc"] { --card-glow: hsl(26, 92%, 58%); }
+.cd.cd-holo[data-clan="bộ rắn"] { --card-glow: hsl(278, 86%, 66%); }
+.cd.cd-holo[data-clan="cửu vĩ"] { --card-glow: hsl(12, 98%, 54%); }
+.cd.cd-holo[data-clan="côn trùng"] { --card-glow: hsl(84, 78%, 54%); }
+.cd.cd-holo[data-clan="gió và cánh quạt"] { --card-glow: hsl(160, 84%, 54%); }
+
+.cd.cd-holo.C { --card-glow: hsl(215, 16%, 68%); }
+.cd.cd-holo.B:not([data-el]) { --card-glow: hsl(217, 91%, 62%); }
+.cd.cd-holo.A:not([data-el]) { --card-glow: hsl(265, 88%, 68%); }
+.cd.cd-holo.S:not([data-clan="mangakyo"]):not([data-clan="rinnegan"]) { --card-glow: hsl(43, 98%, 58%); }
+
+.cd.cd-holo.interacting {
+  z-index: 10;
+}
+
+.cd-rotator {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: var(--card-radius);
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+  transform: rotateY(var(--rotate-x)) rotateX(var(--rotate-y));
+  will-change: transform, box-shadow;
+  transition: box-shadow 0.3s ease;
+  box-shadow: 0 7px 16px -4px #00000080;
+}
+
+.cd.cd-holo.interacting .cd-rotator,
+.cd.cd-holo.is-inspector .cd-rotator {
+  box-shadow:
+    0 0 3px -1px #fff,
+    0 0 4px 1px var(--card-edge),
+    0 0 14px 2px var(--card-glow),
+    0 14px 28px -6px #000000c0,
+    0 0 34px -10px var(--card-glow);
+}
+
+.cd.cd-holo.C.interacting .cd-rotator {
+  box-shadow:
+    0 0 2px 0px #ffffffaa,
+    0 12px 24px -6px #000000a0;
+}
+
+.cd.cd-holo.is-flipped .cd-flipper {
+  transform: rotateY(180deg);
+}
+
+.cd-flipper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: var(--card-radius);
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+  transition: transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.cd-front,
+.cd-back {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--card-radius);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  overflow: hidden;
+}
+
+.cd-front {
+  background: linear-gradient(175deg, #f7eed6, #e6d5ac);
+  color: #221a10;
+  border: 3px solid #7a6a45;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  transform: translateZ(0.01px);
+}
+
+.cd.cd-holo.C .cd-front { border-color: #7b8089; }
+.cd.cd-holo.B .cd-front { border-color: #2563eb; }
+.cd.cd-holo.A .cd-front { border-color: #7c3aed; }
+.cd.cd-holo.S .cd-front {
+  border-color: #e09f00;
+  background: linear-gradient(165deg, #fff5d6, #ecd18e 58%, #dfc070);
+}
+.cd.cd-holo[data-rarity="rare rainbow"] .cd-front {
+  border-color: #e879f9;
+  background: linear-gradient(165deg, #fdf4ff, #e9d5ff 55%, #fbcfe8);
+}
+
+.cd.cd-holo.sel .cd-front {
+  outline: 3px solid #ff5a1f;
+  outline-offset: -3px;
+}
+
+.cd.cd-holo.sel {
+  outline: none;
+}
+
+/* Custom Naruto Scroll Card Back */
+.cd-back {
+  transform: rotateY(180deg) translateZ(0.01px);
+  background:
+    radial-gradient(circle at 50% 50%, #3b1c0e 0%, #1d100a 62%, #0e0806 100%);
+  border: 4px solid #d49b35;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: #fde68a;
+  box-shadow: inset 0 0 28px #000000cc, inset 0 0 0 3px #7c2d12;
+}
+.cd-back-ring {
+  width: 62%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 3px solid #f59e0b;
+  background: radial-gradient(circle, #991b1b 0%, #450a0a 70%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 24px #f59e0b66, inset 0 0 18px #00000099;
+}
+.cd-back-ring svg {
+  width: 72%;
+  height: 72%;
+}
+.cd-back-title {
+  font: 800 13px 'Noto Serif', Georgia, serif;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #fde68a;
+  text-shadow: 0 2px 6px #000;
+}
+.cd-back-sub {
+  font-size: 10px;
+  letter-spacing: 3px;
+  opacity: 0.7;
+  text-transform: uppercase;
+}
+
+/* Hover zoom trigger button on hand cards */
+.cd-zoom-btn {
+  position: absolute;
+  right: 5px;
+  bottom: 5px;
+  z-index: 6;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid #00000044;
+  background: #181e29cc;
+  color: #fff;
+  font-size: 11px;
+  line-height: 22px;
+  text-align: center;
+  opacity: 0;
+  transform: scale(0.85);
+  transition: opacity 0.16s, transform 0.16s, background 0.15s;
+}
+.cd.cd-holo:hover .cd-zoom-btn,
+.cd.cd-holo.sel .cd-zoom-btn {
+  opacity: 0.92;
+  transform: scale(1);
+}
+.cd-zoom-btn:hover {
+  background: var(--ac);
+  border-color: #fff;
+  transform: scale(1.12);
+}
+
+/* ==========================================================================
+   SHINE & GLARE OVERLAY LAYERS (pokemon-cards-css core)
+   ========================================================================== */
+
+.cd__shine,
+.cd__shine:before,
+.cd__shine:after,
+.cd__glare,
+.cd__glare:after {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.cd__shine {
+  z-index: 3;
+  background: transparent;
+  opacity: var(--card-opacity);
+  mix-blend-mode: color-dodge;
+  will-change: opacity, background-position, filter;
+}
+
+.cd__shine:before,
+.cd__shine:after {
+  content: "";
+  --sunpillar-clr-1: var(--sunpillar-5);
+  --sunpillar-clr-2: var(--sunpillar-6);
+  --sunpillar-clr-3: var(--sunpillar-1);
+  --sunpillar-clr-4: var(--sunpillar-2);
+  --sunpillar-clr-5: var(--sunpillar-3);
+  --sunpillar-clr-6: var(--sunpillar-4);
+}
+
+.cd__shine:after {
+  --sunpillar-clr-1: var(--sunpillar-6);
+  --sunpillar-clr-2: var(--sunpillar-1);
+  --sunpillar-clr-3: var(--sunpillar-2);
+  --sunpillar-clr-4: var(--sunpillar-3);
+  --sunpillar-clr-5: var(--sunpillar-4);
+  --sunpillar-clr-6: var(--sunpillar-5);
+}
+
+.cd__glare {
+  z-index: 4;
+  background-image: radial-gradient(
+    farthest-corner circle at var(--pointer-x) var(--pointer-y),
+    hsla(0, 0%, 100%, 0.72) 8%,
+    hsla(0, 0%, 100%, 0.38) 22%,
+    hsla(0, 0%, 0%, 0.35) 90%
+  );
+  opacity: calc(var(--card-opacity) * 0.75);
+  mix-blend-mode: overlay;
+  will-change: opacity, background-image;
+}
+
+/* --- 1. Cấp C: BASIC GLOSSY FOIL --- */
+.cd.cd-holo[data-rarity="basic"] .cd__shine {
+  background-image: linear-gradient(
+    115deg,
+    transparent 20%,
+    hsla(0, 0%, 100%, 0.25) 45%,
+    hsla(45, 90%, 88%, 0.35) 50%,
+    hsla(0, 0%, 100%, 0.2) 55%,
+    transparent 80%
+  );
+  background-size: 260% 260%;
+  background-position: var(--background-x) var(--background-y);
+  mix-blend-mode: soft-light;
+  opacity: calc(var(--card-opacity) * 0.85);
+}
+.cd.cd-holo[data-rarity="basic"] .cd__shine:before,
+.cd.cd-holo[data-rarity="basic"] .cd__shine:after {
+  display: none;
+}
+
+/* --- 2. Cấp B: REGULAR HOLO (regular-holo.css) --- */
+.cd.cd-holo[data-rarity="rare holo"] .cd__shine {
+  --scanlines-space: 1px;
+  --scanlines-light: #777;
+  --scanlines-dark: #111;
+  --bars: 3%;
+  --bar-color: hsla(0, 0%, 75%, 0.85);
+  --bar-bg: hsla(0, 0%, 0%, 0.9);
+
+  background-image:
+    repeating-linear-gradient(
+      110deg,
+      var(--holo-violet), var(--holo-blue), var(--holo-green), var(--holo-yellow), var(--holo-red),
+      var(--holo-violet), var(--holo-blue), var(--holo-green), var(--holo-yellow), var(--holo-red),
+      var(--holo-violet), var(--holo-blue), var(--holo-green), var(--holo-yellow), var(--holo-red)
+    ),
+    repeating-linear-gradient(
+      90deg,
+      var(--scanlines-dark) 0px,
+      var(--scanlines-dark) 2px,
+      var(--scanlines-light) 2px,
+      var(--scanlines-light) 4px
+    );
+  background-position:
+    calc(((50% - var(--background-x)) * 2.6) + 50%) calc(((50% - var(--background-y)) * 3.5) + 50%),
+    center center;
+  background-size: 400% 400%, cover;
+  background-blend-mode: overlay;
+  filter: brightness(0.95) contrast(1.2) saturate(1.15);
+  mix-blend-mode: color-dodge;
+  opacity: calc(var(--card-opacity) * 0.68);
+}
+
+.cd.cd-holo[data-rarity="rare holo"] .cd__shine:before {
+  background-image:
+    repeating-linear-gradient(
+      90deg,
+      var(--bar-bg) calc(var(--bars) * 2),
+      var(--bar-color) calc(var(--bars) * 3),
+      var(--bar-bg) calc(var(--bars) * 3.5),
+      var(--bar-color) calc(var(--bars) * 4),
+      var(--bar-bg) calc(var(--bars) * 5),
+      var(--bar-bg) calc(var(--bars) * 14)
+    );
+  background-position:
+    calc((((50% - var(--background-x)) * 1.65) + 50%) + (var(--background-y) * 0.5)) var(--background-x);
+  background-size: 200% 200%;
+  mix-blend-mode: hard-light;
+  opacity: 0.55;
+}
+
+.cd.cd-holo[data-rarity="rare holo"] .cd__shine:after {
+  background-image: radial-gradient(
+    farthest-corner circle at var(--pointer-x) var(--pointer-y),
+    hsla(0, 0%, 95%, 0.7) 0%,
+    hsla(0, 0%, 78%, 0.12) 28%,
+    hsl(0, 0%, 0%) 90%
+  );
+  mix-blend-mode: luminosity;
+  filter: brightness(0.7) contrast(2.5);
+}
+
+/* --- 3. Cấp A: RADIANT DIAMOND HOLO (radiant-holo.css) --- */
+.cd.cd-holo[data-rarity="radiant rare"] .cd__shine {
+  --barwidth: 1.4%;
+  --space: 6%;
+  background-image:
+    radial-gradient(
+      farthest-corner ellipse at calc((var(--pointer-x) * 0.5) + 25%) calc((var(--pointer-y) * 0.5) + 25%),
+      hsl(0, 0%, 95%) 18%,
+      var(--card-glow) 130%
+    ),
+    repeating-linear-gradient(
+      45deg,
+      hsl(0, 0%, 10%) 0%,
+      hsl(0, 0%, 10%) var(--barwidth),
+      hsl(0, 0%, 35%) calc(var(--barwidth) * 2),
+      hsl(0, 0%, 55%) calc(var(--barwidth) * 4),
+      hsl(0, 0%, 25%) calc(var(--barwidth) * 7),
+      hsl(0, 0%, 0%) calc(var(--barwidth) * 10)
+    ),
+    repeating-linear-gradient(
+      -45deg,
+      hsl(0, 0%, 10%) 0%,
+      hsl(0, 0%, 10%) var(--barwidth),
+      hsl(0, 0%, 35%) calc(var(--barwidth) * 2),
+      hsl(0, 0%, 55%) calc(var(--barwidth) * 4),
+      hsl(0, 0%, 25%) calc(var(--barwidth) * 7),
+      hsl(0, 0%, 0%) calc(var(--barwidth) * 10)
+    );
+  background-size: cover, 210% 210%, 210% 210%;
+  background-position:
+    center,
+    calc(((var(--background-x) - 50%) * 1.5) + 50%) calc(((var(--background-y) - 50%) * 1.5) + 50%),
+    calc(((var(--background-x) - 50%) * -1.5) + 50%) calc(((var(--background-y) - 50%) * -1.5) + 50%);
+  background-blend-mode: exclusion, darken, color-dodge;
+  filter: brightness(0.68) contrast(2) saturate(1.65);
+  mix-blend-mode: color-dodge;
+  opacity: calc(var(--card-opacity) * 0.8);
+}
+
+.cd.cd-holo[data-rarity="radiant rare"] .cd__shine:before {
+  background-image:
+    var(--glitter),
+    radial-gradient(
+      farthest-corner ellipse at calc((var(--pointer-x) * 0.5) + 25%) calc((var(--pointer-y) * 0.5) + 25%),
+      hsla(0, 0%, 68%, 0.75) 10%,
+      hsla(0, 0%, 20%, 0.65) 35%,
+      hsla(0, 0%, 10%, 0.35) 75%
+    );
+  background-size: var(--glittersize) var(--glittersize), 300% 300%;
+  background-position: center;
+  background-blend-mode: color-dodge;
+  mix-blend-mode: overlay;
+}
+
+.cd.cd-holo[data-rarity="radiant rare"] .cd__shine:after {
+  background-image:
+    var(--foil-geo),
+    repeating-linear-gradient(
+      55deg,
+      hsl(3, 95%, 82%) calc(var(--space) * 1),
+      hsl(207, 100%, 82%) calc(var(--space) * 2),
+      hsl(29, 100%, 82%) calc(var(--space) * 3),
+      hsl(160, 100%, 82%) calc(var(--space) * 4),
+      hsl(309, 94%, 84%) calc(var(--space) * 5),
+      hsl(188, 95%, 82%) calc(var(--space) * 6),
+      hsl(3, 95%, 82%) calc(var(--space) * 7)
+    );
+  background-size: 36px 36px, 400% 100%;
+  background-position:
+    center,
+    calc(((var(--background-x) - 50%) * -2.5) + 50%) calc(((var(--background-y) - 50%) * -2.5) + 50%);
+  background-blend-mode: hard-light;
+  filter: brightness(0.75) contrast(2.2) saturate(1.7);
+  mix-blend-mode: color-dodge;
+  opacity: 0.7;
+}
+
+/* --- 4. Cấp S: SECRET RARE GOLD FOIL (secret-rare.css) --- */
+.cd.cd-holo[data-rarity="rare secret"] .cd__shine {
+  --shift: 2px;
+  background-image:
+    var(--glitter),
+    var(--glitter),
+    conic-gradient(
+      from calc(var(--pointer-from-left) * 120deg) at var(--pointer-x) var(--pointer-y),
+      var(--sunpillar-clr-4),
+      var(--sunpillar-clr-5),
+      var(--sunpillar-clr-6),
+      var(--sunpillar-clr-1),
+      var(--sunpillar-clr-2),
+      var(--sunpillar-clr-3),
+      var(--sunpillar-clr-4)
+    ),
+    radial-gradient(
+      farthest-corner circle at var(--pointer-x) var(--pointer-y),
+      hsla(45, 95%, 70%, 0.65) 8%,
+      hsla(0, 0%, 10%, 0.25) 90%
+    );
+  background-size: var(--glittersize) var(--glittersize), 84px 84px, cover, cover;
+  background-position:
+    calc(45% + (var(--background-x) - 50%) * 0.4) calc(45% + (var(--background-y) - 50%) * 0.4),
+    calc(55% - (var(--background-x) - 50%) * 0.4) calc(55% - (var(--background-y) - 50%) * 0.4),
+    center center,
+    center center;
+  background-blend-mode: soft-light, hard-light, overlay;
+  mix-blend-mode: color-dodge;
+  filter: brightness(calc(0.55 + (var(--pointer-from-center) * 0.25))) contrast(1.4) saturate(1.9);
+  opacity: calc(var(--card-opacity) * 0.88);
+}
+
+.cd.cd-holo[data-rarity="rare secret"] .cd__shine:before {
+  background-image:
+    var(--foil-geo),
+    linear-gradient(45deg, hsl(44, 98%, 52%), hsl(52, 100%, 72%), hsl(38, 95%, 48%)),
+    radial-gradient(
+      farthest-corner circle at var(--pointer-x) var(--pointer-y),
+      hsla(48, 80%, 92%, 0.9) 10%,
+      hsl(0, 0%, 0%) 72%
+    );
+  background-size: 36px 36px, cover, cover;
+  background-position: center center;
+  background-blend-mode: hard-light, multiply;
+  mix-blend-mode: lighten;
+  filter: brightness(1.1) contrast(1.2) saturate(0.75);
+  opacity: 0.65;
+}
+
+.cd.cd-holo[data-rarity="rare secret"] .cd__shine:after {
+  background-image: var(--glitter);
+  background-size: var(--glittersize) var(--glittersize);
+  background-position:
+    calc(50% - ((var(--shift) * 3) * var(--pointer-from-left)) + var(--shift))
+    calc(50% - ((var(--shift) * 3) * var(--pointer-from-top)) + var(--shift));
+  filter: brightness(calc((var(--pointer-from-center) * 0.6) + 0.7)) contrast(1.5);
+  mix-blend-mode: overlay;
+}
+
+.cd.cd-holo[data-rarity="rare secret"] .cd__glare {
+  background-image: radial-gradient(
+    farthest-corner circle at var(--pointer-x) var(--pointer-y),
+    hsla(48, 100%, 88%, 0.55) 0%,
+    hsla(40, 60%, 55%, 0.2) 45%,
+    hsla(24, 30%, 10%, 0.35) 140%
+  );
+  filter: brightness(1.15) contrast(1.3);
+  mix-blend-mode: hard-light;
+}
+
+/* --- 5. Cấp S Huyền thoại (Mangekyo / Rinnegan): RAINBOW HOLO (rainbow-holo.css) --- */
+.cd.cd-holo[data-rarity="rare rainbow"] .cd__shine {
+  --r-clr-1: hsl(0, 82%, 56%);
+  --r-clr-2: hsl(40, 88%, 56%);
+  --r-clr-3: hsl(110, 76%, 50%);
+  --r-clr-4: hsl(185, 86%, 52%);
+  --r-clr-5: hsl(220, 86%, 60%);
+  --r-clr-6: hsl(280, 85%, 62%);
+  --r-clr-7: hsl(330, 86%, 60%);
+
+  background-image:
+    linear-gradient(-45deg, var(--r-clr-1), var(--r-clr-5)),
+    var(--glitter),
+    linear-gradient(
+      -30deg,
+      var(--r-clr-1), var(--r-clr-2), var(--r-clr-3), var(--r-clr-4), var(--r-clr-5), var(--r-clr-6), var(--r-clr-7),
+      var(--r-clr-1), var(--r-clr-2), var(--r-clr-3), var(--r-clr-4), var(--r-clr-5), var(--r-clr-6), var(--r-clr-7),
+      var(--r-clr-1)
+    );
+  background-blend-mode: luminosity, soft-light;
+  background-size: 200% 200%, var(--glittersize) var(--glittersize), 400% 400%;
+  background-position:
+    calc(25% + (50% * var(--pointer-from-left))) calc(25% + (50% * var(--pointer-from-top))),
+    center center,
+    calc(25% + (var(--pointer-x) / 2)) calc(25% + (var(--pointer-y) / 2));
+  filter: brightness(calc((var(--pointer-from-center) * 0.25) + 0.72)) contrast(1.8) saturate(1.1);
+  mix-blend-mode: color-dodge;
+  opacity: calc(var(--card-opacity) * 0.88);
+}
+
+.cd.cd-holo[data-rarity="rare rainbow"] .cd__shine:before {
+  background-image: var(--foil-geo);
+  background-size: 32px 32px;
+  background-position: center;
+  opacity: calc((var(--pointer-from-center) + 0.35) * 0.55);
+  mix-blend-mode: overlay;
+}
+
+.cd.cd-holo[data-rarity="rare rainbow"] .cd__shine:after {
+  background-image:
+    var(--glitter),
+    linear-gradient(
+      -60deg,
+      var(--r-clr-1), var(--r-clr-2), var(--r-clr-3), var(--r-clr-4), var(--r-clr-5), var(--r-clr-6), var(--r-clr-7),
+      var(--r-clr-1), var(--r-clr-2), var(--r-clr-3), var(--r-clr-4), var(--r-clr-5), var(--r-clr-6), var(--r-clr-7),
+      var(--r-clr-1)
+    );
+  background-blend-mode: soft-light;
+  background-size: var(--glittersize) var(--glittersize), 400% 400%;
+  background-position: center center, var(--pointer-x) var(--pointer-y);
+  filter: brightness(calc((var(--pointer-from-center) * 0.3) + 0.65)) contrast(1.7) saturate(1.2);
+  mix-blend-mode: color-dodge;
+}
+
+.cd.cd-holo[data-rarity="rare rainbow"] .cd__glare {
+  background-image: radial-gradient(
+    farthest-corner circle at var(--pointer-x) var(--pointer-y),
+    hsla(0, 0%, 100%, 0.72),
+    hsla(290, 60%, 82%, 0.28) 32%,
+    hsla(240, 20%, 18%, 0.35) 120%
+  );
+  mix-blend-mode: hard-light;
+  opacity: calc(var(--card-opacity) * 0.82);
+}
+
+/* Codex grid specific polish */
+.codex-grid {
+  padding: 10px 4px 18px;
+}
+.codex-grid .cd.cd-holo {
+  transition: transform 0.22s ease;
+}
+.codex-grid .cd.cd-holo:hover {
+  transform: translateY(-6px) scale(1.03);
+  z-index: 8;
+}
+.codex-hint {
+  margin: -4px 0 12px;
+  font-size: 13px;
+  color: var(--m);
+}
+
+/* ==========================================================================
+   3D CARD INSPECTOR / SHOWCASE POPOVER
+   ========================================================================== */
+
+.card-inspect-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: radial-gradient(ellipse at 50% 45%, #161d2eee, #05070df2 75%);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: inspectFade 0.22s ease-out;
+}
+@keyframes inspectFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.card-inspect-dialog {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+  max-width: 860px;
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+.card-inspect-stage {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.inspect-nav {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  padding: 0;
+  font-size: 20px;
+  background: #ffffff14;
+  border: 2px solid #ffffff33;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.inspect-nav:hover:not(:disabled) {
+  background: var(--ac);
+  border-color: #fff;
+}
+
+/* Large Showcase Card Sizing */
+.card-inspect-card .cd.cd-holo.is-inspector {
+  flex: none;
+  width: 300px;
+  height: 432px;
+  margin: 0;
+  perspective: 1100px;
+  animation: inspectPop 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes inspectPop {
+  from { opacity: 0; transform: scale(0.75) translateY(24px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.card-inspect-card .cd.cd-holo.is-inspector:hover {
+  transform: none;
+}
+
+.card-inspect-card .cd-front {
+  padding: 14px;
+  border-width: 4px;
+}
+.card-inspect-card .rk {
+  font-size: 16px;
+  padding: 2px 10px;
+}
+.card-inspect-card .el-tag {
+  font-size: 13px;
+  padding: 2px 9px;
+}
+.card-inspect-card .cd-art {
+  height: 146px;
+  border-radius: 10px;
+  margin: 6px 0 10px;
+}
+.card-inspect-card .cd-name {
+  font-size: 22px;
+  margin-bottom: 4px;
+}
+.card-inspect-card .cd-meta {
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+.card-inspect-card .cd-desc {
+  font-size: 14.5px;
+  line-height: 1.45;
+  overflow: auto;
+}
+.card-inspect-card .cd-au {
+  font-size: 13px;
+  margin-top: 8px;
+}
+.card-inspect-card .cd-back-title {
+  font-size: 19px;
+}
+.card-inspect-card .cd-back-sub {
+  font-size: 12px;
+}
+
+/* Inspector Info Panel */
+.card-inspect-info {
+  flex: 1;
+  min-width: 260px;
+  max-width: 360px;
+  color: #f4f0e2;
+  background: #ffffff0e;
+  border: 1px solid #ffffff22;
+  border-radius: 16px;
+  padding: 18px 20px;
+}
+.card-inspect-info h3 {
+  font: 800 24px 'Noto Serif', Georgia, serif;
+  text-transform: capitalize;
+  margin: 0 0 8px;
+  color: #fff;
+}
+.inspect-foil-pill {
+  display: inline-block;
+  font-size: 11.5px;
+  font-weight: 800;
+  padding: 3px 10px;
+  border-radius: 999px;
+  margin-bottom: 12px;
+  color: #fff;
+  background: linear-gradient(135deg, #6366f1, #ec4899);
+}
+.inspect-foil-pill.foil-C { background: #64748b; }
+.inspect-foil-pill.foil-B { background: linear-gradient(135deg, #2563eb, #06b6d4); }
+.inspect-foil-pill.foil-A { background: linear-gradient(135deg, #7c3aed, #ec4899); }
+.inspect-foil-pill.foil-S { background: linear-gradient(135deg, #d97706, #f59e0b); }
+.inspect-foil-pill.foil-rainbow { background: linear-gradient(135deg, #ef4444, #f59e0b, #10b981, #3b82f6, #a855f7); }
+
+.inspect-meta-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13.5px;
+  margin: 10px 0 14px;
+}
+.inspect-meta-list div {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  border-bottom: 1px solid #ffffff16;
+  padding-bottom: 5px;
+}
+.inspect-meta-list span { color: #cbd5e1; }
+.inspect-meta-list b { text-transform: capitalize; text-align: right; }
+.inspect-desc-box {
+  background: #00000044;
+  border: 1px solid #ffffff18;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+  line-height: 1.5;
+  margin-bottom: 14px;
+}
+.inspect-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.inspect-actions button {
+  background: #ffffff18;
+  border-color: #ffffff33;
+  color: #fff;
+  font-size: 13px;
+  padding: 7px 12px;
+}
+.inspect-actions button.go {
+  background: var(--ac);
+  border-color: var(--ac);
+}
+.inspect-tip {
+  margin: 12px 0 0;
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+@media (max-width: 720px) {
+  .card-inspect-dialog { gap: 16px; }
+  .card-inspect-card .cd.cd-holo.is-inspector {
+    width: 244px;
+    height: 352px;
+  }
+  .card-inspect-card .cd-art { height: 112px; }
+  .card-inspect-card .cd-name { font-size: 18px; }
+  .card-inspect-card .cd-desc { font-size: 13px; }
+  .card-inspect-info { max-width: 100%; }
+  .inspect-nav { width: 36px; height: 36px; font-size: 16px; }
+}

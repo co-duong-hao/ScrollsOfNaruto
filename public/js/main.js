@@ -9,6 +9,7 @@ import {
 } from '/shared/engine.js';
 import { SFX } from './sound.js';
 import { VFX } from './vfx.js';
+import { initCardHolo, triggerShowcaseWobble } from './cardHolo.js';
 import {
   esc,
   ECOL,
@@ -20,6 +21,8 @@ import {
   renderAutoPromptModal,
   renderQuickReactionsModal,
   renderVictoryOverlay,
+  renderCardInspectModal,
+  getFilteredCodexCards,
 } from './ui.js';
 
 const $ = (id) => document.getElementById(id);
@@ -37,6 +40,9 @@ const state = {
   modal: null, // null | 'rules' | 'codex' | 'reactions'
   codexRank: 'ALL',
   codexSearch: '',
+  inspectCardId: null,
+  inspectFlipped: false,
+  inspectFromCodex: false,
   busy: false,
   waitOnline: false,
   cast: null,
@@ -48,6 +54,8 @@ const state = {
   sandboxSearch: '',
   sandboxGiveTo: 0,
   dark: localStorage.getItem('son_theme') !== 'light',
+  bgVideo: localStorage.getItem('son_bg_video') !== '0',
+  bgmOpen: localStorage.getItem('son_bgm_open') !== '0',
 };
 
 function applyTheme() {
@@ -55,7 +63,195 @@ function applyTheme() {
 }
 applyTheme();
 
+function applyBgmDock() {
+  const dock = $('bgmDock');
+  if (dock) dock.classList.toggle('is-collapsed', !state.bgmOpen);
+}
+applyBgmDock();
+
+const BGM_TRACKS = [
+  {
+    id: '1584791972',
+    title: 'Morning',
+    artist: 'MUSASHI PROJECT',
+    src: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/64/64/91/646491e6-0615-be42-9d81-e8efd622a5bc/mzaf_3793298420802114168.plus.aac.p.m4a',
+    art: 'https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/fe/b1/ef/feb1ef00-89f2-6b9e-d961-2ffebfc55b7f/4534530133762.jpg/100x100bb.jpg',
+    url: 'https://music.apple.com/us/album/morning/1584791969?i=1584791972',
+  },
+  {
+    id: '1584792218',
+    title: 'Loneliness',
+    artist: 'MUSASHI PROJECT',
+    src: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/b4/51/60/b451604b-ad59-ce56-44ae-3cb77e826ba5/mzaf_450514379178870700.plus.aac.p.m4a',
+    art: 'https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/fe/b1/ef/feb1ef00-89f2-6b9e-d961-2ffebfc55b7f/4534530133762.jpg/100x100bb.jpg',
+    url: 'https://music.apple.com/us/album/loneliness/1584791969?i=1584792218',
+  },
+  {
+    id: '1584792227',
+    title: 'Evening',
+    artist: 'MUSASHI PROJECT',
+    src: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/92/5f/90/925f9080-3c64-4930-f1e0-44d369e9d3cd/mzaf_8071669503517722134.plus.aac.p.m4a',
+    art: 'https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/fe/b1/ef/feb1ef00-89f2-6b9e-d961-2ffebfc55b7f/4534530133762.jpg/100x100bb.jpg',
+    url: 'https://music.apple.com/us/album/evening/1584791969?i=1584792227',
+  },
+  {
+    id: '1584792224',
+    title: 'Sexiness',
+    artist: 'Toshio Masuda',
+    src: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/e2/73/64/e273643b-6433-5a69-e230-9a396b30a78b/mzaf_8052869636653722806.plus.aac.p.m4a',
+    art: 'https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/fe/b1/ef/feb1ef00-89f2-6b9e-d961-2ffebfc55b7f/4534530133762.jpg/100x100bb.jpg',
+    url: 'https://music.apple.com/us/album/sexiness/1584791969?i=1584792224',
+  },
+];
+
+const bgmSavedVol = Number(localStorage.getItem('son_bgm_vol'));
+const bgmSavedTrack = Number(localStorage.getItem('son_bgm_track'));
+const bgmState = {
+  trackIdx:
+    Number.isInteger(bgmSavedTrack) && bgmSavedTrack >= 0 && bgmSavedTrack < BGM_TRACKS.length
+      ? bgmSavedTrack
+      : 0,
+  vol: Number.isFinite(bgmSavedVol) && bgmSavedVol >= 0 && bgmSavedVol <= 100 ? bgmSavedVol : 20,
+  muted: localStorage.getItem('son_bgm_muted') === '1',
+  loop: localStorage.getItem('son_bgm_loop') !== '0',
+};
+
+function fmtTime(sec) {
+  if (!Number.isFinite(sec) || sec < 0) return '0:00';
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+function renderBgmPlaylist() {
+  const wrap = $('bgmPlaylist');
+  if (!wrap) return;
+  wrap.innerHTML = BGM_TRACKS.map(
+    (tr, idx) =>
+      `<button type="button" class="bgm-track-pill ${idx === bgmState.trackIdx ? 'is-active' : ''}" onclick="appActions.bgmSelectTrack(${idx})" title="${esc(tr.title)} — ${esc(tr.artist)}">${idx === bgmState.trackIdx ? '♪ ' : ''}${esc(tr.title)}</button>`
+  ).join('');
+}
+
+function loadBgmTrack(idx, autoPlay = false) {
+  const audio = $('bgmAudio');
+  const nextIdx = ((idx % BGM_TRACKS.length) + BGM_TRACKS.length) % BGM_TRACKS.length;
+  bgmState.trackIdx = nextIdx;
+  localStorage.setItem('son_bgm_track', String(nextIdx));
+  const tr = BGM_TRACKS[nextIdx];
+
+  const head = $('bgmDockTitle');
+  if (head) head.textContent = `🎵 Nhạc nền · ${tr.title}`;
+  const nameEl = $('bgmTrackName');
+  if (nameEl) nameEl.textContent = tr.title;
+  const artistEl = $('bgmTrackArtist');
+  if (artistEl) artistEl.textContent = `${tr.artist} · Naruto OST`;
+  const artEl = $('bgmArt');
+  if (artEl) artEl.src = tr.art;
+  const linkEl = $('bgmAppleLink');
+  if (linkEl) linkEl.href = tr.url;
+
+  const seek = $('bgmSeek');
+  if (seek) seek.value = '0';
+  const cur = $('bgmCurTime');
+  if (cur) cur.textContent = '0:00';
+
+  if (audio && audio.src !== tr.src) {
+    audio.src = tr.src;
+    audio.load();
+  }
+  renderBgmPlaylist();
+  updateBgmUi();
+
+  if (autoPlay && audio) {
+    audio.play().catch(() => {});
+  }
+}
+
+function updateBgmUi() {
+  const audio = $('bgmAudio');
+  const effectiveVol = bgmState.muted ? 0 : bgmState.vol;
+  if (audio) {
+    // Perceptual curve so 20% feels soft and gentle instead of blasting
+    audio.volume = effectiveVol <= 0 ? 0 : Math.pow(effectiveVol / 100, 1.55);
+    audio.muted = bgmState.muted || bgmState.vol === 0;
+    audio.loop = bgmState.loop;
+  }
+  const slider = $('bgmVolSlider');
+  if (slider) slider.value = String(effectiveVol);
+  const pct = $('bgmVolPct');
+  if (pct) pct.textContent = `${effectiveVol}%`;
+  const muteBtn = $('bgmMuteBtn');
+  if (muteBtn) {
+    muteBtn.textContent = effectiveVol === 0 ? '🔇' : effectiveVol < 45 ? '🔉' : '🔊';
+  }
+  const loopBtn = $('bgmLoopBtn');
+  if (loopBtn) loopBtn.classList.toggle('is-on', bgmState.loop);
+  const playBtn = $('bgmPlayBtn');
+  if (playBtn && audio) playBtn.textContent = audio.paused ? '▶' : '⏸';
+}
+
+function initBgmPlayer() {
+  const audio = $('bgmAudio');
+  if (!audio) return;
+  loadBgmTrack(bgmState.trackIdx, false);
+
+  audio.addEventListener('loadedmetadata', () => {
+    const dur = $('bgmDurTime');
+    if (dur) dur.textContent = fmtTime(audio.duration);
+  });
+  audio.addEventListener('timeupdate', () => {
+    const cur = $('bgmCurTime');
+    const seek = $('bgmSeek');
+    if (cur) cur.textContent = fmtTime(audio.currentTime);
+    if (seek && audio.duration) {
+      seek.value = String((audio.currentTime / audio.duration) * 100);
+    }
+  });
+  audio.addEventListener('play', updateBgmUi);
+  audio.addEventListener('pause', updateBgmUi);
+  audio.addEventListener('ended', () => {
+    if (!bgmState.loop) {
+      loadBgmTrack(bgmState.trackIdx + 1, true);
+    } else {
+      updateBgmUi();
+    }
+  });
+}
+initBgmPlayer();
+
+function applyBgVideo() {
+  document.documentElement.setAttribute('data-bg-video', state.bgVideo ? 'on' : 'off');
+  const vid = $('bgVideo');
+  if (!vid) return;
+  if (state.bgVideo) {
+    vid.muted = true;
+    const p = vid.play?.();
+    if (p && typeof p.catch === 'function') p.catch(() => {});
+  } else {
+    vid.pause?.();
+  }
+}
+applyBgVideo();
+
+document.addEventListener(
+  'pointerdown',
+  () => {
+    const vid = $('bgVideo');
+    if (state.bgVideo && vid && vid.paused) {
+      vid.play?.().catch(() => {});
+    }
+  },
+  { once: true }
+);
+
+function sfxIcon() {
+  if (SFX.muted || SFX.volume === 0) return '🔇';
+  if (SFX.volume < 45) return '🔉';
+  return '🔊';
+}
+
 function topBarHtml(showLeave = false) {
+  const curVol = SFX.muted ? 0 : SFX.volume;
   return `
     <header class="topbar">
       <div class="brand" onclick="${showLeave ? 'appActions.leaveGame()' : 'appActions.goMenu()'}">
@@ -67,7 +263,16 @@ function topBarHtml(showLeave = false) {
         <button class="btn-sm" onclick="appActions.openModal(\'reactions\')" title="Tra cứu nhanh phản ứng nguyên tố (Phím R)">⚗️ Phản ứng</button>
         <button class="btn-sm" onclick="appActions.openModal(\'codex\')">🃏 Nhẫn thuật</button>
         <button class="btn-sm" onclick="appActions.openModal(\'rules\')">📖 Luật</button>
-        <button class="btn-sm" onclick="appActions.toggleSound()">${SFX.muted ? '🔇 Tắt âm' : '🔊 Âm thanh'}</button>
+        <div class="vol-ctrl" title="Điều chỉnh âm lượng hiệu ứng game (SFX)">
+          <button type="button" id="sfxMuteBtn" class="vol-mute" onclick="appActions.toggleSound()" title="${SFX.muted ? 'Bật âm hiệu ứng' : 'Tắt tiếng hiệu ứng'}">${sfxIcon()}</button>
+          <input id="sfxVolSlider" class="vol-slider" type="range" min="0" max="100" value="${curVol}"
+                 aria-label="Âm lượng hiệu ứng"
+                 oninput="appActions.setSoundVolume(this.value)"
+                 onchange="appActions.previewSoundVolume()">
+          <span id="sfxVolPct" class="vol-pct">${curVol}%</span>
+        </div>
+        <button class="btn-sm ${state.bgmOpen ? 'go' : ''}" onclick="appActions.toggleBgmDock()" title="Mở / Thu gọn trình phát nhạc nền (nhạc vẫn phát khi thu gọn)">🎵 Nhạc</button>
+        <button class="btn-sm" onclick="appActions.toggleBgVideo()" title="Bật/tắt video nền Làng Lá">${state.bgVideo ? '🎬 Nền động' : '🖼️ Nền tĩnh'}</button>
         <button class="btn-sm" onclick="appActions.toggleTheme()">${state.dark ? '🌙 Tối' : '☀️ Sáng'}</button>
       </div>
     </header>`;
@@ -249,10 +454,21 @@ function connectSocket() {
 
 function renderModal() {
   if (state.autoPrompt) return renderAutoPromptModal(state.autoPrompt);
-  if (state.modal === 'rules') return renderRulesModal(state.rulebookText);
-  if (state.modal === 'codex') return renderCodexModal(state.codexRank, state.codexSearch);
-  if (state.modal === 'reactions') return renderQuickReactionsModal();
-  return '';
+  let out = '';
+  if (state.modal === 'rules') out += renderRulesModal(state.rulebookText);
+  else if (state.modal === 'codex') out += renderCodexModal(state.codexRank, state.codexSearch);
+  else if (state.modal === 'reactions') out += renderQuickReactionsModal();
+
+  if (state.inspectCardId != null) {
+    const listIds = state.inspectFromCodex
+      ? getFilteredCodexCards(state.codexRank, state.codexSearch).map((c) => c.id)
+      : null;
+    out += renderCardInspectModal(state.inspectCardId, {
+      flipped: state.inspectFlipped,
+      listIds,
+    });
+  }
+  return out;
 }
 
 function renderMenu() {
@@ -262,14 +478,14 @@ function renderMenu() {
       <div class="hero-card">
         <div class="hero-badge">⚔️ TACTICAL ELEMENTAL TCG</div>
         <h1>Scrolls of Naruto</h1>
-        <p class="hero-sub">Đấu thẻ bài chiến thuật 4 nguyên tố <b>Phong · Thủy · Hỏa · Lôi</b> với 96 nhẫn thuật, Pet hộ thể, Né tránh ẩn và 7 Phản ứng Nguyên tố.</p>
+        <p class="hero-sub">Đấu thẻ bài chiến thuật 4 nguyên tố <b>Phong · Thủy · Hỏa · Lôi</b> với ${CARDS.length} nhẫn thuật, Pet hộ thể, Né tránh ẩn và 7 Phản ứng Nguyên tố.</p>
         <div class="hero-btns">
           <button class="go btn-lg btn-online" onclick="appActions.openOnlineMenu()">🌐 Chơi Online</button>
           <button class="go btn-lg" onclick="appActions.openOfflineSetup()">🎮 Chơi Offline</button>
           <button class="btn-lg btn-sandbox" onclick="appActions.startSandbox()">🧪 Thử Skill</button>
         </div>
         <div class="hero-links">
-          <button onclick="appActions.openModal('codex')">🃏 Xem 96 Thẻ Bài</button>
+          <button onclick="appActions.openModal('codex')">🃏 Xem ${CARDS.length} Thẻ Bài</button>
           <button onclick="appActions.openModal('rules')">📜 Sổ Tay Luật Chơi</button>
         </div>
       </div>
@@ -526,6 +742,8 @@ function render() {
   const app = $('app');
   const prevHand = document.querySelector('.hand');
   const scrollLeft = prevHand ? prevHand.scrollLeft : 0;
+  const prevModal = document.querySelector('.modal-card');
+  const modalScrollTop = prevModal ? prevModal.scrollTop : 0;
 
   let html = '';
   if (state.mode === 'menu') html = renderMenu();
@@ -539,6 +757,8 @@ function render() {
 
   const newHand = document.querySelector('.hand');
   if (newHand) newHand.scrollLeft = scrollLeft;
+  const newModal = document.querySelector('.modal-card');
+  if (newModal) newModal.scrollTop = modalScrollTop;
   const lg = $('lg');
   if (lg) lg.scrollTop = lg.scrollHeight;
 }
@@ -555,9 +775,78 @@ window.appActions = {
     applyTheme();
     render();
   },
+  toggleBgVideo() {
+    state.bgVideo = !state.bgVideo;
+    localStorage.setItem('son_bg_video', state.bgVideo ? '1' : '0');
+    applyBgVideo();
+    render();
+  },
+  toggleBgmDock() {
+    state.bgmOpen = !state.bgmOpen;
+    localStorage.setItem('son_bgm_open', state.bgmOpen ? '1' : '0');
+    applyBgmDock();
+    render();
+  },
+  bgmTogglePlay() {
+    const audio = $('bgmAudio');
+    if (!audio) return;
+    if (audio.paused) {
+      updateBgmUi();
+      audio.play().catch(() => {});
+    } else {
+      audio.pause();
+    }
+    updateBgmUi();
+  },
+  bgmSelectTrack(idx) {
+    loadBgmTrack(idx, true);
+  },
+  bgmStepTrack(dir) {
+    const audio = $('bgmAudio');
+    const wasPlaying = audio ? !audio.paused : false;
+    loadBgmTrack(bgmState.trackIdx + dir, wasPlaying || true);
+  },
+  bgmSetVolume(val) {
+    const v = Math.max(0, Math.min(100, Math.round(Number(val) || 0)));
+    bgmState.vol = v;
+    bgmState.muted = v === 0;
+    localStorage.setItem('son_bgm_vol', String(v));
+    localStorage.setItem('son_bgm_muted', bgmState.muted ? '1' : '0');
+    updateBgmUi();
+  },
+  bgmToggleMute() {
+    bgmState.muted = !bgmState.muted;
+    if (!bgmState.muted && bgmState.vol === 0) {
+      bgmState.vol = 20;
+      localStorage.setItem('son_bgm_vol', '20');
+    }
+    localStorage.setItem('son_bgm_muted', bgmState.muted ? '1' : '0');
+    updateBgmUi();
+  },
+  bgmToggleLoop() {
+    bgmState.loop = !bgmState.loop;
+    localStorage.setItem('son_bgm_loop', bgmState.loop ? '1' : '0');
+    updateBgmUi();
+  },
+  bgmSeek(pct) {
+    const audio = $('bgmAudio');
+    if (audio && audio.duration) {
+      audio.currentTime = (Number(pct) / 100) * audio.duration;
+    }
+  },
   toggleSound() {
     SFX.toggle();
     render();
+  },
+  setSoundVolume(val) {
+    const v = SFX.setVolume(val);
+    const pct = $('sfxVolPct');
+    const btn = $('sfxMuteBtn');
+    if (pct) pct.textContent = `${v}%`;
+    if (btn) btn.textContent = sfxIcon();
+  },
+  previewSoundVolume() {
+    if (!SFX.muted && SFX.volume > 0) SFX.play('select');
   },
   openModal(name) {
     state.modal = name;
@@ -574,7 +863,54 @@ window.appActions = {
   },
   closeModal() {
     state.modal = null;
+    state.inspectCardId = null;
+    state.inspectFlipped = false;
+    state.inspectFromCodex = false;
     render();
+  },
+  inspectCard(cardId, fromCodex = false) {
+    state.inspectCardId = cardId;
+    state.inspectFlipped = false;
+    state.inspectFromCodex = !!fromCodex;
+    SFX.play('select');
+    render();
+    requestAnimationFrame(() => triggerShowcaseWobble());
+  },
+  closeInspect() {
+    state.inspectCardId = null;
+    state.inspectFlipped = false;
+    state.inspectFromCodex = false;
+    render();
+  },
+  toggleInspectFlip() {
+    if (state.inspectCardId == null) return;
+    state.inspectFlipped = !state.inspectFlipped;
+    SFX.play('draw');
+    const cardEl = document.querySelector('.card-inspect-card .cd.cd-holo');
+    const btnEl = $('inspectFlipBtn');
+    if (cardEl) {
+      cardEl.classList.toggle('is-flipped', state.inspectFlipped);
+      if (btnEl) {
+        btnEl.textContent = `🔄 ${state.inspectFlipped ? 'Xem mặt trước' : 'Lật mặt sau'} (F)`;
+      }
+      return;
+    }
+    render();
+  },
+  inspectStep(dir) {
+    if (state.inspectCardId == null || !state.inspectFromCodex) return;
+    const ids = getFilteredCodexCards(state.codexRank, state.codexSearch).map((c) => c.id);
+    if (ids.length <= 1) return;
+    const idx = ids.indexOf(state.inspectCardId);
+    if (idx < 0) return;
+    state.inspectCardId = ids[(idx + dir + ids.length) % ids.length];
+    state.inspectFlipped = false;
+    SFX.play('select');
+    render();
+    requestAnimationFrame(() => triggerShowcaseWobble());
+  },
+  triggerInspectShowcase() {
+    triggerShowcaseWobble();
   },
   codexFilter(rank, search) {
     state.codexRank = rank;
@@ -940,10 +1276,26 @@ document.addEventListener('keydown', (e) => {
   if (state.autoPrompt) return;
 
   if (e.key === 'Escape') {
-    if (state.modal) {
+    if (state.inspectCardId != null) {
+      window.appActions.closeInspect();
+    } else if (state.modal) {
       window.appActions.closeModal();
     } else if (state.G?.sel != null) {
       window.appActions.cancelSelect();
+    }
+    return;
+  }
+
+  if (state.inspectCardId != null) {
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      window.appActions.inspectStep(-1);
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      window.appActions.inspectStep(1);
+    } else if (e.key === 'f' || e.key === 'F') {
+      e.preventDefault();
+      window.appActions.toggleInspectFlip();
     }
     return;
   }
@@ -993,4 +1345,5 @@ document.addEventListener(
 if (new URLSearchParams(window.location.search).get('room')) {
   state.mode = 'online_menu';
 }
+initCardHolo();
 render();

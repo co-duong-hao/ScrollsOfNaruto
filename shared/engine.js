@@ -3,7 +3,8 @@ import { CARDS, HIDDEN_CLANS, CLANS, REACTIONS } from './cards.js';
 export const TEAM_NAMES = ['Phe Đỏ', 'Phe Xanh'];
 export const EDO_HP = 1e9;
 
-export const needTarget = (c) => !!(c.d || c.h || c.ms || c.rv || c.dt || c.heal);
+export const needTarget = (c) =>
+  !c.a && !!(c.d || c.h || c.ms || c.rv || c.dt || c.heal || c.koto || c.gourdMark);
 
 export function previewReaction(existingMarks, incomingEl) {
   if (!incomingEl || !Array.isArray(existingMarks) || existingMarks.length !== 1) return null;
@@ -29,11 +30,24 @@ export function calcExpectedDamage(G, actorIdx, card, targetIdx = -1) {
   const p = G?.ps?.[actorIdx];
   if (!p || !card) return { dmg: 0, isCrit: false, mult: 1 };
 
-  let mult = 1 + p.buffs.reduce((a, b) => a + b.m + (b.hy && card.s === CLANS.HYUGA ? b.hy : 0), 0);
-  if (p.edo) mult *= 0.5;
+  let mult =
+    1 +
+    p.buffs.reduce(
+      (a, b) =>
+        a +
+        (b.m || 0) +
+        (b.hy && card.s === CLANS.HYUGA ? b.hy : 0) +
+        (b.clanM && b.clanM.clan === card.s ? b.clanM.m : 0),
+      0
+    );
+  if (p.edo || p.weak) mult *= 0.5;
 
   let base = 0;
-  if (card.h) {
+  if (card.c0) {
+    const baseHp = p.hp >= EDO_HP ? 4000 : p.hp;
+    const lost = Math.max(0, baseHp - Math.max(1, Math.floor(baseHp * (1 - card.c0.lossPct / 100))));
+    base = Math.round(lost * (card.c0.dmgPct / 100));
+  } else if (card.h) {
     base = card.h.reduce((a, b) => a + b, 0);
   } else if (card.a) {
     base = card.a;
@@ -103,9 +117,15 @@ export function createPlayer(name, bot, index, uid = null) {
     bleed: 0,
     stun: 0,
     immune: 0,
+    stealth: 0,
+    koto: null,
+    gourd: null,
+    bugMark: null,
     regen: [],
     edo: 0,
     corpse: 0,
+    weak: 0,
+    puppetMaster: null,
     izm: 0,
     last: null,
     hand: [],
@@ -168,6 +188,7 @@ export function isValidTarget(G, card, targetIdx, actorIdx) {
   if (card.ally) return !q.dead;
   if (targetIdx === actorIdx) return false;
   if (card.rv) return !!(q.dead && !q.destroyed);
+  if (q.stealth > 0) return false;
   if (card.ds) return !q.destroyed;
   return !q.dead;
 }
@@ -271,7 +292,17 @@ async function directDamage(G, p, dmg, emitFloat = true, creditSource = null) {
 async function applyHit(G, source, target, dmg, card, ignoreEvasion = false, statCredit = null) {
   dmg = Math.round(dmg);
   if (target.dead) return 0;
-  if (source && source !== target) target.last = G.ps.indexOf(source);
+  if (source && source !== target) {
+    target.last = G.ps.indexOf(source);
+    if (source.gourd && G.ps[source.gourd.ownerIdx] === target) {
+      source.gourd = null;
+      if (source.immune <= 0) {
+        source.stun = Math.max(source.stun, 1);
+        addLog(G, `🏺 Hồng Hồ Lô kích hoạt! ${source.name} bị Choáng 1 vòng`);
+        pushFloat(G, source, '🏺 CHOÁNG!', 'au');
+      }
+    }
+  }
   const credit = statCredit || source;
 
   if (!ignoreEvasion) {
@@ -343,11 +374,17 @@ async function applyHit(G, source, target, dmg, card, ignoreEvasion = false, sta
     return 1;
   }
 
+  const clanDrBuff = card ? target.buffs.find((b) => b.clanDr && b.clanDr.clan === card.s) : null;
+  if (clanDrBuff) {
+    dmg = Math.round(dmg * (1 - clanDrBuff.clanDr.dr));
+  }
+
   const drBuff = target.buffs.find((b) => b.dr && target.armor > 0);
   if (drBuff) {
     dmg = Math.round(dmg * (1 - drBuff.dr));
   }
 
+  let reflected = false;
   const absorbed = Math.min(target.armor, dmg);
   if (absorbed > 0) {
     target.armor -= absorbed;
@@ -357,6 +394,15 @@ async function applyHit(G, source, target, dmg, card, ignoreEvasion = false, sta
     if (source && !source.dead && rfBuff) {
       const rfAmt = typeof rfBuff.rf === 'number' ? rfBuff.rf : 20;
       addLog(G, `🛡 Giáp của ${target.name} phản ${rfAmt} sát thương lên ${source.name}`);
+      await directDamage(G, source, rfAmt, true, target);
+      reflected = true;
+    }
+  }
+  if (!reflected && source && !source.dead) {
+    const rfAlwaysBuff = target.buffs.find((b) => b.rf && b.rfAlways);
+    if (rfAlwaysBuff) {
+      const rfAmt = typeof rfAlwaysBuff.rf === 'number' ? rfAlwaysBuff.rf : 20;
+      addLog(G, `❄ ${rfAlwaysBuff.n} của ${target.name} phản ${rfAmt} sát thương lên ${source.name}`);
       await directDamage(G, source, rfAmt, true, target);
     }
   }
@@ -445,10 +491,27 @@ export async function startTurn(G, _chained = false) {
   G.showTurn = 1;
   addLog(G, `— Lượt ${p.name} —`);
 
+  if (p.stealth > 0) p.stealth--;
+
   if (p.bleed > 0) {
     p.bleed = Math.max(0, p.bleed - 50);
     addLog(G, `🩸 ${p.name} chảy máu −50`);
     await directDamage(G, p, 50, true);
+  }
+  if (!p.dead) {
+    for (const b of p.buffs) {
+      if (b.healTurn && p.hp < EDO_HP) {
+        p.hp += b.healTurn;
+        if (p.stats) p.stats.healed += b.healTurn;
+        addLog(G, `💚 ${p.name} hồi ${b.healTurn} máu (${b.n})`);
+        pushFloat(G, p, `+${b.healTurn} ❤`, 'au');
+      }
+      if (b.maxHpDrain && !p.dead) {
+        const drain = Math.round(4000 * (b.maxHpDrain / 100));
+        addLog(G, `🩸 ${b.n}: ${p.name} mất ${drain} máu`);
+        await directDamage(G, p, drain, true);
+      }
+    }
   }
   if (p.regen.length && !p.dead && p.hp < 4000) {
     p.regen.forEach((rg) => {
@@ -474,14 +537,16 @@ export async function startTurn(G, _chained = false) {
   if (aoePets.length) {
     const foes = aliveIndices(G).filter((i) => i !== G.cur);
     for (const pet of aoePets) {
-      addLog(G, `🐾 Shukaku của ${p.name} gầm thét, tấn công cả bàn (${pet.atk} sát thương)!`);
+      const pName = pet.name || 'Shukaku';
+      addLog(G, `🐾 ${pName} của ${p.name} gầm thét, tấn công cả bàn (${pet.atk} sát thương)!`);
       for (const idx of foes) await applyHit(G, p, G.ps[idx], pet.atk, null);
     }
     if (checkWin(G)) return;
   }
 
-  if (p.pets.some((q) => q.lock)) {
-    addLog(G, `💤 ${p.name} bị khóa chủ động bởi Mộng Nhất Vĩ`);
+  const lockPet = p.pets.find((q) => q.lock);
+  if (lockPet) {
+    addLog(G, `💤 ${p.name} bị khóa chủ động bởi ${lockPet.name || 'Mộng Nhất Vĩ'}`);
     return endTurn(G, false, true);
   }
 
@@ -518,9 +583,39 @@ export async function endTurn(G, skipDraw = false, _chained = false) {
     [...new Set(G.used)].forEach((s) => {
       p.aff[s] = (p.aff[s] || 1) * 1.5;
     });
-    p.buffs.forEach((b) => b.t--);
+    const expiredBuffs = [];
+    p.buffs.forEach((b) => {
+      b.t--;
+      if (b.t <= 0) expiredBuffs.push(b);
+    });
     p.buffs = p.buffs.filter((b) => b.t > 0);
+    for (const eb of expiredBuffs) {
+      if (eb.endSp) {
+        addLog(G, `⚠ ${eb.n} hết hiệu lực: ${p.name} ${eb.endSp} tinh thần`);
+        adjustSp(G, p, eb.endSp);
+      }
+      if (eb.stackClan && (eb.stacks || 0) > 0) {
+        const boomDmg = eb.stacks * (eb.stackDmg || 100);
+        const foes = aliveIndices(G).filter((x) => x !== G.cur && (!G.teams || G.ps[x].team !== p.team));
+        addLog(G, `💥 ${eb.n} kết thúc! Nổ ${eb.stacks} điểm = ${boomDmg} sát thương lên mọi kẻ địch!`);
+        pushFloat(G, p, `💥 NỔ ${boomDmg}!`, 'rx');
+        for (const idx of foes) await applyHit(G, p, G.ps[idx], boomDmg, null);
+        if (checkWin(G)) return { events: [...G.q] };
+      }
+    }
     if (p.immune > 0) p.immune--;
+    if (p.bugMark) {
+      p.bugMark.t--;
+      if (p.bugMark.t <= 0) p.bugMark = null;
+    }
+    if (p.koto) {
+      p.koto.t--;
+      if (p.koto.t <= 0) p.koto = null;
+    }
+    if (p.gourd) {
+      p.gourd.t--;
+      if (p.gourd.t <= 0) p.gourd = null;
+    }
     p.hand = p.hand.filter((c) => {
       if (c.au) return true;
       c.age = (c.age || 0) + 1;
@@ -557,9 +652,38 @@ export async function useCard(G, handIndex, targetIdx = -1, hitList = null) {
 
   p.hand.splice(handIndex, 1);
   if (p.stats) p.stats.cardsUsed++;
-  const T = G.ps[targetIdx];
   G.used.push(c.s);
   G.q = [];
+
+  // Kotoamatsukami mind-control redirection for offensive targeted cards
+  if (p.koto && needTarget(c) && !c.ally && !c.rv && !c.heal && !c.koto && !c.gourdMark) {
+    const teammates = G.teams
+      ? aliveIndices(G).filter((x) => x !== G.cur && G.ps[x].team === p.team && G.ps[x].stealth <= 0)
+      : [];
+    const redirectOne = (orig) => {
+      if (teammates.length) {
+        return teammates[Math.floor(Math.random() * teammates.length)];
+      }
+      if (orig === p.koto.casterIdx) {
+        const others = aliveIndices(G).filter((x) => x !== G.cur && x !== p.koto.casterIdx && G.ps[x].stealth <= 0);
+        return others.length ? others[Math.floor(Math.random() * others.length)] : G.cur;
+      }
+      return orig;
+    };
+    if (c.h && Array.isArray(hitList)) {
+      hitList = hitList.map((x) => redirectOne(x));
+      targetIdx = hitList[0];
+      addLog(G, `👁 Kotoamatsukami điều khiển ${p.name} đổi mục tiêu!`);
+    } else {
+      const nextTgt = redirectOne(targetIdx);
+      if (nextTgt !== targetIdx) {
+        targetIdx = nextTgt;
+        addLog(G, `👁 Kotoamatsukami ép ${p.name} tấn công ${G.ps[targetIdx].name}!`);
+      }
+    }
+  }
+
+  const T = G.ps[targetIdx];
 
   G.q.push({
     k: 'cast',
@@ -570,13 +694,60 @@ export async function useCard(G, handIndex, targetIdx = -1, hitList = null) {
     el: c.el || null,
     srcIdx: G.cur,
     who: p.name,
-    sub: c.a || c.split || c.splitSelf ? 'lên cả bàn' : c.h ? '' : T && needTarget(c) ? `→ ${T.name}` : '',
+    sub:
+      c.a || c.split || c.splitSelf || c.c0
+        ? 'lên cả bàn'
+        : c.h || c.gourdMark
+          ? ''
+          : T && needTarget(c)
+            ? `→ ${T.name}`
+            : '',
   });
-  addLog(G, `${p.name} dùng ${c.n}${c.h ? '' : T && !c.a && needTarget(c) ? ` → ${T.name}` : ''}`);
+  addLog(
+    G,
+    `${p.name} dùng ${c.n}${c.h || c.gourdMark ? '' : T && !c.a && needTarget(c) ? ` → ${T.name}` : ''}`
+  );
+
+  // Action-triggered debuff: Trùng Bám Đuổi
+  if (p.bugMark && p.bugMark.t > 0 && !p.dead) {
+    const srcP = p.bugMark.srcIdx != null ? G.ps[p.bugMark.srcIdx] : null;
+    addLog(G, `🐛 Trùng Bám Đuổi cắn ${p.name} −${p.bugMark.dmg} máu`);
+    await directDamage(G, p, p.bugMark.dmg, true, srcP);
+    if (p.dead) {
+      const events = [...G.q];
+      if (!checkWin(G)) await endTurn(G);
+      return { ok: true, events };
+    }
+  }
+
+  // Active clan-synergy buff triggers (Thủy Giao Đạn, Sa Mạc Bảo Hộ, Đất Sét Nổ)
+  for (const b of p.buffs) {
+    if (b.clanHeal && c.s === b.clanHeal.clan && p.hp < EDO_HP) {
+      p.hp += b.clanHeal.amt;
+      if (p.stats) p.stats.healed += b.clanHeal.amt;
+      addLog(G, `💚 ${b.n}: ${p.name} hồi ${b.clanHeal.amt} máu`);
+      pushFloat(G, p, `+${b.clanHeal.amt} ❤`, 'au');
+    }
+    if (b.clanArmor && c.s === b.clanArmor.clan) {
+      p.armor += b.clanArmor.amt;
+      addLog(G, `🛡 ${b.n}: ${p.name} nhận +${b.clanArmor.amt} giáp`);
+      pushFloat(G, p, `🛡 +${b.clanArmor.amt}`, 'ar');
+    }
+    if (b.stackClan && c.s === b.stackClan) {
+      b.stacks = (b.stacks || 0) + 1;
+      addLog(G, `💣 ${b.n}: tích điểm (×${b.stacks})`);
+      pushFloat(G, p, `💣 ×${b.stacks}`, 'au');
+    }
+  }
 
   if (c.hpl && p.hp < EDO_HP) p.hp = Math.max(1, Math.floor(p.hp * (1 - c.hpl / 100)));
   if (c.sf) adjustSp(G, p, c.sf);
   if (c.dg) p.dodge += c.dg;
+  if (c.stealth) {
+    p.stealth = Math.max(p.stealth, c.stealth);
+    addLog(G, `🌫 ${p.name} ẩn thân ${c.stealth} lượt`);
+    pushFloat(G, p, '🌫 ẨN THÂN', 'au');
+  }
   if (c.ar) {
     p.armor += c.ar;
     if (c.at) p.armorT = c.at;
@@ -598,6 +769,9 @@ export async function useCard(G, handIndex, targetIdx = -1, hitList = null) {
     p.marks = [];
     p.stun = 0;
     p.izm = 0;
+    p.bugMark = null;
+    p.koto = null;
+    p.gourd = null;
     addLog(G, `✨ ${p.name} giải toàn bộ hiệu ứng xấu`);
   }
   if (c.immune) p.immune = Math.max(p.immune, c.immune);
@@ -611,12 +785,13 @@ export async function useCard(G, handIndex, targetIdx = -1, hitList = null) {
         atk: c.pet[2],
         aoeTurn: c.pet[3] || 0,
         lock: c.pet[4] || 0,
+        name: c.pet[5] || (c.pet[3] ? 'Shukaku' : ''),
       });
       if (p.pets.length > 3) p.pets.shift();
     }
   }
   if (c.b) {
-    p.buffs.push({ n: c.n, ...c.b, t: c.b.t || 99 });
+    p.buffs.push({ n: c.n, ...c.b, stacks: c.b.stackClan ? 0 : undefined, t: c.b.t || 99 });
     if (p.buffs.length > 2) p.buffs.shift();
   }
   if (c.gv === 'm') {
@@ -630,18 +805,46 @@ export async function useCard(G, handIndex, targetIdx = -1, hitList = null) {
     }
   }
   if (c.kpa) G.ps.forEach((q) => (q.pets = []));
+  if (c.koto && T && !T.dead) {
+    if (T.immune <= 0) {
+      T.koto = { t: c.koto, casterIdx: G.cur };
+      addLog(G, `👁 ${T.name} trúng Kotoamatsukami (${c.koto} vòng)!`);
+      pushFloat(G, T, '👁 BỊ ĐIỀU KHIỂN!', 'au');
+    } else {
+      addLog(G, `🕊 ${T.name} miễn nhiễm Kotoamatsukami`);
+    }
+  }
+  if (c.gourdMark && T && !T.dead) {
+    // Secret trap mark: no log or floating text revealing the target
+    T.gourd = { ownerIdx: G.cur, t: 1 };
+  }
   if (c.rv && T) {
     T.dead = 0;
     if (c.edo) {
       T.hp = EDO_HP;
       T.edo = 1;
       T.corpse = 1;
+      T.weak = 0;
+      T.puppetMaster = null;
       addLog(G, `🧟 ${T.name} được Uế Thổ Chuyển Sinh (máu ∞, -50% sát thương)`);
       pushFloat(G, T, '🧟 UẾ THỔ!', 'au');
+    } else if (c.puppetRevive) {
+      T.hp = 500;
+      T.edo = 0;
+      T.corpse = 1;
+      T.weak = 1;
+      T.puppetMaster = p.name;
+      if (G.teams) T.team = p.team;
+      T.bot = p.bot;
+      if (p.uid) T.uid = p.uid;
+      addLog(G, `🎭 ${p.name} biến ${T.name} thành con rối (500 máu, -50% sát thương)`);
+      pushFloat(G, T, '🎭 RỐI!', 'au');
     } else {
       T.hp = 1000;
       T.edo = 0;
       T.corpse = 0;
+      T.weak = 0;
+      T.puppetMaster = null;
       addLog(G, `♻ ${T.name} được hồi sinh với 1000 máu`);
       pushFloat(G, T, '♻ HỒI SINH!', 'au');
     }
@@ -658,12 +861,29 @@ export async function useCard(G, handIndex, targetIdx = -1, hitList = null) {
     addLog(G, `🔥 Thi thể ${T.name} bị tiêu diệt vĩnh viễn`);
   }
 
-  let mult = 1 + p.buffs.reduce((a, b) => a + b.m + (b.hy && c.s === CLANS.HYUGA ? b.hy : 0), 0);
-  if (p.edo) mult *= 0.5;
+  let mult =
+    1 +
+    p.buffs.reduce(
+      (a, b) =>
+        a +
+        (b.m || 0) +
+        (b.hy && c.s === CLANS.HYUGA ? b.hy : 0) +
+        (b.clanM && b.clanM.clan === c.s ? b.clanM.m : 0),
+      0
+    );
+  if (p.edo || p.weak) mult *= 0.5;
 
   const landed = {};
   let plan = [];
-  if (c.h) {
+  if (c.c0) {
+    const baseHp = p.hp >= EDO_HP ? 4000 : p.hp;
+    const lost = Math.max(0, baseHp - Math.max(1, Math.floor(baseHp * (1 - c.c0.lossPct / 100))));
+    if (p.hp < EDO_HP) p.hp -= lost;
+    const c0Dmg = Math.round(lost * (c.c0.dmgPct / 100));
+    addLog(G, `💥 ${p.name} tự bạo mất ${lost} máu, gây ${c0Dmg} sát thương diện rộng!`);
+    const foes = aliveIndices(G).filter((x) => x !== G.cur && (!G.teams || G.ps[x].team !== p.team));
+    plan = foes.map((x) => [x, c0Dmg]);
+  } else if (c.h) {
     plan = hitList.map((x, k) => [x, c.h[k]]);
   } else if (c.a) {
     plan = aliveIndices(G)
@@ -677,13 +897,15 @@ export async function useCard(G, handIndex, targetIdx = -1, hitList = null) {
     const all = aliveIndices(G);
     const each = all.length ? Math.round(c.splitSelf / all.length) : 0;
     plan = all.map((x) => [x, each]);
-  } else if (needTarget(c) && !c.rv && !c.heal) {
+  } else if (needTarget(c) && !c.rv && !c.heal && !c.koto && !c.gourdMark) {
     plan = [[targetIdx, c.d || 0]];
   }
 
+  let firstAttackedTarget = null;
   for (const [x, baseDmg] of plan) {
     const t = G.ps[x];
     if (!t || t.dead) continue;
+    if (!firstAttackedTarget && x !== G.cur && baseDmg > 0) firstAttackedTarget = t;
     if (!baseDmg) {
       landed[x] = 1;
       continue;
@@ -702,15 +924,36 @@ export async function useCard(G, handIndex, targetIdx = -1, hitList = null) {
     }
   }
 
+  // Extra attack hit from active buff (e.g., Ma Kính Băng Tinh: +100 dmg + thủy mark once per turn)
+  if (firstAttackedTarget && !firstAttackedTarget.dead) {
+    for (const b of p.buffs) {
+      if (b.extraHit && b._usedTurn !== G.turnCount) {
+        b._usedTurn = G.turnCount;
+        addLog(G, `❄ ${b.n} gây thêm ${b.extraHit} sát thương phụ lên ${firstAttackedTarget.name}`);
+        const extraLanded = await applyHit(G, p, firstAttackedTarget, b.extraHit, null);
+        if (extraLanded && b.extraEl && !firstAttackedTarget.dead) {
+          await applyMark(G, firstAttackedTarget, b.extraEl, p);
+        }
+      }
+    }
+  }
+
+  let hitTargetCount = 0;
   for (const k of Object.keys(landed)) {
     const t = G.ps[k];
     if (!t || t.dead || !landed[k]) continue;
+    if (Number(k) !== G.cur) hitTargetCount++;
     if (c.el) await applyMark(G, t, c.el, p);
     if (c.st && t.immune <= 0) t.stun = Math.max(t.stun, c.st);
     if (c.ms) adjustSp(G, t, -c.ms);
     if (c.ma) adjustSp(G, t, -c.ma);
     if (c.dt) t.dodge = Math.max(0, t.dodge - c.dt);
     if (c.bl && t.immune <= 0) t.bleed += c.bl;
+    if (c.bugMark && t.immune <= 0) {
+      t.bugMark = { dmg: c.bugMark.dmg, t: c.bugMark.t, srcIdx: G.cur };
+      addLog(G, `🐛 ${t.name} bị Trùng Bám Đuổi đánh dấu (${c.bugMark.t} lượt)`);
+      pushFloat(G, t, '🐛 TRÙNG BÁM!', 'au');
+    }
     if (c.kp) t.pets = [];
     if (c.rd && t.hand.length) {
       const removed = t.hand.splice(Math.floor(Math.random() * t.hand.length), 1)[0];
@@ -721,6 +964,14 @@ export async function useCard(G, handIndex, targetIdx = -1, hitList = null) {
       p.hand.push({ ...stolen, age: 0 });
       addLog(G, `🫳 Cướp 1 thẻ từ ${t.name}`);
     }
+  }
+
+  if (c.healPerHit && hitTargetCount > 0 && !p.dead && p.hp < EDO_HP) {
+    const healAmt = hitTargetCount * c.healPerHit;
+    p.hp += healAmt;
+    if (p.stats) p.stats.healed += healAmt;
+    addLog(G, `💚 ${c.n}: ${p.name} hồi ${healAmt} máu (${hitTargetCount} mục tiêu trúng đòn)`);
+    pushFloat(G, p, `+${healAmt} ❤`, 'au');
   }
 
   const events = [...G.q];
@@ -735,7 +986,10 @@ export function pickBotAction(G) {
   const p = G.ps[G.cur];
   if (p.pets.some((q) => q.lock)) return { type: 'end' };
 
-  const isEnemy = (x) => x !== G.cur && (!G.teams || G.ps[x].team !== p.team);
+  const isEnemy = (x) =>
+    x !== G.cur &&
+    G.ps[x].stealth <= 0 &&
+    (!G.teams || (p.koto ? G.ps[x].team === p.team : G.ps[x].team !== p.team));
   const allTargets = aliveIndices(G).filter(isEnemy);
   const targets = allTargets.filter((x) => !G.ps[x].corpse);
   const hasCorpse = allTargets.some((x) => G.ps[x].corpse);
@@ -763,18 +1017,25 @@ export function pickBotAction(G) {
   const options = [];
   p.hand.forEach((c, i) => {
     if (c.au || (c.hpl && p.hp < 2000)) return;
+    if (c.c0 && p.hp < 1800) return;
     if ((c.heal || c.healSelf) && p.hp >= 3200) return;
 
     let sc =
       (c.d || 0) +
       (c.a || 0) * targets.length +
+      (c.c0 ? Math.min(p.hp, 4000) * 0.55 : 0) +
       (c.split || 0) +
       (c.splitSelf ? c.splitSelf * 0.4 : 0) +
       (c.h || []).reduce((a, b) => a + b, 0) +
       (c.ar || 0) * 0.8 +
       (c.heal || c.healSelf || 0) * (p.hp < 2500 ? 0.9 : 0.2) +
+      (c.healPerHit ? c.healPerHit * targets.length * 0.5 : 0) +
       (c.pet ? c.pet[0] * c.pet[1] * 0.6 : 0) +
       (c.b ? 150 : 0) +
+      (c.stealth ? 130 : 0) +
+      (c.koto ? 200 : 0) +
+      (c.gourdMark ? 110 : 0) +
+      (c.bugMark ? 90 : 0) +
       (c.dg || 0) * 0.5 +
       (c.ms || 0) * 30 +
       (c.st ? 90 : 0) +
@@ -858,9 +1119,14 @@ export function sanitizeStateFor(G, viewerUid) {
         bleed: p.bleed,
         stun: p.stun,
         immune: p.immune,
+        stealth: p.stealth,
+        koto: p.koto,
+        bugMark: p.bugMark,
         regen: p.regen,
         edo: p.edo,
         corpse: p.corpse,
+        weak: p.weak,
+        puppetMaster: p.puppetMaster,
         dead: p.dead,
         destroyed: p.destroyed,
         destiny: isMe ? p.destiny : null,

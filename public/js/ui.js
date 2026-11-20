@@ -32,7 +32,54 @@ export const EL_BADGE = {
   phong: '🌪 Phong',
 };
 
-export function renderCard(c, i, { selected = false, dim = false, interactive = true, hotkey = null } = {}) {
+export function getCardFoilInfo(c) {
+  if (c.r === 'S' && (c.s === 'mangakyo' || c.s === 'rinnegan')) {
+    return { rarity: 'rare rainbow', label: '🌈 Huyền Thoại Rainbow Holo', pillCls: 'foil-rainbow' };
+  }
+  if (c.r === 'S') {
+    return { rarity: 'rare secret', label: '✨ Bí Truyền Gold Secret', pillCls: 'foil-S' };
+  }
+  if (c.r === 'A') {
+    return { rarity: 'radiant rare', label: '💎 Radiant Diamond Holo', pillCls: 'foil-A' };
+  }
+  if (c.r === 'B') {
+    return { rarity: 'rare holo', label: '🌀 Regular Scanline Holo', pillCls: 'foil-B' };
+  }
+  return { rarity: 'basic', label: '📜 Glossy Foil', pillCls: 'foil-C' };
+}
+
+function renderCardBackHtml() {
+  return `
+    <div class="cd-back">
+      <div class="cd-back-ring">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <circle cx="50" cy="50" r="42" fill="none" stroke="#fde68a" stroke-width="3" stroke-dasharray="6 4"/>
+          <path d="M50 18 C72 18 82 36 74 54 C67 70 48 76 34 66 C22 57 22 40 34 32 C44 26 56 32 58 43 C60 52 51 58 44 54 C39 51 41 44 47 45" fill="none" stroke="#fde68a" stroke-width="5" stroke-linecap="round"/>
+          <circle cx="50" cy="50" r="4.5" fill="#f59e0b"/>
+        </svg>
+      </div>
+      <div class="cd-back-title">Scrolls of Naruto</div>
+      <div class="cd-back-sub">Shinobi Scroll</div>
+    </div>`;
+}
+
+export function renderCard(
+  c,
+  i,
+  {
+    selected = false,
+    dim = false,
+    interactive = true,
+    hotkey = null,
+    inspectable = false,
+    holoMode = null,
+    includeBack = false,
+    flipped = false,
+    isInspector = false,
+  } = {}
+) {
+  const foil = getCardFoilInfo(c);
+  const mode = holoMode || (isInspector ? 'inspector' : interactive ? 'hand' : 'codex');
   const elTag = c.el ? `<span class="el-tag el-${c.el}">${EL_BADGE[c.el]}</span>` : '';
   const rem = 3 - (c.age || 0);
   const ageTag =
@@ -40,20 +87,48 @@ export function renderCard(c, i, { selected = false, dim = false, interactive = 
       ? `<span class="age-tag ${rem <= 1 ? 'age-warn' : ''}" title="Còn ${rem} lượt trước khi tự hủy">⏳ ${rem}</span>`
       : '';
   const hkTag = interactive && hotkey ? `<span class="hk-tag" title="Phím tắt ${hotkey}">${hotkey}</span>` : '';
+  const clickAttr = interactive
+    ? `onclick="appActions.pickCard(${i})" oncontextmenu="event.preventDefault();appActions.inspectCard(${c.id}, false)"`
+    : inspectable
+      ? `onclick="appActions.inspectCard(${c.id}, true)"`
+      : isInspector
+        ? `onclick="appActions.toggleInspectFlip()"`
+        : '';
+  const zoomBtn = interactive
+    ? `<button type="button" class="cd-zoom-btn" title="Phóng to & xoay thẻ 3D (hoặc chuột phải)" onclick="event.stopPropagation();appActions.inspectCard(${c.id}, false)">🔍</button>`
+    : '';
+
   return `
-    <div class="cd ${c.r} ${c.au ? 'au' : ''} ${selected ? 'sel' : ''} ${dim ? 'dim' : ''}"
+    <div class="cd cd-holo ${c.r} ${c.au ? 'au' : ''} ${selected ? 'sel' : ''} ${dim ? 'dim' : ''} ${
+    isInspector ? 'is-inspector' : ''
+  } ${flipped ? 'is-flipped' : ''}"
          data-card-idx="${i}"
-         ${interactive ? `onclick="appActions.pickCard(${i})"` : ''}
+         data-card-id="${c.id}"
+         data-rarity="${foil.rarity}"
+         data-el="${c.el || ''}"
+         data-clan="${esc(c.s)}"
+         data-holo-mode="${mode}"
+         ${clickAttr}
          title="${esc(describeCard(c))}">
-      <div class="cd-top">
-        <div class="cd-left-tags"><span class="rk rk-${c.r}">${c.r}</span>${hkTag}</div>
-        <div class="cd-badges">${ageTag}${elTag}</div>
+      <div class="cd-rotator">
+        <div class="cd-flipper">
+          <div class="cd-front">
+            <div class="cd-top">
+              <div class="cd-left-tags"><span class="rk rk-${c.r}">${c.r}</span>${hkTag}</div>
+              <div class="cd-badges">${ageTag}${elTag}</div>
+            </div>
+            ${cardArtSvg(c)}
+            <b class="cd-name">${esc(c.n)}</b>
+            <small class="cd-meta">${TYPE_LABELS[c.t] || c.t} · ${esc(c.s)}</small>
+            <div class="cd-desc">${esc(describeCard(c))}</div>
+            ${c.au ? '<div class="cd-au">🛡 Tự kích hoạt</div>' : ''}
+            ${zoomBtn}
+            <div class="cd__shine"></div>
+            <div class="cd__glare"></div>
+          </div>
+          ${includeBack ? renderCardBackHtml() : ''}
+        </div>
       </div>
-      ${cardArtSvg(c)}
-      <b class="cd-name">${esc(c.n)}</b>
-      <small class="cd-meta">${TYPE_LABELS[c.t] || c.t} · ${esc(c.s)}</small>
-      <div class="cd-desc">${esc(describeCard(c))}</div>
-      ${c.au ? '<div class="cd-au">🛡 Tự kích hoạt</div>' : ''}
     </div>`;
 }
 
@@ -62,16 +137,20 @@ function renderChips(p, showSecret) {
     ...p.marks.map((e) => [`ấn ${e}`, 'Ấn nguyên tố: thêm 1 ấn nữa sẽ gây phản ứng']),
     p.bleed ? [`🩸 chảy máu ${p.bleed > 1e9 ? '∞' : p.bleed}`, 'Mất 50 máu đầu mỗi lượt, bỏ qua giáp và pet'] : null,
     p.stun ? ['💫 choáng', 'Mất lượt kế tiếp, không rút bài, vẫn chịu sát thương'] : null,
+    p.bugMark ? [`🐛 trùng bám -${p.bugMark.dmg} · ${p.bugMark.t}L`, 'Mỗi lần dùng thẻ sẽ nhận thêm sát thương trực tiếp'] : null,
+    p.koto ? [`👁 koto · ${p.koto.t}L`, 'Bị Kotoamatsukami điều khiển tấn công đồng đội'] : null,
   ].filter(Boolean);
 
   const auCount = showSecret ? p.hand.filter((c) => c.au).length : 0;
   const good = [
     ...p.buffs.map((b) => [
-      `✦ ${b.n}${b.m ? ' +' + Math.round(b.m * 100) + '%' : ''}${b.t < 90 ? ` · ${b.t}L` : ''}`,
+      `✦ ${b.n}${b.m ? ' +' + Math.round(b.m * 100) + '%' : ''}${b.stacks ? ` ×${b.stacks}` : ''}${b.t < 90 ? ` · ${b.t}L` : ''}`,
       'Trạng thái chủ động',
     ]),
+    p.stealth ? [`🌫 ẩn thân · ${p.stealth}L`, 'Không thể bị chọn làm mục tiêu đơn'] : null,
     p.immune ? [`🕊 miễn nhiễm · ${p.immune}L`, 'Miễn nhiễm hiệu ứng xấu'] : null,
     p.edo ? ['🧟 Uế Thổ (-50% dmg)', 'Thi thể bất tử, có thể bị Kim Sa Ấn tiêu diệt'] : null,
+    p.puppetMaster ? [`🎭 Rối (${p.puppetMaster})`, 'Con rối 500 máu (-50% dmg), có thể bị Kim Sa Ấn tiêu diệt'] : null,
     p.armor ? [`🛡 giáp ${p.armor}${p.armorT ? ` · ${p.armorT}L` : ''}`, 'Giáp chặn sát thương sau khi qua pet'] : null,
     showSecret && p.dodge !== null ? [`💨 né ${p.dodge}`, 'Điểm né ẩn: dưới 100 là % né, né xong trừ 100'] : null,
     showSecret && auCount ? [`👁 canh phòng ×${auCount}`, 'Thẻ tự kích hoạt đang trên tay'] : null,
@@ -129,7 +208,15 @@ export function renderSeat(G, p, i, cur, showSecret, isMe, flList = []) {
     if (selCard.heal) {
       badges.push(`<span class="tg-badge tg-heal">💚 +${selCard.heal} máu</span>`);
     } else if (selCard.rv) {
-      badges.push(`<span class="tg-badge tg-heal">${selCard.edo ? '🧟 Uế Thổ (∞)' : '♻ Hồi sinh 1000'}</span>`);
+      badges.push(
+        `<span class="tg-badge tg-heal">${
+          selCard.edo ? '🧟 Uế Thổ (∞)' : selCard.puppetRevive ? '🎭 Biến thành rối (500)' : '♻ Hồi sinh 1000'
+        }</span>`
+      );
+    } else if (selCard.koto) {
+      badges.push(`<span class="tg-badge tg-rx">👁 Điều khiển ${selCard.koto} vòng</span>`);
+    } else if (selCard.gourdMark) {
+      badges.push(`<span class="tg-badge tg-break">🏺 Đánh dấu bí mật</span>`);
     } else {
       const est = calcExpectedDamage(G, G.cur, selCard, i);
       if (est.dmg > 0) {
@@ -324,15 +411,19 @@ export function renderAutoPromptModal(prompt) {
     </div>`;
 }
 
-export function renderCodexModal(filterRank = 'ALL', search = '') {
+export function getFilteredCodexCards(filterRank = 'ALL', search = '') {
   const q = search.trim().toLowerCase();
-  const list = CARDS.filter((c) => {
+  return CARDS.filter((c) => {
     if (filterRank !== 'ALL' && c.r !== filterRank) return false;
     if (q && !c.n.toLowerCase().includes(q) && !c.s.toLowerCase().includes(q) && !(c.el || '').includes(q)) {
       return false;
     }
     return true;
   });
+}
+
+export function renderCodexModal(filterRank = 'ALL', search = '') {
+  const list = getFilteredCodexCards(filterRank, search);
 
   return `
     <div class="modal" onclick="if(event.target===this)appActions.closeModal()">
@@ -355,8 +446,73 @@ export function renderCodexModal(filterRank = 'ALL', search = '') {
               .join('')}
           </div>
         </div>
+        <p class="codex-hint">✨ Di chuột lên thẻ để xem hiệu ứng 3D Holo theo cấp độ · Nhấn vào thẻ để phóng to & lật xem mặt sau.</p>
         <div class="codex-grid">
-          ${list.map((c, i) => renderCard(c, i, { interactive: false })).join('')}
+          ${list.map((c, i) => renderCard(c, i, { interactive: false, inspectable: true, holoMode: 'codex' })).join('')}
+        </div>
+      </div>
+    </div>`;
+}
+
+export function renderCardInspectModal(cardId, { flipped = false, listIds = null } = {}) {
+  const c = CARDS.find((x) => x.id === cardId);
+  if (!c) return '';
+  const foil = getCardFoilInfo(c);
+  const idx = Array.isArray(listIds) ? listIds.indexOf(cardId) : -1;
+  const hasNav = Array.isArray(listIds) && listIds.length > 1 && idx >= 0;
+  const isHiddenClan = c.s === 'mangakyo' || c.s === 'rinnegan';
+
+  return `
+    <div class="card-inspect-overlay" onclick="if(event.target===this)appActions.closeInspect()">
+      <div class="card-inspect-dialog">
+        <div class="card-inspect-stage">
+          ${
+            hasNav
+              ? `<button class="inspect-nav" title="Thẻ trước (←)" onclick="appActions.inspectStep(-1)">‹</button>`
+              : ''
+          }
+          <div class="card-inspect-card">
+            ${renderCard(c, 0, {
+              interactive: false,
+              inspectable: false,
+              holoMode: 'inspector',
+              includeBack: true,
+              flipped,
+              isInspector: true,
+            })}
+          </div>
+          ${
+            hasNav
+              ? `<button class="inspect-nav" title="Thẻ sau (→)" onclick="appActions.inspectStep(1)">›</button>`
+              : ''
+          }
+        </div>
+        <div class="card-inspect-info">
+          <span class="inspect-foil-pill ${foil.pillCls}">${foil.label}</span>
+          <h3>${esc(c.n)}</h3>
+          <div class="inspect-meta-list">
+            <div><span>Cấp độ</span><b>Cấp ${c.r}</b></div>
+            <div><span>Loại thẻ</span><b>${esc(TYPE_LABELS[c.t] || c.t)}</b></div>
+            <div><span>Hệ phái / Tộc</span><b>${esc(c.s)}</b></div>
+            <div><span>Nguyên tố</span><b>${c.el ? EL_BADGE[c.el] : 'Không nguyên tố'}</b></div>
+            <div><span>Nguồn rút</span><b>${
+              isHiddenClan && c.n !== 'rinnengan'
+                ? c.s === 'mangakyo'
+                  ? 'Qua Mangakyo Sharingan'
+                  : 'Qua Rinnengan'
+                : 'Rút trực tiếp từ bộ bài'
+            }</b></div>
+            ${hasNav ? `<div><span>Vị trí</span><b>${idx + 1} / ${listIds.length}</b></div>` : ''}
+          </div>
+          <div class="inspect-desc-box">${esc(describeCard(c))}</div>
+          <div class="inspect-actions">
+            <button id="inspectFlipBtn" onclick="appActions.toggleInspectFlip()">🔄 ${flipped ? 'Xem mặt trước' : 'Lật mặt sau'} (F)</button>
+            <button onclick="appActions.triggerInspectShowcase()">✨ Tự nghiêng</button>
+            <button class="go" onclick="appActions.closeInspect()">✕ Đóng</button>
+          </div>
+          <p class="inspect-tip">Di chuột hoặc vuốt lên lá bài để ngắm ánh sáng 3D · Phím <kbd>F</kbd> lật bài${
+            hasNav ? ' · <kbd>←</kbd>/<kbd>→</kbd> chuyển thẻ' : ''
+          } · <kbd>Esc</kbd> đóng</p>
         </div>
       </div>
     </div>`;
