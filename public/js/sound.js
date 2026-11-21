@@ -1,10 +1,34 @@
+const SFX_CLIPS = {
+  genjutsu: '/assets/sfx/genjutsu.mp3',
+};
+
 class SoundEngine {
   constructor() {
     this.ctx = null;
     this.master = null;
+    this.clipCache = new Map();
     this.muted = localStorage.getItem('son_muted') === '1';
     const savedVol = Number(localStorage.getItem('son_sfx_vol'));
     this.volume = Number.isFinite(savedVol) && savedVol >= 0 && savedVol <= 100 ? savedVol : 35;
+  }
+
+  getClipVolume() {
+    if (this.muted || this.volume <= 0) return 0;
+    return Math.min(1, Math.pow(this.volume / 100, 1.55));
+  }
+
+  playClip(url) {
+    const vol = this.getClipVolume();
+    if (vol <= 0 || typeof Audio === 'undefined') return;
+    let base = this.clipCache.get(url);
+    if (!base) {
+      base = new Audio(url);
+      base.preload = 'auto';
+      this.clipCache.set(url, base);
+    }
+    const inst = base.cloneNode();
+    inst.volume = vol;
+    inst.play().catch(() => {});
   }
 
   getEffectiveGain() {
@@ -98,7 +122,11 @@ class SoundEngine {
   }
 
   play(name) {
-    if (this.muted) return;
+    if (this.muted || this.volume <= 0) return;
+    if (SFX_CLIPS[name]) {
+      this.playClip(SFX_CLIPS[name]);
+      return;
+    }
     switch (name) {
       case 'select':
         this.tone(520, 0.06, 'triangle', 0.08, 0, 660);

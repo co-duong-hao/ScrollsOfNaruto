@@ -321,11 +321,13 @@ function playFxEvents(events, onDone) {
   setTimeout(() => {
     state.cast = null;
     state.fl = fl;
+    const customSfx = [...new Set(fl.map((e) => e.sfx).filter(Boolean))];
+    customSfx.forEach((name) => SFX.play(name));
     if (fl.some((e) => e.c === 'ko')) SFX.play('ko');
-    else if (fl.some((e) => e.c === 'hp')) SFX.play('hit');
-    else if (fl.some((e) => e.c === 'dg')) SFX.play('dodge');
-    else if (fl.some((e) => e.c === 'ar')) SFX.play('armor');
-    else if (fl.some((e) => e.c === 'pt')) SFX.play('pet');
+    else if (!customSfx.length && fl.some((e) => e.c === 'hp')) SFX.play('hit');
+    else if (!customSfx.length && fl.some((e) => e.c === 'dg')) SFX.play('dodge');
+    else if (!customSfx.length && fl.some((e) => e.c === 'ar')) SFX.play('armor');
+    else if (!customSfx.length && fl.some((e) => e.c === 'pt')) SFX.play('pet');
     if (fl.some((e) => e.c === 'rx')) SFX.play('reaction');
     render();
     VFX.trigger(document.querySelector('.tb'), null, fl);

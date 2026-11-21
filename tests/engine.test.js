@@ -489,3 +489,19 @@ test('Kotoamatsukami redirects offensive attack onto teammate in team mode', asy
   assert.equal(G.ps[0].hp, 4000);
   assert.equal(G.ps[3].hp, 3800);
 });
+
+test('Bẫy Ảo Thuật emits genjutsu sfx, reflects 100% damage and drains 1 SP', async () => {
+  const G = await createGame([
+    { name: 'Attacker', bot: false },
+    { name: 'Defender', bot: false },
+  ]);
+  G.ps[1].dodge = 0;
+  G.ps[1].hand = [{ ...CARDS.find((c) => c.n === 'bẫy ảo thuật'), age: 0 }];
+  G.ps[0].hand = [{ ...CARDS.find((c) => c.n === 'rasengan'), age: 0 }];
+  const res = await useCard(G, 0, 1);
+  assert.equal(res.ok, true);
+  assert.equal(G.ps[1].hp, 4000);
+  assert.equal(G.ps[0].hp, 3800);
+  assert.equal(G.ps[0].sp, 9);
+  assert.ok(res.events.some((e) => e.sfx === 'genjutsu'));
+});

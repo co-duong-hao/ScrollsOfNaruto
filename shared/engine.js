@@ -214,8 +214,10 @@ export function drawCard(p) {
   return fallback;
 }
 
-function pushFloat(G, targetPlayer, tx, cls) {
-  G.q.push({ t: G.ps.indexOf(targetPlayer), tx, c: cls });
+function pushFloat(G, targetPlayer, tx, cls, sfx = null) {
+  const ev = { t: G.ps.indexOf(targetPlayer), tx, c: cls };
+  if (sfx) ev.sfx = sfx;
+  G.q.push(ev);
 }
 
 function addLog(G, msg) {
@@ -325,7 +327,7 @@ async function applyHit(G, source, target, dmg, card, ignoreEvasion = false, sta
       if (idx >= 0) target.hand.splice(idx, 1);
       if (x.au !== 'izm') {
         addLog(G, `🛡 ${target.name} kích hoạt ${x.n}`);
-        pushFloat(G, target, `🛡 ${x.n}!`, 'au');
+        pushFloat(G, target, `🛡 ${x.n}!`, 'au', x.au === 'trap' ? 'genjutsu' : null);
       }
       if (x.au === 'kl' && card && card.t === 'a') target.hand.push({ ...card, age: 0 });
       if (x.au === 'kr') target.armor += 150;
