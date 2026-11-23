@@ -1,10 +1,19 @@
-import { CARDS, describeCard, TYPE_LABELS, REACTIONS } from '/shared/cards.js';
+import {
+  CARDS,
+  describeCard,
+  TYPE_LABELS,
+  REACTIONS,
+  getCardTitle,
+  isSameJpViName,
+  normalizeSearchText,
+} from '/shared/cards.js';
 import {
   isValidTarget,
   TEAM_NAMES,
   EDO_HP,
   previewReaction,
   calcExpectedDamage,
+  totalArmor,
 } from '/shared/engine.js';
 import { cardArtSvg } from './cardArt.js';
 
@@ -26,26 +35,79 @@ export const RCOL = {
 };
 
 export const EL_BADGE = {
-  hỏa: '🔥 Hỏa',
-  thủy: '💧 Thủy',
-  lôi: '⚡ Lôi',
-  phong: '🌪 Phong',
+  hỏa: 'Hỏa',
+  thủy: 'Thủy',
+  lôi: 'Lôi',
+  phong: 'Phong',
 };
+
+export const KONOHA_CREST_SVG = `<svg class="konoha-crest" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <path d="M5 24.5 L12 24.5 C10.5 21 10.8 14.5 16.5 11.2 C21.8 8.2 28.5 11.2 28.8 17.5 C29.1 22.8 24.5 26.8 19.2 26.2 C15 25.7 13 22 14.2 18.2 C15.2 15.2 18.6 14 21.4 15.5 C23.6 16.7 24.2 19.6 22.5 21.5 C21 23.1 18.4 22.8 17.8 20.8 C17.3 19.2 18.6 18 19.8 18.6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M23.5 11 L29.5 6.5 L26.5 14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>`;
+
+const AKATSUKI_CLOUD_SVG = `<svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <path d="M9 23.5 C6 23.5 4.5 21 5.2 18.5 C5.8 16.2 8 15.2 10 15.8 C10.8 12.2 14.4 10 18.2 11 C20.4 11.5 22 13 22.8 14.8 C24.8 13.8 27.6 14.4 29.2 16.3 C31.2 18.7 30.2 23.5 26.5 23.5 Z" fill="#dc2626" stroke="#fef2f2" stroke-width="1.6" stroke-linejoin="round"/>
+  <path d="M13.5 19.2 C14.5 17.6 16.8 17.6 17.6 19.2 C18.2 20.4 17 21.6 15.8 21.2" stroke="#fef2f2" stroke-width="1.4" stroke-linecap="round"/>
+  <path d="M22.5 18.2 C23.8 17.2 25.8 17.8 26 19.4" stroke="#fef2f2" stroke-width="1.4" stroke-linecap="round"/>
+</svg>`;
+
+export const ARENA_SEAL_SVG = `<svg class="arena-seal" viewBox="0 0 320 320" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <circle cx="160" cy="160" r="148" stroke="currentColor" stroke-width="2.2" stroke-dasharray="14 8"/>
+  <circle cx="160" cy="160" r="134" stroke="currentColor" stroke-width="1.4"/>
+  <circle cx="160" cy="160" r="96" stroke="currentColor" stroke-width="1.6" stroke-dasharray="6 6"/>
+  <circle cx="160" cy="160" r="46" stroke="currentColor" stroke-width="1.8"/>
+  <polygon points="160,26 276,227 44,227" stroke="currentColor" stroke-width="1.2" opacity="0.55"/>
+  <polygon points="160,294 276,93 44,93" stroke="currentColor" stroke-width="1.2" opacity="0.55"/>
+  <g fill="currentColor" font-family="'Yuji Syuku','Noto Serif JP',serif" font-size="18" text-anchor="middle" dominant-baseline="central">
+    <text x="160" y="42">火</text>
+    <text x="278" y="160">風</text>
+    <text x="160" y="278">水</text>
+    <text x="42" y="160">雷</text>
+    <text x="160" y="162" font-size="34" opacity="0.8">封</text>
+  </g>
+</svg>`;
+
+function renderSeatEmblem(G, p) {
+  if (G.teams && p.team === 0) {
+    return `<span class="seat-crest" style="color:#fca5a5;border-color:rgba(220,38,38,.55)" title="Phe Đỏ (Akatsuki)">${AKATSUKI_CLOUD_SVG}</span>`;
+  }
+  if (G.teams && p.team === 1) {
+    return `<span class="seat-crest" style="color:#93c5fd;border-color:rgba(37,99,235,.55)" title="Phe Xanh (Liên Minh Shinobi)">${KONOHA_CREST_SVG}</span>`;
+  }
+  return `<span class="seat-crest" title="Shinobi Làng Lá">${KONOHA_CREST_SVG}</span>`;
+}
+
+function renderChakraBar(sp, handCount) {
+  const clamped = Math.max(0, Math.min(10, Number(sp) || 0));
+  let pips = '';
+  for (let k = 0; k < 10; k++) {
+    pips += `<span class="sp-pip ${k < clamped ? 'on' : ''}"></span>`;
+  }
+  return `
+    <div class="chakra-row">
+      <div class="sp-bar ${clamped <= 2 ? 'is-low' : ''}" title="Chakra: ${clamped}/10">${pips}</div>
+      <div class="chakra-meta">
+        <span>CK ${clamped}/10</span>
+        <span class="hand-pill">${handCount} lá</span>
+      </div>
+    </div>`;
+}
 
 export function getCardFoilInfo(c) {
   if (c.r === 'S' && (c.s === 'mangakyo' || c.s === 'rinnegan')) {
-    return { rarity: 'rare rainbow', label: '🌈 Huyền Thoại Rainbow Holo', pillCls: 'foil-rainbow' };
+    return { rarity: 'rare rainbow', label: 'Huyền Thoại Rainbow Holo', pillCls: 'foil-rainbow' };
   }
   if (c.r === 'S') {
-    return { rarity: 'rare secret', label: '✨ Bí Truyền Gold Secret', pillCls: 'foil-S' };
+    return { rarity: 'rare secret', label: 'Bí Truyền Gold Secret', pillCls: 'foil-S' };
   }
   if (c.r === 'A') {
-    return { rarity: 'radiant rare', label: '💎 Radiant Diamond Holo', pillCls: 'foil-A' };
+    return { rarity: 'radiant rare', label: 'Radiant Diamond Holo', pillCls: 'foil-A' };
   }
   if (c.r === 'B') {
-    return { rarity: 'rare holo', label: '🌀 Regular Scanline Holo', pillCls: 'foil-B' };
+    return { rarity: 'rare holo', label: 'Regular Scanline Holo', pillCls: 'foil-B' };
   }
-  return { rarity: 'basic', label: '📜 Glossy Foil', pillCls: 'foil-C' };
+  return { rarity: 'basic', label: 'Glossy Foil', pillCls: 'foil-C' };
 }
 
 function renderCardBackHtml() {
@@ -84,7 +146,7 @@ export function renderCard(
   const rem = 3 - (c.age || 0);
   const ageTag =
     interactive && !c.au
-      ? `<span class="age-tag ${rem <= 1 ? 'age-warn' : ''}" title="Còn ${rem} lượt trước khi tự hủy">⏳ ${rem}</span>`
+      ? `<span class="age-tag ${rem <= 1 ? 'age-warn' : ''}" title="Còn ${rem} lượt trước khi tự hủy">${rem}L</span>`
       : '';
   const hkTag = interactive && hotkey ? `<span class="hk-tag" title="Phím tắt ${hotkey}">${hotkey}</span>` : '';
   const clickAttr = interactive
@@ -95,8 +157,15 @@ export function renderCard(
         ? `onclick="appActions.toggleInspectFlip()"`
         : '';
   const zoomBtn = interactive
-    ? `<button type="button" class="cd-zoom-btn" title="Phóng to & xoay thẻ 3D (hoặc chuột phải)" onclick="event.stopPropagation();appActions.inspectCard(${c.id}, false)">🔍</button>`
+    ? `<button type="button" class="cd-zoom-btn" title="Phóng to & xoay thẻ 3D (hoặc chuột phải)" onclick="event.stopPropagation();appActions.inspectCard(${c.id}, false)">3D</button>`
     : '';
+
+  const titleJp = getCardTitle(c);
+  const subParts = [];
+  if (c.kj) subParts.push(`<span class="cd-kj">${esc(c.kj)}</span>`);
+  if (c.n && !isSameJpViName(c)) subParts.push(`<span class="cd-vi">${esc(c.n)}</span>`);
+  const subHtml = subParts.length ? `<div class="cd-sub">${subParts.join(' · ')}</div>` : '';
+  const tooltipText = `${titleJp}${c.kj ? ` (${c.kj})` : ''}${!isSameJpViName(c) ? ` — ${c.n}` : ''}: ${describeCard(c)}`;
 
   return `
     <div class="cd cd-holo ${c.r} ${c.au ? 'au' : ''} ${selected ? 'sel' : ''} ${dim ? 'dim' : ''} ${
@@ -109,7 +178,7 @@ export function renderCard(
          data-clan="${esc(c.s)}"
          data-holo-mode="${mode}"
          ${clickAttr}
-         title="${esc(describeCard(c))}">
+         title="${esc(tooltipText)}">
       <div class="cd-rotator">
         <div class="cd-flipper">
           <div class="cd-front">
@@ -118,10 +187,11 @@ export function renderCard(
               <div class="cd-badges">${ageTag}${elTag}</div>
             </div>
             ${cardArtSvg(c)}
-            <b class="cd-name">${esc(c.n)}</b>
+            <b class="cd-name">${esc(titleJp)}</b>
+            ${subHtml}
             <small class="cd-meta">${TYPE_LABELS[c.t] || c.t} · ${esc(c.s)}</small>
             <div class="cd-desc">${esc(describeCard(c))}</div>
-            ${c.au ? '<div class="cd-au">🛡 Tự kích hoạt</div>' : ''}
+            ${c.au ? '<div class="cd-au">Tự kích hoạt</div>' : ''}
             ${zoomBtn}
             <div class="cd__shine"></div>
             <div class="cd__glare"></div>
@@ -135,32 +205,37 @@ export function renderCard(
 function renderChips(p, showSecret) {
   const bad = [
     ...p.marks.map((e) => [`ấn ${e}`, 'Ấn nguyên tố: thêm 1 ấn nữa sẽ gây phản ứng']),
-    p.bleed ? [`🩸 chảy máu ${p.bleed > 1e9 ? '∞' : p.bleed}`, 'Mất 50 máu đầu mỗi lượt, bỏ qua giáp và pet'] : null,
-    p.stun ? ['💫 choáng', 'Mất lượt kế tiếp, không rút bài, vẫn chịu sát thương'] : null,
-    p.bugMark ? [`🐛 trùng bám -${p.bugMark.dmg} · ${p.bugMark.t}L`, 'Mỗi lần dùng thẻ sẽ nhận thêm sát thương trực tiếp'] : null,
-    p.koto ? [`👁 koto · ${p.koto.t}L`, 'Bị Kotoamatsukami điều khiển tấn công đồng đội'] : null,
+    p.bleed ? [`chảy máu ${p.bleed > 1e9 ? '∞' : p.bleed}`, 'Mất 50 máu đầu mỗi lượt, bỏ qua giáp và pet'] : null,
+    p.stun ? ['choáng', 'Mất lượt kế tiếp, không rút bài, vẫn chịu sát thương'] : null,
+    p.bugMark ? [`trùng bám -${p.bugMark.dmg} · ${p.bugMark.t}L`, 'Mỗi lần dùng thẻ sẽ nhận thêm sát thương trực tiếp'] : null,
+    p.koto ? [`koto · ${p.koto.t}L`, 'Bị Kotoamatsukami điều khiển tấn công đồng đội'] : null,
   ].filter(Boolean);
 
   const auCount = showSecret ? p.hand.filter((c) => c.au).length : 0;
   const good = [
     ...p.buffs.map((b) => [
-      `✦ ${b.n}${b.m ? ' +' + Math.round(b.m * 100) + '%' : ''}${b.stacks ? ` ×${b.stacks}` : ''}${b.t < 90 ? ` · ${b.t}L` : ''}`,
+      `${b.n}${b.m ? ' +' + Math.round(b.m * 100) + '%' : ''}${b.stacks ? ` ×${b.stacks}` : ''}${b.t < 90 ? ` · ${b.t}L` : ''}`,
       'Trạng thái chủ động',
     ]),
-    p.stealth ? [`🌫 ẩn thân · ${p.stealth}L`, 'Không thể bị chọn làm mục tiêu đơn'] : null,
-    p.immune ? [`🕊 miễn nhiễm · ${p.immune}L`, 'Miễn nhiễm hiệu ứng xấu'] : null,
-    p.edo ? ['🧟 Uế Thổ (-50% dmg)', 'Thi thể bất tử, có thể bị Kim Sa Ấn tiêu diệt'] : null,
-    p.puppetMaster ? [`🎭 Rối (${p.puppetMaster})`, 'Con rối 500 máu (-50% dmg), có thể bị Kim Sa Ấn tiêu diệt'] : null,
-    p.armor ? [`🛡 giáp ${p.armor}${p.armorT ? ` · ${p.armorT}L` : ''}`, 'Giáp chặn sát thương sau khi qua pet'] : null,
-    showSecret && p.dodge !== null ? [`💨 né ${p.dodge}`, 'Điểm né ẩn: dưới 100 là % né, né xong trừ 100'] : null,
-    showSecret && auCount ? [`👁 canh phòng ×${auCount}`, 'Thẻ tự kích hoạt đang trên tay'] : null,
+    p.stealth ? [`ẩn thân · ${p.stealth}L`, 'Không thể bị chọn làm mục tiêu đơn'] : null,
+    p.immune ? [`miễn nhiễm · ${p.immune}L`, 'Miễn nhiễm hiệu ứng xấu'] : null,
+    p.edo ? ['Uế Thổ (-50% dmg)', 'Thi thể bất tử, có thể bị Kim Sa Ấn tiêu diệt'] : null,
+    p.puppetMaster ? [`Rối (${p.puppetMaster})`, 'Con rối 500 máu (-50% dmg), có thể bị Kim Sa Ấn tiêu diệt'] : null,
+    ...(p.tempArmors || []).map((s) => [
+      `giáp tạm ${s.amt} · ${s.t}L`,
+      `Giáp có thời hạn (${s.t} lượt): chịu sát thương trước giáp vĩnh viễn và tự mất khi hết lượt`,
+      'tarmor',
+    ]),
+    p.armor ? [`giáp ${p.armor}`, 'Giáp không thời hạn: chỉ giảm khi bị tấn công, chịu sát thương sau giáp tạm'] : null,
+    showSecret && p.dodge !== null ? [`né ${p.dodge}`, 'Điểm né ẩn: dưới 100 là % né, né xong trừ 100'] : null,
+    showSecret && auCount ? [`canh phòng ×${auCount}`, 'Thẻ tự kích hoạt đang trên tay'] : null,
   ].filter(Boolean);
 
   const mk = (arr, cls) =>
     arr
       .map(
-        ([t, d]) =>
-          `<span class="ch ${cls}" title="${esc(d)}" onclick="event.stopPropagation();appActions.toast('${esc(t)}: ${esc(d)}')">${esc(t)}</span>`
+        ([t, d, customCls]) =>
+          `<span class="ch ${customCls || cls}" title="${esc(d)}" onclick="event.stopPropagation();appActions.toast('${esc(t)}: ${esc(d)}')">${esc(t)}</span>`
       )
       .join('') || '<span class="ch-empty">—</span>';
 
@@ -168,7 +243,7 @@ function renderChips(p, showSecret) {
     p.pets
       .map(
         (q) =>
-          `<span class="ch pet" title="Pet: đỡ đòn, đánh ${q.atk} mỗi hit">🐾 ${q.hp}<u style="width:${Math.max(
+          `<span class="ch pet" title="Pet: đỡ đòn, đánh ${q.atk} mỗi hit">Pet ${q.hp}<u style="width:${Math.max(
             0,
             (q.hp / q.mx) * 100
           )}%"></u></span>`
@@ -178,9 +253,9 @@ function renderChips(p, showSecret) {
   return {
     bad,
     html: `
-      <div class="rw"><i>⚠</i>${mk(bad, 'bad')}</div>
-      <div class="rw"><i>✦</i>${mk(good, 'good')}</div>
-      <div class="rw"><i>🐾</i>${petsHtml}</div>`,
+      <div class="rw"><i>Xấu</i>${mk(bad, 'bad')}</div>
+      <div class="rw"><i>Lợi</i>${mk(good, 'good')}</div>
+      <div class="rw"><i>Pet</i>${petsHtml}</div>`,
   };
 }
 
@@ -190,9 +265,10 @@ export function renderSeat(G, p, i, cur, showSecret, isMe, flList = []) {
   const fl = flList.filter((e) => e.t === i);
   const ch = renderChips(p, isMe && showSecret);
   const handCount = p.handCount != null ? p.handCount : p.hand.length;
+  const totArmor = totalArmor(p);
   const statusClasses = [
     p.bleed ? 'is-bleed' : '',
-    p.armor > 0 ? 'has-armor' : '',
+    totArmor > 0 ? 'has-armor' : '',
     p.buffs.length ? 'has-buff' : '',
     p.immune > 0 ? 'is-immune' : '',
     p.corpse ? 'is-corpse' : '',
@@ -206,17 +282,17 @@ export function renderSeat(G, p, i, cur, showSecret, isMe, flList = []) {
   if (canTarget && selCard) {
     const badges = [];
     if (selCard.heal) {
-      badges.push(`<span class="tg-badge tg-heal">💚 +${selCard.heal} máu</span>`);
+      badges.push(`<span class="tg-badge tg-heal">+${selCard.heal} máu</span>`);
     } else if (selCard.rv) {
       badges.push(
         `<span class="tg-badge tg-heal">${
-          selCard.edo ? '🧟 Uế Thổ (∞)' : selCard.puppetRevive ? '🎭 Biến thành rối (500)' : '♻ Hồi sinh 1000'
+          selCard.edo ? 'Uế Thổ (∞)' : selCard.puppetRevive ? 'Biến thành rối (500)' : 'Hồi sinh 1000'
         }</span>`
       );
     } else if (selCard.koto) {
-      badges.push(`<span class="tg-badge tg-rx">👁 Điều khiển ${selCard.koto} vòng</span>`);
+      badges.push(`<span class="tg-badge tg-rx">Điều khiển ${selCard.koto} vòng</span>`);
     } else if (selCard.gourdMark) {
-      badges.push(`<span class="tg-badge tg-break">🏺 Đánh dấu bí mật</span>`);
+      badges.push(`<span class="tg-badge tg-break">Đánh dấu bí mật</span>`);
     } else {
       const est = calcExpectedDamage(G, G.cur, selCard, i);
       if (est.dmg > 0) {
@@ -224,23 +300,23 @@ export function renderSeat(G, p, i, cur, showSecret, isMe, flList = []) {
           const hitIdx = (G.hl || []).length;
           const hitBase = selCard.h[hitIdx] || 0;
           const hitDmg = Math.round(hitBase * est.mult);
-          badges.push(`<span class="tg-badge tg-dmg">⚔️ Đòn ${hitIdx + 1}: ~${hitDmg}</span>`);
+          badges.push(`<span class="tg-badge tg-dmg">Đòn ${hitIdx + 1}: ~${hitDmg}</span>`);
         } else {
           badges.push(
-            `<span class="tg-badge ${est.isCrit ? 'tg-crit' : 'tg-dmg'}">${est.isCrit ? '💥 CHÍ MẠNG' : '⚔️'} ~${est.dmg}</span>`
+            `<span class="tg-badge ${est.isCrit ? 'tg-crit' : 'tg-dmg'}">${est.isCrit ? 'CHÍ MẠNG' : 'Sát thương'} ~${est.dmg}</span>`
           );
         }
       }
-      if (selCard.ba && p.armor > 0) {
-        badges.push(`<span class="tg-badge tg-break">💥 Phá ${p.armor} giáp</span>`);
+      if (selCard.ba && totArmor > 0) {
+        badges.push(`<span class="tg-badge tg-break">Phá ${totArmor} giáp</span>`);
       }
       if (selCard.ds && (p.dead || p.corpse)) {
-        badges.push(`<span class="tg-badge tg-crit">🔥 Tiêu diệt thi thể</span>`);
+        badges.push(`<span class="tg-badge tg-crit">Tiêu diệt thi thể</span>`);
       }
       if (selCard.el && p.immune <= 0) {
         const rx = previewReaction(p.marks, selCard.el);
         if (rx) {
-          badges.push(`<span class="tg-badge tg-rx" title="${esc(rx.desc)}">⚗️ ${esc(rx.name)}</span>`);
+          badges.push(`<span class="tg-badge tg-rx" title="${esc(rx.desc)}">${esc(rx.name)}</span>`);
         } else if (p.marks.length === 0) {
           badges.push(`<span class="tg-badge tg-el">${EL_BADGE[selCard.el]}</span>`);
         }
@@ -264,23 +340,22 @@ export function renderSeat(G, p, i, cur, showSecret, isMe, flList = []) {
         })
         .join('')}
       <div class="st-head">
-        <b>${esc(p.name)}${p.bot ? ' 🤖' : ''}${p.dead ? ' 💀' : ''}${p.stun > 0 ? ' 💫' : ''}</b>
+        ${renderSeatEmblem(G, p)}
+        <b>${esc(p.name)}${p.bot ? ' (Bot)' : ''}${p.dead ? ' (Hạ gục)' : ''}</b>
         ${G.teams ? `<span class="tm t${p.team}">${TEAM_NAMES[p.team]}</span>` : ''}
         ${orbs ? `<span class="orb-row">${orbs}</span>` : ''}
       </div>
       <div class="hp">
+        <b class="hp-lag" style="width:${p.hp >= EDO_HP ? 100 : Math.min(100, (p.hp / 4000) * 100)}%"></b>
         <i style="width:${p.hp >= EDO_HP ? 100 : Math.min(100, (p.hp / 4000) * 100)}%"></i>
-        <span>❤ ${p.hp >= EDO_HP ? '∞' : `${p.hp} / 4000`}</span>
+        <span>HP ${p.hp >= EDO_HP ? '∞' : `${p.hp} / 4000`}</span>
       </div>
-      <div class="st-stats">
-        <span>🧠 ${p.sp}/10</span>
-        <span>🃏 ${handCount} lá</span>
-      </div>
+      ${renderChakraBar(p.sp, handCount)}
       ${ch.html}
       ${
         isMe && showSecret
           ? `<div class="sum">
-               ${p.destiny?.length ? `<div class="destiny">🌟 Định mệnh (×3): <b>${p.destiny.map(esc).join(' · ')}</b></div>` : ''}
+               ${p.destiny?.length ? `<div class="destiny">Định mệnh (×3): <b>${p.destiny.map(esc).join(' · ')}</b></div>` : ''}
                <div>${ch.bad.length ? 'Đang dính: ' + ch.bad.map((x) => esc(x[0])).join(', ') : 'Trạng thái ổn định'}</div>
              </div>`
           : ''
@@ -377,10 +452,15 @@ export function renderRulesModal(rulebookText = '') {
     <div class="modal" onclick="if(event.target===this)appActions.closeModal()">
       <div class="modal-card rules-modal">
         <div class="modal-head">
-          <h2>📜 Sổ Tay Luật Chơi & Đặc Tả Hệ Thống</h2>
+          <h2>Sổ Tay Luật Chơi & Đặc Tả Hệ Thống</h2>
           <button onclick="appActions.closeModal()">✕</button>
         </div>
-        <div class="rb-content">${body}</div>
+        <div class="rb-content">
+          ${body}
+          <p class="hint" style="margin-top:18px;padding-top:10px;border-top:1px solid var(--bd);font-size:11.5px">
+            Tài nguyên hiệu ứng chiến đấu Sakuga: <b>KanaWorks_AI (@KanaWorks_AI)</b> · Animation: <b>GSAP</b>.
+          </p>
+        </div>
       </div>
     </div>`;
 }
@@ -398,25 +478,28 @@ export function renderAutoPromptModal(prompt) {
     <div class="modal auto-modal">
       <div class="modal-card auto-prompt-box">
         <div class="modal-head">
-          <h2>🛡 Xác nhận kích hoạt thẻ</h2>
+          <h2>Xác nhận kích hoạt thẻ</h2>
         </div>
         ${playerName ? `<p class="hint">Người chơi: <b>${esc(playerName)}</b></p>` : ''}
         <p>${reasonText}</p>
         <div class="auto-preview">${renderCard(card, 0, { interactive: false })}</div>
         <div class="row auto-actions">
-          <button class="go btn-lg" onclick="appActions.replyAuto(true)">✅ Kích hoạt</button>
-          <button class="btn-lg" onclick="appActions.replyAuto(false)">❌ Bỏ qua</button>
+          <button class="go btn-lg" onclick="appActions.replyAuto(true)">Kích hoạt</button>
+          <button class="btn-lg" onclick="appActions.replyAuto(false)">Bỏ qua</button>
         </div>
       </div>
     </div>`;
 }
 
 export function getFilteredCodexCards(filterRank = 'ALL', search = '') {
-  const q = search.trim().toLowerCase();
+  const qRaw = String(search || '').trim().toLowerCase();
+  const qNorm = normalizeSearchText(search);
   return CARDS.filter((c) => {
     if (filterRank !== 'ALL' && c.r !== filterRank) return false;
-    if (q && !c.n.toLowerCase().includes(q) && !c.s.toLowerCase().includes(q) && !(c.el || '').includes(q)) {
-      return false;
+    if (qNorm) {
+      const hay = normalizeSearchText(`${c.jp || ''} ${c.n || ''} ${c.s || ''} ${c.el || ''}`);
+      const kjHit = qRaw && (c.kj || '').toLowerCase().includes(qRaw);
+      if (!hay.includes(qNorm) && !kjHit) return false;
     }
     return true;
   });
@@ -429,11 +512,11 @@ export function renderCodexModal(filterRank = 'ALL', search = '') {
     <div class="modal" onclick="if(event.target===this)appActions.closeModal()">
       <div class="modal-card codex-modal">
         <div class="modal-head">
-          <h2>🃏 Từ Điển Nhẫn Thuật (${list.length}/${CARDS.length})</h2>
+          <h2>Từ Điển Nhẫn Thuật (${list.length}/${CARDS.length})</h2>
           <button onclick="appActions.closeModal()">✕</button>
         </div>
         <div class="codex-bar">
-          <input id="codexSearch" placeholder="Tìm tên thẻ, tộc, nguyên tố..." value="${esc(search)}"
+          <input id="codexSearch" placeholder="Tìm tên Nhật (vd: gokakyu, amaterasu), Kanji, tiếng Việt, tộc..." value="${esc(search)}"
                  oninput="appActions.codexFilter('${filterRank}', this.value)">
           <div class="rank-pills">
             ${['ALL', 'S', 'A', 'B', 'C']
@@ -446,7 +529,7 @@ export function renderCodexModal(filterRank = 'ALL', search = '') {
               .join('')}
           </div>
         </div>
-        <p class="codex-hint">✨ Di chuột lên thẻ để xem hiệu ứng 3D Holo theo cấp độ · Nhấn vào thẻ để phóng to & lật xem mặt sau.</p>
+        <p class="codex-hint">Di chuột lên thẻ để xem hiệu ứng 3D Holo theo cấp độ · Nhấn vào thẻ để phóng to & lật xem mặt sau.</p>
         <div class="codex-grid">
           ${list.map((c, i) => renderCard(c, i, { interactive: false, inspectable: true, holoMode: 'codex' })).join('')}
         </div>
@@ -489,8 +572,10 @@ export function renderCardInspectModal(cardId, { flipped = false, listIds = null
         </div>
         <div class="card-inspect-info">
           <span class="inspect-foil-pill ${foil.pillCls}">${foil.label}</span>
-          <h3>${esc(c.n)}</h3>
+          <h3>${esc(getCardTitle(c))}</h3>
+          ${c.kj ? `<div class="inspect-kj">${esc(c.kj)}</div>` : ''}
           <div class="inspect-meta-list">
+            <div><span>Tên Tiếng Việt</span><b>${esc(c.n)}</b></div>
             <div><span>Cấp độ</span><b>Cấp ${c.r}</b></div>
             <div><span>Loại thẻ</span><b>${esc(TYPE_LABELS[c.t] || c.t)}</b></div>
             <div><span>Hệ phái / Tộc</span><b>${esc(c.s)}</b></div>
@@ -498,17 +583,17 @@ export function renderCardInspectModal(cardId, { flipped = false, listIds = null
             <div><span>Nguồn rút</span><b>${
               isHiddenClan && c.n !== 'rinnengan'
                 ? c.s === 'mangakyo'
-                  ? 'Qua Mangakyo Sharingan'
-                  : 'Qua Rinnengan'
+                  ? 'Qua Mangekyō Sharingan'
+                  : 'Qua Rinnegan'
                 : 'Rút trực tiếp từ bộ bài'
             }</b></div>
             ${hasNav ? `<div><span>Vị trí</span><b>${idx + 1} / ${listIds.length}</b></div>` : ''}
           </div>
           <div class="inspect-desc-box">${esc(describeCard(c))}</div>
           <div class="inspect-actions">
-            <button id="inspectFlipBtn" onclick="appActions.toggleInspectFlip()">🔄 ${flipped ? 'Xem mặt trước' : 'Lật mặt sau'} (F)</button>
-            <button onclick="appActions.triggerInspectShowcase()">✨ Tự nghiêng</button>
-            <button class="go" onclick="appActions.closeInspect()">✕ Đóng</button>
+            <button id="inspectFlipBtn" onclick="appActions.toggleInspectFlip()">${flipped ? 'Xem mặt trước' : 'Lật mặt sau'} (F)</button>
+            <button onclick="appActions.triggerInspectShowcase()">Tự nghiêng</button>
+            <button class="go" onclick="appActions.closeInspect()">Đóng</button>
           </div>
           <p class="inspect-tip">Di chuột hoặc vuốt lên lá bài để ngắm ánh sáng 3D · Phím <kbd>F</kbd> lật bài${
             hasNav ? ' · <kbd>←</kbd>/<kbd>→</kbd> chuyển thẻ' : ''
@@ -528,7 +613,7 @@ export function renderQuickReactionsModal() {
     [pill('thủy') + ' + ' + pill('thủy'), REACTIONS['thủy+thủy'].name, REACTIONS['thủy+thủy'].desc],
     [pill('lôi') + ' + ' + pill('lôi'), REACTIONS['lôi+lôi'].name, REACTIONS['lôi+lôi'].desc],
     [
-      pill('phong') + ' + <span class="rx-pill rx-el-any">✨ Ấn bất kỳ</span>',
+      pill('phong') + ' + <span class="rx-pill rx-el-any">Ấn bất kỳ</span>',
       'Khuếch tán nguyên tố',
       'Lan ấn kia cho 2 người cạnh bên, xóa ấn Phong và giữ lại ấn gốc trên mục tiêu',
     ],
@@ -538,7 +623,7 @@ export function renderQuickReactionsModal() {
     <div class="modal" onclick="if(event.target===this)appActions.closeModal()">
       <div class="modal-card rx-quick-modal">
         <div class="modal-head">
-          <h2>⚗️ Tra Cứu Nhanh Phản Ứng Nguyên Tố</h2>
+          <h2>Tra Cứu Nhanh Phản Ứng Nguyên Tố</h2>
           <button onclick="appActions.closeModal()">✕</button>
         </div>
         <p class="hint">Đủ <b>2 ấn</b> trên mục tiêu sẽ kích nổ phản ứng ngay lập tức và tiêu thụ ấn.</p>
@@ -575,7 +660,7 @@ export function renderVictoryOverlay(G, { canRematch = true, isOnline = false } 
   return `
     <div class="ov-win">
       <div class="win-box win-wide">
-        <div class="win-trophy">🏆</div>
+        <div class="win-stamp" aria-hidden="true">勝</div>
         <h1>${esc(G.over)} chiến thắng!</h1>
         <p class="hint">Tổng số lượt: <b>${G.turnCount || 1}</b></p>
         <div class="stats-wrap">
@@ -583,10 +668,10 @@ export function renderVictoryOverlay(G, { canRematch = true, isOnline = false } 
             <thead>
               <tr>
                 <th>Ninja</th>
-                <th>⚔️ Sát thương</th>
-                <th>⚗️ Phản ứng</th>
-                <th>🃏 Số thẻ</th>
-                <th>💀 Hạ gục</th>
+                <th>Sát thương</th>
+                <th>Phản ứng</th>
+                <th>Số thẻ</th>
+                <th>Hạ gục</th>
               </tr>
             </thead>
             <tbody>
@@ -597,9 +682,9 @@ export function renderVictoryOverlay(G, { canRematch = true, isOnline = false } 
                   return `
                   <tr class="${p.dead ? 'row-dead' : 'row-alive'}">
                     <td>
-                      <b>${esc(p.name)}</b>${p.bot ? ' 🤖' : ''}
+                      <b>${esc(p.name)}</b>${p.bot ? ' (Bot)' : ''}
                       ${G.teams ? `<span class="tm t${p.team}">${TEAM_NAMES[p.team]}</span>` : ''}
-                      ${isMvp ? '<span class="mvp-badge">🏅 MVP</span>' : ''}
+                      ${isMvp ? '<span class="mvp-badge">MVP</span>' : ''}
                     </td>
                     <td><b>${st.dmgDealt}</b></td>
                     <td>${st.reactions}</td>
@@ -614,12 +699,12 @@ export function renderVictoryOverlay(G, { canRematch = true, isOnline = false } 
         <div class="row win-actions">
           ${
             canRematch
-              ? '<button class="go btn-lg" onclick="appActions.rematch()">🔄 Chơi lại ngay</button>'
+              ? '<button class="go btn-lg" onclick="appActions.rematch()">Chơi lại ngay</button>'
               : isOnline
-                ? '<span class="hint">⏳ Chờ chủ phòng bấm Chơi lại...</span>'
+                ? '<span class="hint">Chờ chủ phòng bấm Chơi lại...</span>'
                 : ''
           }
-          <button class="btn-lg" onclick="appActions.leaveGame()">🏠 Về Menu</button>
+          <button class="btn-lg" onclick="appActions.leaveGame()">Về Menu</button>
         </div>
       </div>
     </div>`;

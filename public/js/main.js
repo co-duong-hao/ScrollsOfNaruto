@@ -1,4 +1,10 @@
-import { CARDS } from '/shared/cards.js';
+import {
+  CARDS,
+  getCardTitle,
+  formatCardLogName,
+  isSameJpViName,
+  normalizeSearchText,
+} from '/shared/cards.js';
 import {
   createGame,
   useCard,
@@ -6,9 +12,11 @@ import {
   pickBotAction,
   needTarget,
   isValidTarget,
+  EDO_HP,
 } from '/shared/engine.js';
 import { SFX } from './sound.js';
 import { VFX } from './vfx.js';
+import { CombatAnim } from './combatAnim.js';
 import { initCardHolo, triggerShowcaseWobble } from './cardHolo.js';
 import {
   esc,
@@ -23,6 +31,8 @@ import {
   renderVictoryOverlay,
   renderCardInspectModal,
   getFilteredCodexCards,
+  KONOHA_CREST_SVG,
+  ARENA_SEAL_SVG,
 } from './ui.js';
 
 const $ = (id) => document.getElementById(id);
@@ -128,7 +138,7 @@ function renderBgmPlaylist() {
   if (!wrap) return;
   wrap.innerHTML = BGM_TRACKS.map(
     (tr, idx) =>
-      `<button type="button" class="bgm-track-pill ${idx === bgmState.trackIdx ? 'is-active' : ''}" onclick="appActions.bgmSelectTrack(${idx})" title="${esc(tr.title)} — ${esc(tr.artist)}">${idx === bgmState.trackIdx ? '♪ ' : ''}${esc(tr.title)}</button>`
+      `<button type="button" class="bgm-track-pill ${idx === bgmState.trackIdx ? 'is-active' : ''}" onclick="appActions.bgmSelectTrack(${idx})" title="${esc(tr.title)} — ${esc(tr.artist)}">${esc(tr.title)}</button>`
   ).join('');
 }
 
@@ -140,7 +150,7 @@ function loadBgmTrack(idx, autoPlay = false) {
   const tr = BGM_TRACKS[nextIdx];
 
   const head = $('bgmDockTitle');
-  if (head) head.textContent = `🎵 Nhạc nền · ${tr.title}`;
+  if (head) head.textContent = `Nhạc nền · ${tr.title}`;
   const nameEl = $('bgmTrackName');
   if (nameEl) nameEl.textContent = tr.title;
   const artistEl = $('bgmTrackArtist');
@@ -182,12 +192,12 @@ function updateBgmUi() {
   if (pct) pct.textContent = `${effectiveVol}%`;
   const muteBtn = $('bgmMuteBtn');
   if (muteBtn) {
-    muteBtn.textContent = effectiveVol === 0 ? '🔇' : effectiveVol < 45 ? '🔉' : '🔊';
+    muteBtn.textContent = effectiveVol === 0 ? 'Tắt' : 'Loa';
   }
   const loopBtn = $('bgmLoopBtn');
   if (loopBtn) loopBtn.classList.toggle('is-on', bgmState.loop);
   const playBtn = $('bgmPlayBtn');
-  if (playBtn && audio) playBtn.textContent = audio.paused ? '▶' : '⏸';
+  if (playBtn && audio) playBtn.textContent = audio.paused ? 'Phát' : 'Dừng';
 }
 
 function initBgmPlayer() {
@@ -245,9 +255,8 @@ document.addEventListener(
 );
 
 function sfxIcon() {
-  if (SFX.muted || SFX.volume === 0) return '🔇';
-  if (SFX.volume < 45) return '🔉';
-  return '🔊';
+  if (SFX.muted || SFX.volume === 0) return 'Tắt';
+  return 'SFX';
 }
 
 function topBarHtml(showLeave = false) {
@@ -255,14 +264,18 @@ function topBarHtml(showLeave = false) {
   return `
     <header class="topbar">
       <div class="brand" onclick="${showLeave ? 'appActions.leaveGame()' : 'appActions.goMenu()'}">
-        <span class="brand-icon">📜</span>
-        <span>Scrolls of Naruto</span>
+        <span class="hitai-plate">
+          <span class="hitai-rivet"></span>
+          ${KONOHA_CREST_SVG}
+          <span>Scrolls of Naruto</span>
+          <span class="hitai-rivet"></span>
+        </span>
       </div>
       <div class="top-actions">
-        ${showLeave ? '<button class="btn-sm" onclick="appActions.leaveGame()">🚪 Thoát</button>' : ''}
-        <button class="btn-sm" onclick="appActions.openModal(\'reactions\')" title="Tra cứu nhanh phản ứng nguyên tố (Phím R)">⚗️ Phản ứng</button>
-        <button class="btn-sm" onclick="appActions.openModal(\'codex\')">🃏 Nhẫn thuật</button>
-        <button class="btn-sm" onclick="appActions.openModal(\'rules\')">📖 Luật</button>
+        ${showLeave ? '<button class="btn-sm" onclick="appActions.leaveGame()">Thoát</button>' : ''}
+        <button class="btn-sm" onclick="appActions.openModal(\'reactions\')" title="Tra cứu nhanh phản ứng nguyên tố (Phím R)">Phản ứng</button>
+        <button class="btn-sm" onclick="appActions.openModal(\'codex\')">Nhẫn thuật</button>
+        <button class="btn-sm" onclick="appActions.openModal(\'rules\')">Luật</button>
         <div class="vol-ctrl" title="Điều chỉnh âm lượng hiệu ứng game (SFX)">
           <button type="button" id="sfxMuteBtn" class="vol-mute" onclick="appActions.toggleSound()" title="${SFX.muted ? 'Bật âm hiệu ứng' : 'Tắt tiếng hiệu ứng'}">${sfxIcon()}</button>
           <input id="sfxVolSlider" class="vol-slider" type="range" min="0" max="100" value="${curVol}"
@@ -271,9 +284,9 @@ function topBarHtml(showLeave = false) {
                  onchange="appActions.previewSoundVolume()">
           <span id="sfxVolPct" class="vol-pct">${curVol}%</span>
         </div>
-        <button class="btn-sm ${state.bgmOpen ? 'go' : ''}" onclick="appActions.toggleBgmDock()" title="Mở / Thu gọn trình phát nhạc nền (nhạc vẫn phát khi thu gọn)">🎵 Nhạc</button>
-        <button class="btn-sm" onclick="appActions.toggleBgVideo()" title="Bật/tắt video nền Làng Lá">${state.bgVideo ? '🎬 Nền động' : '🖼️ Nền tĩnh'}</button>
-        <button class="btn-sm" onclick="appActions.toggleTheme()">${state.dark ? '🌙 Tối' : '☀️ Sáng'}</button>
+        <button class="btn-sm ${state.bgmOpen ? 'go' : ''}" onclick="appActions.toggleBgmDock()" title="Mở / Thu gọn trình phát nhạc nền (nhạc vẫn phát khi thu gọn)">Nhạc</button>
+        <button class="btn-sm" onclick="appActions.toggleBgVideo()" title="Bật/tắt video nền Làng Lá">${state.bgVideo ? 'Nền động' : 'Nền tĩnh'}</button>
+        <button class="btn-sm" onclick="appActions.toggleTheme()">${state.dark ? 'Tối' : 'Sáng'}</button>
       </div>
     </header>`;
 }
@@ -316,7 +329,13 @@ function playFxEvents(events, onDone) {
     else SFX.play('cast');
   }
   render();
-  VFX.trigger(document.querySelector('.tb'), cs, fl);
+  const tbCast = document.querySelector('.tb');
+  if (cs && tbCast) {
+    const targetIndices = [...new Set(fl.map((e) => e.t).filter((t) => t != null && t >= 0))];
+    CombatAnim.animateCastBanner(tbCast, cs);
+    CombatAnim.animateSeatAttack(tbCast, cs.srcIdx, targetIndices);
+    VFX.triggerCast(tbCast, cs, fl);
+  }
 
   setTimeout(() => {
     state.cast = null;
@@ -330,15 +349,19 @@ function playFxEvents(events, onDone) {
     else if (!customSfx.length && fl.some((e) => e.c === 'pt')) SFX.play('pet');
     if (fl.some((e) => e.c === 'rx')) SFX.play('reaction');
     render();
-    VFX.trigger(document.querySelector('.tb'), null, fl);
-  }, cs ? 1700 : 0);
+    const tbHit = document.querySelector('.tb');
+    if (tbHit) {
+      VFX.triggerImpact(tbHit, cs, fl);
+      CombatAnim.animateImpactGroup(tbHit, cs, fl);
+    }
+  }, cs ? 1250 : 0);
 
   setTimeout(() => {
     state.fl = [];
     state.busy = false;
     render();
-    if (onDone) setTimeout(onDone, 350);
-  }, cs ? 3100 : 1400);
+    if (onDone) setTimeout(onDone, 320);
+  }, cs ? 2650 : 1350);
 }
 
 function runOfflineBotStep() {
@@ -478,17 +501,18 @@ function renderMenu() {
     ${topBarHtml(false)}
     <main class="hero">
       <div class="hero-card">
-        <div class="hero-badge">⚔️ TACTICAL ELEMENTAL TCG</div>
+        <span class="hanko-seal" aria-hidden="true">忍</span>
+        <div class="hero-badge">TACTICAL ELEMENTAL TCG</div>
         <h1>Scrolls of Naruto</h1>
         <p class="hero-sub">Đấu thẻ bài chiến thuật 4 nguyên tố <b>Phong · Thủy · Hỏa · Lôi</b> với ${CARDS.length} nhẫn thuật, Pet hộ thể, Né tránh ẩn và 7 Phản ứng Nguyên tố.</p>
         <div class="hero-btns">
-          <button class="go btn-lg btn-online" onclick="appActions.openOnlineMenu()">🌐 Chơi Online</button>
-          <button class="go btn-lg" onclick="appActions.openOfflineSetup()">🎮 Chơi Offline</button>
-          <button class="btn-lg btn-sandbox" onclick="appActions.startSandbox()">🧪 Thử Skill</button>
+          <button class="go btn-lg btn-online" onclick="appActions.openOnlineMenu()">Chơi Online</button>
+          <button class="go btn-lg" onclick="appActions.openOfflineSetup()">Chơi Offline</button>
+          <button class="btn-lg btn-sandbox" onclick="appActions.startSandbox()">Thử Skill</button>
         </div>
         <div class="hero-links">
-          <button onclick="appActions.openModal('codex')">🃏 Xem ${CARDS.length} Thẻ Bài</button>
-          <button onclick="appActions.openModal('rules')">📜 Sổ Tay Luật Chơi</button>
+          <button onclick="appActions.openModal('codex')">Xem ${CARDS.length} Thẻ Bài</button>
+          <button onclick="appActions.openModal('rules')">Sổ Tay Luật Chơi</button>
         </div>
       </div>
     </main>`;
@@ -500,7 +524,8 @@ function renderOfflineSetup() {
     ${topBarHtml(false)}
     <main class="panel-wrap">
       <div class="panel">
-        <h2>🎮 Thiết lập trận Offline</h2>
+        <span class="hanko-seal" aria-hidden="true">忍</span>
+        <h2>Thiết lập trận Offline</h2>
         <div class="row">
           <label>Số người chơi:</label>
           <select onchange="appActions.setOfflineCount(+this.value)">
@@ -515,14 +540,14 @@ function renderOfflineSetup() {
               <input id="nm${i}" value="Người chơi ${i + 1}" maxlength="16">
               <select id="ty${i}">
                 <option value="0" ${i === 0 ? 'selected' : ''}>Người</option>
-                <option value="1" ${i > 0 ? 'selected' : ''}>Bot 🤖</option>
+                <option value="1" ${i > 0 ? 'selected' : ''}>Bot</option>
               </select>
             </div>`
           ).join('')}
         </div>
         ${
           n >= 4 && n % 2 === 0
-            ? '<p class="hint">✨ Số người chẵn: tự động chia 2 phe (Phe Đỏ / Phe Xanh).</p>'
+            ? '<p class="hint">Số người chẵn: tự động chia 2 phe (Phe Đỏ / Phe Xanh).</p>'
             : ''
         }
         <div class="row actions-row">
@@ -539,18 +564,19 @@ function renderOnlineMenu() {
     ${topBarHtml(false)}
     <main class="panel-wrap">
       <div class="panel">
-        <h2>🌐 Chơi Online (Real-time)</h2>
+        <span class="hanko-seal" aria-hidden="true">忍</span>
+        <h2>Chơi Online (Real-time)</h2>
         <div class="row">
           <label>Tên Ninja:</label>
           <input id="nickInput" value="${esc(state.nick)}" maxlength="16" placeholder="Nhập tên của bạn">
         </div>
         <div class="divider"></div>
         <div class="row">
-          <button class="go" onclick="appActions.createRoom()">➕ Tạo phòng mới</button>
+          <button class="go" onclick="appActions.createRoom()">Tạo phòng mới</button>
         </div>
         <div class="row">
           <input id="codeInput" value="${esc(urlCode)}" placeholder="Mã phòng (4 ký tự)" maxlength="4" style="text-transform:uppercase;width:170px">
-          <button onclick="appActions.joinRoom()">🚪 Vào phòng</button>
+          <button onclick="appActions.joinRoom()">Vào phòng</button>
         </div>
         ${state.msg ? `<p class="err">${esc(state.msg)}</p>` : ''}
         <div class="row actions-row">
@@ -571,16 +597,17 @@ function renderLobby() {
     ${topBarHtml(false)}
     <main class="panel-wrap">
       <div class="panel">
+        <span class="hanko-seal" aria-hidden="true">忍</span>
         <div class="lobby-head">
           <h2>Phòng <span class="room-code">${L.code}</span></h2>
-          <button class="btn-sm" onclick="appActions.copyInvite('${shareUrl}')">📋 Copy link mời</button>
+          <button class="btn-sm" onclick="appActions.copyInvite('${shareUrl}')">Copy link mời</button>
         </div>
         <p class="hint">Người chơi (${L.players.length}/6):</p>
         <ul class="lobby-list">
           ${L.players
             .map(
               (p) =>
-                `<li><span>🥷 ${esc(p.name)}</span><span>${p.id === L.hostId ? '👑 Chủ phòng' : ''}${
+                `<li><span>${esc(p.name)}</span><span>${p.id === L.hostId ? 'Chủ phòng' : ''}${
                   p.id === state.you ? ' (Bạn)' : ''
                 }</span></li>`
             )
@@ -596,10 +623,10 @@ function renderLobby() {
                 <span class="hint">Tổng: ${total} người ${total >= 4 && total % 2 === 0 ? '· Chia 2 phe' : ''}</span>
               </div>
               <div class="row actions-row">
-                <button class="go" ${total < 2 || total > 6 ? 'disabled' : ''} onclick="appActions.startOnline()">⚔️ Bắt đầu</button>
+                <button class="go" ${total < 2 || total > 6 ? 'disabled' : ''} onclick="appActions.startOnline()">Bắt đầu</button>
                 <button onclick="appActions.leaveLobby()">Rời phòng</button>
               </div>`
-            : `<p class="hint">⏳ Đang chờ chủ phòng bắt đầu...</p>
+            : `<p class="hint">Đang chờ chủ phòng bắt đầu...</p>
                <div class="row actions-row"><button onclick="appActions.leaveLobby()">Rời phòng</button></div>`
         }
       </div>
@@ -608,27 +635,33 @@ function renderLobby() {
 
 function renderSandboxBar(G) {
   if (!G.sandbox) return '';
-  const q = state.sandboxSearch.trim().toLowerCase();
-  const matches = CARDS.filter((c) => !q || c.n.toLowerCase().includes(q) || c.s.toLowerCase().includes(q)).slice(0, 12);
+  const qRaw = state.sandboxSearch.trim().toLowerCase();
+  const qNorm = normalizeSearchText(state.sandboxSearch);
+  const matches = CARDS.filter((c) => {
+    if (!qNorm) return true;
+    const hay = normalizeSearchText(`${c.jp || ''} ${c.n || ''} ${c.s || ''} ${c.el || ''}`);
+    const kjHit = qRaw && (c.kj || '').toLowerCase().includes(qRaw);
+    return hay.includes(qNorm) || kjHit;
+  }).slice(0, 12);
   return `
     <div class="sandbox-bar">
       <div class="sandbox-row">
-        <span class="sandbox-badge">🧪 PHÒNG TẬP SKILL</span>
-        <input id="sbSearch" placeholder="Tìm tên skill (vd: rasengan, kamui, thiên chiếu...)" value="${esc(state.sandboxSearch)}"
+        <span class="sandbox-badge">PHÒNG TẬP SKILL</span>
+        <input id="sbSearch" placeholder="Tìm tên Nhật / Việt / Kanji (vd: amaterasu, gokakyu, hỏa cầu...)" value="${esc(state.sandboxSearch)}"
                oninput="appActions.sandboxFilter(this.value)">
         <select onchange="appActions.sandboxTarget(this.value)">
           <option value="0" ${state.sandboxGiveTo === 0 ? 'selected' : ''}>Thêm cho: Bạn</option>
           <option value="1" ${state.sandboxGiveTo === 1 ? 'selected' : ''}>Thêm cho: Hình nộm 1</option>
         </select>
-        <button class="btn-sm" onclick="appActions.sandboxDummyAttack()">⚔️ Hình nộm đánh thử</button>
-        <button class="btn-sm" onclick="appActions.sandboxReset()">🔄 Reset bàn</button>
-        <button class="btn-sm" onclick="appActions.sandboxClearHand()">🗑 Xóa tay</button>
+        <button class="btn-sm" onclick="appActions.sandboxDummyAttack()">Hình nộm đánh thử</button>
+        <button class="btn-sm" onclick="appActions.sandboxReset()">Reset bàn</button>
+        <button class="btn-sm" onclick="appActions.sandboxClearHand()">Xóa tay</button>
       </div>
       <div class="sandbox-picks">
         ${matches
           .map(
             (c) =>
-              `<button class="sb-pill rk-b-${c.r}" onclick="appActions.sandboxAdd(${c.id})" title="${esc(c.s)}"><b>[${c.r}]</b> ${esc(c.n)}</button>`
+              `<button class="sb-pill rk-b-${c.r}" onclick="appActions.sandboxAdd(${c.id})" title="${esc(`${c.kj ? c.kj + ' · ' : ''}${c.n} (${c.s})`)}"><b>[${c.r}]</b> ${esc(getCardTitle(c))}</button>`
           )
           .join('')}
       </div>
@@ -664,12 +697,13 @@ function renderGame() {
   const others = G.ps.map((_, i) => i).filter((i) => i !== viewIdx);
   const rotated = [...others.filter((i) => i > viewIdx), ...others.filter((i) => i < viewIdx)];
 
-  let banner = cur.bot ? `🤖 ${cur.name} đang suy nghĩ…` : on && isMyTurn ? '⚔️ Đến lượt bạn!' : `Lượt của ${cur.name}`;
+  let banner = cur.bot ? `${cur.name} đang suy nghĩ…` : on && isMyTurn ? 'Đến lượt bạn!' : `Lượt của ${cur.name}`;
   let msg = state.msg || '';
   if (selCard) {
+    const selLabel = formatCardLogName(selCard);
     msg = selCard.h
-      ? `Đòn ${(G.hl || []).length + 1}/${selCard.h.length} của ${selCard.n}: chọn mục tiêu`
-      : `Chọn mục tiêu cho ${selCard.n}`;
+      ? `Đòn ${(G.hl || []).length + 1}/${selCard.h.length} của ${selLabel}: chọn mục tiêu`
+      : `Chọn mục tiêu cho ${selLabel}`;
   }
 
   const ca = state.cast;
@@ -677,8 +711,8 @@ function renderGame() {
 
   const actionsHtml = canAct
     ? `<div class="acts">
-         <button class="go" onclick="appActions.endTurn()">⏭ Kết thúc lượt</button>
-         ${selCard ? '<button onclick="appActions.cancelSelect()">✕ Hủy chọn</button>' : ''}
+         <button class="go" onclick="appActions.endTurn()">Kết thúc lượt</button>
+         ${selCard ? '<button onclick="appActions.cancelSelect()">Hủy chọn</button>' : ''}
          <span class="hk-hint">Phím tắt: <b>1-9</b> chọn · <b>Space</b> hết lượt · <b>R</b> phản ứng</span>
        </div>`
     : '';
@@ -704,7 +738,7 @@ function renderGame() {
            <div class="pass-box">
              <h2>Lượt của ${esc(cur.name)}</h2>
              <p>Đưa màn hình cho <b>${esc(cur.name)}</b> rồi bấm Sẵn sàng để xem bài.</p>
-             <button class="go btn-lg" onclick="appActions.readyHotseat()">👁 Sẵn sàng</button>
+             <button class="go btn-lg" onclick="appActions.readyHotseat()">Sẵn sàng</button>
            </div>
          </div>`
       : '';
@@ -713,14 +747,18 @@ function renderGame() {
     ${topBarHtml(true)}
     ${renderSandboxBar(G)}
     <div class="tb ${ca && ca.r === 'S' ? 'shake' : ''}">
+      ${ARENA_SEAL_SVG}
       <div class="opp">
         ${rotated.map((i) => renderSeat(G, G.ps[i], i, cur, showSecret, false, state.fl)).join('')}
       </div>
       ${
         ca
           ? `<div class="cast">
-               <h2 style="--c:${castCol}">${esc(ca.n.toUpperCase())}!</h2>
-               <small>${esc(ca.who)} · cấp ${ca.r} ${esc(ca.sub)}</small>
+               ${ca.kj ? `<span class="cast-kj" style="--c:${castCol}">${esc(ca.kj)}</span>` : ''}
+               <h2 style="--c:${castCol}">${esc((ca.jp || ca.n).toUpperCase())}!</h2>
+               <small>${
+                 ca.n && !isSameJpViName(ca) ? `<span class="cast-vi">${esc(ca.n)}</span> · ` : ''
+               }${esc(ca.who)} · cấp ${ca.r} ${esc(ca.sub)}</small>
              </div>`
           : ''
       }
@@ -763,6 +801,16 @@ function render() {
   if (newModal) newModal.scrollTop = modalScrollTop;
   const lg = $('lg');
   if (lg) lg.scrollTop = lg.scrollHeight;
+  if (state.mode === 'game' && state.G && !state.G.over) {
+    VFX.preloadCore();
+    const tb = document.querySelector('.tb');
+    if (tb) {
+      VFX.attach(tb);
+      if (!state.cast) {
+        CombatAnim.syncHpLagBars(tb, state.G.ps, EDO_HP);
+      }
+    }
+  }
 }
 
 window.appActions = {
@@ -893,7 +941,7 @@ window.appActions = {
     if (cardEl) {
       cardEl.classList.toggle('is-flipped', state.inspectFlipped);
       if (btnEl) {
-        btnEl.textContent = `🔄 ${state.inspectFlipped ? 'Xem mặt trước' : 'Lật mặt sau'} (F)`;
+        btnEl.textContent = `${state.inspectFlipped ? 'Xem mặt trước' : 'Lật mặt sau'} (F)`;
       }
       return;
     }
@@ -946,6 +994,7 @@ window.appActions = {
       bot: $('ty' + i)?.value === '1',
     }));
     state.lastOfflinePlayers = players;
+    CombatAnim.resetMatch();
     state.G = await createGame(players, { online: false, onAskAuto: askLocalAuto });
     state.G.sel = null;
     state.G.hl = null;
@@ -988,11 +1037,12 @@ window.appActions = {
       { name: 'Hình nộm 2', bot: false },
     ];
     const G = await createGame(players, { online: false, onAskAuto: askLocalAuto });
+    CombatAnim.resetMatch();
     G.sandbox = true;
     G.sel = null;
     G.hl = null;
     G.ready = true;
-    G.log = ['🧪 Chế độ Thử Skill: chọn bất kỳ thẻ nào bên trên để thêm vào tay và thử nghiệm!'];
+    G.log = ['Chế độ Thử Skill: chọn bất kỳ thẻ nào bên trên để thêm vào tay và thử nghiệm!'];
     state.G = G;
     state.mode = 'game';
     state.msg = '';
@@ -1021,7 +1071,7 @@ window.appActions = {
     const targetP = G.ps[state.sandboxGiveTo] || G.ps[0];
     targetP.hand.push({ ...card, age: 0 });
     SFX.play('draw');
-    state.msg = `Đã thêm [${card.r}] ${card.n} cho ${targetP.name}`;
+    state.msg = `Đã thêm [${card.r}] ${formatCardLogName(card)} cho ${targetP.name}`;
     render();
   },
   sandboxClearHand() {
@@ -1040,16 +1090,22 @@ window.appActions = {
       p.sp = 10;
       p.dodge = 0;
       p.armor = 0;
-      p.armorT = 0;
+      p.tempArmors = [];
       p.pets = [];
       p.buffs = [];
       p.marks = [];
       p.bleed = 0;
       p.stun = 0;
       p.immune = 0;
+      p.stealth = 0;
+      p.koto = null;
+      p.gourd = null;
+      p.bugMark = null;
       p.regen = [];
       p.edo = 0;
       p.corpse = 0;
+      p.weak = 0;
+      p.puppetMaster = null;
       p.izm = 0;
       p.dead = 0;
       p.destroyed = 0;
@@ -1058,7 +1114,7 @@ window.appActions = {
     G.over = null;
     G.sel = null;
     G.hl = null;
-    G.log.push('🔄 Đã reset trạng thái bàn thử nghiệm.');
+    G.log.push('Đã reset trạng thái bàn thử nghiệm.');
     render();
   },
   async sandboxDummyAttack() {

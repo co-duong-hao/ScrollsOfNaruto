@@ -33,7 +33,10 @@ const CLAN_COLORS = {
   'gió và cánh quạt': ['#047857', '#6ee7b7'],
 };
 
-// Keep the 11 Sharingan-emblem cards (Izanagi + uploaded Uchiha/Mangekyo set) untouched
+// Card IDs that have generated Anime TCG WebP artwork in /assets/cards/{id}.webp
+export const CARD_IMAGE_IDS = new Set([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138]);
+
+// Fallback Sharingan SVG IDs (used when a card has no WebP image yet)
 const EXCLUDED_SHARINGAN_IDS = new Set([0, 8, 41, 42, 46, 47, 48, 49, 50, 63, 117]);
 
 function getPalette(c) {
@@ -1151,6 +1154,11 @@ let artUid = 0;
 
 export function cardArtSvg(c) {
   const [c1, c2] = getPalette(c);
+
+  if (CARD_IMAGE_IDS.has(c.id)) {
+    return `<div class="cd-art cd-art-img" style="--art-c1:${c1};--art-c2:${c2}"><img src="/assets/cards/${c.id}.webp" alt="" loading="lazy" decoding="async" draggable="false"/></div>`;
+  }
+
   const gid = `g_${c.id}_${++artUid}`;
 
   if (EXCLUDED_SHARINGAN_IDS.has(c.id)) {

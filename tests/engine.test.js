@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { CARDS } from '../shared/cards.js';
+import { CARDS, getCardTitle, formatCardLogName, normalizeSearchText } from '../shared/cards.js';
 import {
   createGame,
   useCard,
@@ -11,6 +11,7 @@ import {
   calcExpectedDamage,
   isValidTarget,
   needTarget,
+  totalArmor,
   EDO_HP,
 } from '../shared/engine.js';
 
@@ -504,4 +505,131 @@ test('Bẫy Ảo Thuật emits genjutsu sfx, reflects 100% damage and drains 1 S
   assert.equal(G.ps[0].hp, 3800);
   assert.equal(G.ps[0].sp, 9);
   assert.ok(res.events.some((e) => e.sfx === 'genjutsu'));
+});
+
+test('permanent armor (Kanshouo) and timed armor (Ngũ Trùng La Sinh Môn) are tracked separately and timed armor absorbs damage first', async () => {
+  const G = await createGame([
+    { name: 'Defender', bot: false },
+    { name: 'Attacker', bot: false },
+  ]);
+  const def = G.ps[0];
+  def.dodge = 0;
+  def.hand = [
+    { ...CARDS.find((c) => c.n === 'ngũ trùng la sinh môn'), age: 0 }, // +300 temp (3L)
+    { ...CARDS.find((c) => c.n === 'kanshouo'), age: 0 }, // +50 perm
+  ];
+  await useCard(G, 0);
+  await useCard(G, 0);
+  assert.equal(def.armor, 50);
+  assert.deepEqual(def.tempArmors, [{ amt: 300, t: 3 }]);
+  assert.equal(totalArmor(def), 350);
+
+  // Switch to Attacker and deal 200 dmg -> temp armor absorbs first (300 -> 100), permanent stays 50!
+  await endTurn(G, true);
+  G.ps[1].hand = [
+    { ...CARDS.find((c) => c.n === 'rasengan'), age: 0 }, // 200
+    { ...CARDS.find((c) => c.n === 'bát quái không chưởng'), age: 0 }, // 180
+  ];
+  await useCard(G, 0, 0);
+  assert.equal(def.armor, 50);
+  assert.deepEqual(def.tempArmors, [{ amt: 100, t: 3 }]);
+  assert.equal(def.hp, 4000);
+
+  // Deal 180 more dmg -> remaining 100 temp armor + 50 perm armor absorbed, 30 spills into HP!
+  await useCard(G, 0, 0);
+  assert.equal(def.armor, 0);
+  assert.deepEqual(def.tempArmors, []);
+  assert.equal(def.hp, 3970);
+});
+
+test('timed armor expires after its duration without removing permanent armor, and shortest timed armor absorbs first', async () => {
+  const G = await createGame([
+    { name: 'P1', bot: false },
+    { name: 'P2', bot: false },
+  ]);
+  const p1 = G.ps[0];
+  p1.dodge = 0;
+  p1.hand = [
+    { ...CARDS.find((c) => c.n === 'kanshouo'), age: 0 }, // +50 perm
+    { ...CARDS.find((c) => c.n === 'ngũ trùng la sinh môn'), age: 0 }, // +300 (3L)
+    { ...CARDS.find((c) => c.n === 'thiên sứ chi dực'), age: 0 }, // +400 (1L)
+  ];
+  await useCard(G, 0);
+  await useCard(G, 0);
+  await useCard(G, 0);
+  assert.equal(p1.armor, 50);
+  assert.deepEqual(p1.tempArmors, [
+    { amt: 400, t: 1 },
+    { amt: 300, t: 3 },
+  ]);
+
+  // P2 deals 200 dmg -> 1L shield absorbs first (400 -> 200), 3L stays 300, perm stays 50
+  await endTurn(G, true);
+  G.ps[1].hand = [{ ...CARDS.find((c) => c.n === 'rasengan'), age: 0 }];
+  await useCard(G, 0, 0);
+  assert.deepEqual(p1.tempArmors, [
+    { amt: 200, t: 1 },
+    { amt: 300, t: 3 },
+  ]);
+  assert.equal(p1.armor, 50);
+
+  // Back to P1's turn -> 1L expires, 3L becomes 2L, permanent 50 remains untouched
+  await endTurn(G, true);
+  assert.deepEqual(p1.tempArmors, [{ amt: 300, t: 2 }]);
+  assert.equal(p1.armor, 50);
+
+  // Advance 2 more full rounds so 3L also expires -> permanent 50 STILL remains!
+  await endTurn(G, true);
+  await endTurn(G, true);
+  assert.deepEqual(p1.tempArmors, [{ amt: 300, t: 1 }]);
+  await endTurn(G, true);
+  await endTurn(G, true);
+  assert.deepEqual(p1.tempArmors, []);
+  assert.equal(p1.armor, 50);
+});
+
+test('armor break (Lôi Thiết) destroys both timed and permanent armor', async () => {
+  const G = await createGame([
+    { name: 'P1', bot: false },
+    { name: 'P2', bot: false },
+  ]);
+  G.ps[1].dodge = 0;
+  G.ps[1].armor = 50;
+  G.ps[1].tempArmors = [{ amt: 300, t: 3 }];
+  G.ps[1].hand = [];
+  G.ps[0].hand = [{ ...CARDS.find((c) => c.n === 'Lôi Thiết'), age: 0 }];
+  await useCard(G, 0, 1);
+  assert.equal(G.ps[1].armor, 0);
+  assert.deepEqual(G.ps[1].tempArmors, []);
+  assert.equal(G.ps[1].hp, 3700);
+});
+
+test('all 139 cards have authentic Japanese Romaji (jp) and Kanji/Kana (kj) names', () => {
+  for (const c of CARDS) {
+    assert.ok(typeof c.jp === 'string' && c.jp.trim().length > 0, `Missing jp for card ${c.id} (${c.n})`);
+    assert.ok(typeof c.kj === 'string' && c.kj.trim().length > 0, `Missing kj for card ${c.id} (${c.n})`);
+  }
+  const gokakyu = CARDS.find((c) => c.id === 41);
+  assert.equal(getCardTitle(gokakyu), 'Katon: Gōkakyū no Jutsu');
+  assert.equal(gokakyu.kj, '火遁・豪火球の術');
+  assert.equal(formatCardLogName(gokakyu), 'Katon: Gōkakyū no Jutsu (hỏa cầu chi thuật)');
+  assert.equal(normalizeSearchText('Katon: Gōkakyū no Jutsu').includes('gokakyu'), true);
+  assert.equal(normalizeSearchText('hỏa cầu chi thuật').includes('hoa cau'), true);
+});
+
+test('cast event includes both Japanese (jp, kj) and Vietnamese (n) names', async () => {
+  const G = await createGame([
+    { name: 'Itachi', bot: false },
+    { name: 'Sasuke', bot: false },
+  ]);
+  G.ps[1].dodge = 0;
+  G.ps[1].hand = [];
+  G.ps[0].hand = [{ ...CARDS.find((c) => c.n === 'thiên chiếu'), age: 0 }];
+  const res = await useCard(G, 0, 1);
+  assert.equal(res.ok, true);
+  const castEv = res.events.find((e) => e.k === 'cast');
+  assert.ok(castEv);
+  assert.equal(castEv.jp, 'Amaterasu');
+  assert.equal(castEv.kj, '天照');
+  assert.equal(castEv.n, 'thiên chiếu');
 });

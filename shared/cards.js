@@ -61,7 +61,177 @@ export const TYPE_LABELS = {
   h: 'Hồi phục',
 };
 
-const card = (id, n, r, t, s, extra = {}) => ({ id, n, r, t, s, ...extra });
+export const CARD_JP_NAMES = {
+  0: ['Sharingan', '写輪眼'],
+  1: ['Rasengan', '螺旋丸'],
+  2: ['Kunai Nage', 'クナイ投げ'],
+  3: ['Shurikenjutsu', '手裏剣術'],
+  4: ['Katon', '火遁'],
+  5: ['Suiton', '水遁'],
+  6: ['Byakugan', '白眼'],
+  7: ['Kuchiyose no Jutsu', '口寄せの術'],
+  8: ['Izanagi', 'イザナギ'],
+  9: ['Hiraishin no Jutsu', '飛雷神の術'],
+  10: ['Fūton', '風遁'],
+  11: ['Kibaku Nendo: Kumo', '起爆粘土・蜘蛛'],
+  12: ['Kibaku Nendo: Tori', '起爆粘土・鳥'],
+  13: ['Karasu', '烏'],
+  14: ['Kuroari', '黒蟻'],
+  15: ['Sanshōuo', '山椒魚'],
+  16: ['Hiruko', 'ヒルコ'],
+  17: ['Sandaime Kazekage', '三代目風影'],
+  18: ['Shirohigi: Jikki Chikamatsu no Shū', '白秘技・十機近松の集'],
+  19: ['Akahigi: Hyakki no Sōen', '赤秘技・百機の操演'],
+  20: ['Suirō no Jutsu', '水牢の術'],
+  21: ['Suiton: Goshokuzame', '水遁・五食鮫'],
+  22: ['Suiton: Senshokukō', '水遁・千食鮫'],
+  23: ['Suiton: Suikōdan no Jutsu', '水遁・水鮫弾の術'],
+  24: ['Mizu Bunshin no Jutsu', '水分身の術'],
+  25: ['Ōdama Rasengan', '大玉螺旋丸'],
+  26: ['Tajū Kage Bunshin no Jutsu', '多重影分身の術'],
+  27: ['Katon: Karyū Endan', '火遁・火龍炎弾'],
+  28: ['Chidori', '千鳥'],
+  29: ['Fūinjutsu: Shiki Fūjin', '封印術・屍鬼封尽'],
+  30: ['Senpō: Myōjinmon', '仙法・明神門'],
+  31: ['Sabaku Sōtaisō Fūin', '砂漠層大葬封印'],
+  32: ['Kuchiyose: Gojū Rashōmon', '口寄せ・五重羅生門'],
+  33: ['Suna no Tate', '砂の盾'],
+  34: ['Hakkeshō Kaiten', '八卦掌回天'],
+  35: ['Jūken', '柔拳'],
+  36: ['Hakke Rokujūyon Shō', '八卦六十四掌'],
+  37: ['Hakke Kūshō', '八卦空掌'],
+  38: ['Jūho Sōshiken', '柔歩双獅拳'],
+  39: ['Hakke Hyaku Nijūhachi Shō', '八卦百二十八掌'],
+  40: ['Susanoo', '須佐能乎'],
+  41: ['Katon: Gōkakyū no Jutsu', '火遁・豪火球の術'],
+  42: ['Katon: Hōsenka no Jutsu', '火遁・鳳仙花の術'],
+  43: ['Magen: Kasegui no Jutsu', '魔幻・枷杭の術'],
+  44: ['Mateki: Mugen Onsa', '魔笛・夢幻音鎖'],
+  45: ['Magen: Kyō Tenchi-ten', '魔幻・鏡天地転'],
+  46: ['Mangekyō Sharingan', '万華鏡写輪眼'],
+  47: ['Amaterasu', '天照'],
+  48: ['Tsukuyomi', '月読'],
+  49: ['Kamui (Hidari)', '神威・左'],
+  50: ['Kamui (Migi)', '神威・右'],
+  51: ['Rinnegan', '輪廻眼'],
+  52: ['Shinra Tensei', '神羅天征'],
+  53: ["Banshō Ten'in", '万象天引'],
+  54: ['Shuradō: Kaiwan no Hiya', '修羅道・怪腕ノ火矢'],
+  55: ['Shuradō: Sōken', '修羅道・双剣'],
+  56: ['Chikushōdō', '畜生道'],
+  57: ['Gakidō: Fūjutsu Kyūin', '餓鬼道・封術吸印'],
+  58: ['Ningendō', '人間道'],
+  59: ['Jigokudō', '地獄道'],
+  60: ['Chibaku Tensei', '地爆天星'],
+  61: ['Tengai Shinsei', '天碍震星'],
+  62: ['Kuchiyose: Gedō Mazō', '口寄せ・外道魔像'],
+  63: ['Izanami', 'イザナミ'],
+  64: ['Hachimon Tonkō: Shimon', '八門遁甲・死門'],
+  65: ['Ryūsa Bakuryū', '流砂瀑流'],
+  66: ['Sabaku Taisō', '砂漠大葬'],
+  67: ['Sabaku Kyū', '砂縛柩'],
+  68: ['Suna no Yoroi', '砂の鎧'],
+  69: ['Tanukineiri no Jutsu', '狸寝入りの術'],
+  70: ['Konoha Senpū', '木ノ葉旋風'],
+  71: ['Uzumaki Naruto Rendan', 'うずまきナルト連弾'],
+  72: ['Hachimon: Kaimon', '八門・開門'],
+  73: ['Omote Renge', '表蓮華'],
+  74: ['Asa Kujaku', '朝孔雀'],
+  75: ['Tantō Totsugeki', '短刀突撃'],
+  76: ['Fūma Shuriken', '風魔手裏剣'],
+  77: ['Iryō Ninjutsu: Chiyu', '医療忍術・治癒'],
+  78: ['Taijutsu', '体術'],
+  79: ['Shōsen Jutsu', '掌仙術'],
+  80: ['Kairiki', '怪力'],
+  81: ['Byakugō no Jutsu', '百豪の術'],
+  82: ['Ōkashō', '桜花衝'],
+  83: ['Ninpō: Sōzō Saisei', '忍法・創造再生'],
+  84: ['Kuchiyose: Edo Tensei', '口寄せ・穢土転生'],
+  85: ['Hiraishin Giri', '飛雷神斬り'],
+  86: ['Kagemane no Jutsu', '影真似の術'],
+  87: ['Kage Nui no Jutsu', '影縫いの術'],
+  88: ['Kage Kubishibari no Jutsu', '影首縛りの術'],
+  89: ['Doton: Doryūheki', '土遁・土流壁'],
+  90: ['Raikiri', '雷切'],
+  91: ['Kami no Shisha no Jutsu', '神の紙者の術'],
+  92: ['Kami Shuriken', '紙手裏剣'],
+  93: ['Shikigami no Mai', '式紙の舞'],
+  94: ['Kami Yari', '紙槍'],
+  95: ['Tenshi no Tsubasa', '天使の翼'],
+  96: ['Doton: Chō Kajūgan no Jutsu', '土遁・超加重岩の術'],
+  97: ['Mokuton: Jukai Kōtan', '木遁・樹界降誕'],
+  98: ['Raiton: Raijū Tsuiga', '雷遁・雷獣追牙'],
+  99: ['Kibaku Nendo: C1', '起爆粘土・C1'],
+  100: ['C4 Karura', 'C4カルラ'],
+  101: ['Kibakufuda', '起爆札'],
+  102: ['Doku Senbon', '毒千本'],
+  103: ['Kibaku Nendo: Shōkumo', '起爆粘土・小蜘蛛'],
+  104: ['Kawarimi no Jutsu', '変わり身の術'],
+  105: ['Kemuridama', '煙玉'],
+  106: ['Mokuton: Mokujōheki', '木遁・木錠壁'],
+  107: ['Moku Bunshin no Jutsu', '木分身の術'],
+  108: ['Mokuton: Shichūka no Jutsu', '木遁・四柱家の術'],
+  109: ['Sensatsu Suishō', '千殺水翔'],
+  110: ['Hyōton: Ikkaku Hakugei', '氷遁・一角白鯨'],
+  111: ['Hyōton: Hyōrō no Jutsu', '氷遁・氷牢の術'],
+  112: ['Hijutsu: Makyō Hyōshō', '秘術・魔鏡氷晶'],
+  113: ['Hyōton: Hyōgan Dōmu', '氷遁・氷岩堂無'],
+  114: ['Sennin Mōdo', '仙人モード'],
+  115: ['Hebi Sennin Mōdo', '蛇仙人モード'],
+  116: ['Kyūbi Bōsō', '九尾暴走'],
+  117: ['Kotoamatsukami', '別天神'],
+  118: ['Bashōsen', '芭蕉扇'],
+  119: ['Benihisago', '紅葫蘆'],
+  120: ['Gamayu Dan', '蝦蟇油弾'],
+  121: ['Kuchiyose: Gamabunta', '口寄せ・ガマブン太'],
+  122: ['Senpō: Goemon', '仙法・五右衛門'],
+  123: ['Rinkaichū', '燐壊虫'],
+  124: ['Kikaichū', '寄壊蟲'],
+  125: ['Kidaichū: Mushikui', '寄大蟲・蟲食い'],
+  126: ['Hijutsu: Mushidama', '秘術・蟲玉'],
+  127: ['Hijutsu: Mushibaku', '秘術・蟲爆'],
+  128: ['Fūton: Kaze no Yaiba', '風遁・風の刃'],
+  129: ['Fūton: Ōkamaitachi', '風遁・大鎌鼬'],
+  130: ['Fūton: Reppūshō', '風遁・烈風掌'],
+  131: ['Kuchiyose: Kirikiri Mai', '口寄せ・斬り斬り舞'],
+  132: ['Fūton: Kakeami', '風遁・掛け網'],
+  133: ['Ten no Juin', '天の呪印'],
+  134: ['Suiton: Daikōdan no Jutsu', '水遁・大鮫弾の術'],
+  135: ['Geijutsu wa Bakuhatsu da!', '芸術は爆発だ'],
+  136: ['Kyūkyoku Geijutsu: C0', '究極芸術・C0'],
+  137: ['Hitokugutsu', '人傀儡'],
+  138: ['Suna no Mayu', '砂の繭'],
+};
+
+export function normalizeSearchText(s) {
+  return String(s || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[đĐ]/g, 'd')
+    .toLowerCase()
+    .trim();
+}
+
+export function getCardTitle(c) {
+  return c?.jp || c?.n || '';
+}
+
+export function isSameJpViName(c) {
+  if (!c || !c.jp) return true;
+  return normalizeSearchText(c.jp) === normalizeSearchText(c.n);
+}
+
+export function formatCardLogName(c) {
+  if (!c) return '';
+  const jp = getCardTitle(c);
+  if (!c.n || isSameJpViName(c)) return jp;
+  return `${jp} (${c.n})`;
+}
+
+const card = (id, n, r, t, s, extra = {}) => {
+  const [jp, kj] = CARD_JP_NAMES[id] || [n, ''];
+  return { id, n, jp, kj, r, t, s, ...extra };
+};
 
 const {
   PUPPET: R, HYUGA: H, UCHIHA: U, NORMAL: T, MANGEKYO: M, RINNEGAN: RN,

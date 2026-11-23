@@ -5,9 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Scrolls of Naruto — Đấu Thẻ Bài Nguyên Tố</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700;800&family=Noto+Serif:wght@600;800&display=swap">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,400;0,600;0,700;1,600&family=Noto+Serif+JP:wght@600;700&family=Noto+Serif:wght@600;700&family=Yuji+Syuku&display=swap">
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/holo-cards.css">
+  <link rel="stylesheet" href="/css/naruto-theme.css">
 </head>
 <body>
   <div class="bg-video-wrap" aria-hidden="true">
@@ -19,9 +21,9 @@
   <div id="app"></div>
   <aside id="bgmDock" class="bgm-dock" aria-label="Nhạc nền Naruto">
     <div class="bgm-dock-head">
-      <span id="bgmDockTitle">🎵 Nhạc nền · Morning</span>
+      <span id="bgmDockTitle">Nhạc nền · Morning</span>
       <div class="bgm-head-actions">
-        <a id="bgmAppleLink" class="bgm-apple-link" href="https://music.apple.com/us/album/morning/1584791969?i=1584791972" target="_blank" rel="noopener noreferrer" title="Mở trên Apple Music">Apple Music ↗</a>
+        <a id="bgmAppleLink" class="bgm-apple-link" href="https://music.apple.com/us/album/morning/1584791969?i=1584791972" target="_blank" rel="noopener noreferrer" title="Mở trên Apple Music">Apple Music</a>
         <button type="button" class="btn-sm bgm-close-btn" onclick="appActions.toggleBgmDock()" title="Thu gọn (nhạc vẫn phát nền)">—</button>
       </div>
     </div>
@@ -34,9 +36,9 @@
             <small id="bgmTrackArtist">MUSASHI PROJECT · Naruto OST</small>
           </div>
           <div class="bgm-transport">
-            <button type="button" class="bgm-icon-btn" onclick="appActions.bgmStepTrack(-1)" title="Bài trước">⏮</button>
-            <button type="button" id="bgmPlayBtn" class="bgm-play-btn go" onclick="appActions.bgmTogglePlay()" title="Phát / Tạm dừng">▶</button>
-            <button type="button" class="bgm-icon-btn" onclick="appActions.bgmStepTrack(1)" title="Bài tiếp theo">⏭</button>
+            <button type="button" class="bgm-icon-btn" onclick="appActions.bgmStepTrack(-1)" title="Bài trước">&lt;</button>
+            <button type="button" id="bgmPlayBtn" class="bgm-play-btn go" onclick="appActions.bgmTogglePlay()" title="Phát / Tạm dừng">Phát</button>
+            <button type="button" class="bgm-icon-btn" onclick="appActions.bgmStepTrack(1)" title="Bài tiếp theo">&gt;</button>
           </div>
         </div>
         <div id="bgmPlaylist" class="bgm-playlist" aria-label="Chọn bài nhạc nền"></div>
@@ -44,10 +46,10 @@
           <span id="bgmCurTime" class="bgm-time">0:00</span>
           <input id="bgmSeek" class="bgm-seek" type="range" min="0" max="100" step="0.1" value="0" aria-label="Tiến độ bài hát" oninput="appActions.bgmSeek(this.value)">
           <span id="bgmDurTime" class="bgm-time">0:30</span>
-          <button type="button" id="bgmLoopBtn" class="bgm-icon-btn is-on" onclick="appActions.bgmToggleLoop()" title="Lặp lại bài hiện tại (tắt để tự chuyển bài)">🔁</button>
+          <button type="button" id="bgmLoopBtn" class="bgm-icon-btn is-on" onclick="appActions.bgmToggleLoop()" title="Lặp lại bài hiện tại (tắt để tự chuyển bài)">Lặp</button>
         </div>
         <div class="bgm-vol-row">
-          <button type="button" id="bgmMuteBtn" class="bgm-icon-btn" onclick="appActions.bgmToggleMute()" title="Tắt / Bật tiếng nhạc nền">🔉</button>
+          <button type="button" id="bgmMuteBtn" class="bgm-icon-btn" onclick="appActions.bgmToggleMute()" title="Tắt / Bật tiếng nhạc nền">Loa</button>
           <span class="bgm-vol-label">Âm lượng nhạc</span>
           <input id="bgmVolSlider" class="bgm-vol-slider" type="range" min="0" max="100" value="20" aria-label="Âm lượng nhạc nền" oninput="appActions.bgmSetVolume(this.value)">
           <span id="bgmVolPct" class="vol-pct">20%</span>
@@ -57,6 +59,7 @@
     </div>
   </aside>
   <script src="/socket.io/socket.io.js"></script>
+  <script src="/vendor/gsap/gsap.min.js"></script>
   <script type="module" src="/js/main.js"></script>
 </body>
 </html>

@@ -125,7 +125,6 @@ function stopShowcase() {
 }
 
 function interactCard(el, clientX, clientY) {
-  if (el.classList.contains('dim')) return;
   stopShowcase();
 
   const rect = el.getBoundingClientRect();

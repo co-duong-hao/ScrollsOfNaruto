@@ -1,0 +1,586 @@
+/* ==========================================================================
+   Scrolls of Naruto — Authentic Anime Naruto Theme
+   Konoha Scroll (Makimono) + Ultimate Ninja Storm Battle HUD
+   Supports Light (Konoha Daylight) & Dark (Konoha Moonlight) modes
+   ========================================================================== */
+
+:root {
+  --uzumaki: #ea580c;
+  --uzumaki-bright: #f97316;
+  --chakra: #0284c7;
+  --chakra-glow: #38bdf8;
+  --konoha: #1e6b45;
+  --hokage-gold: #d97706;
+  --hokage-gold-lt: #fbbf24;
+  --hanko-red: #b91c1c;
+  --wood-dark: #3b2314;
+  --wood-mid: #5c361e;
+  --scroll-bg: rgba(248, 238, 214, 0.9);
+  --scroll-bd: #b69156;
+  --hitai-cloth: linear-gradient(135deg, rgba(28, 42, 66, 0.9), rgba(18, 27, 45, 0.92));
+  --hitai-text: #f8f2e2;
+  --asanoha-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 48 48'%3E%3Cg fill='none' stroke='%239a7640' stroke-opacity='.09' stroke-width='1'%3E%3Cpath d='M24 0L48 24L24 48L0 24Z'/%3E%3Cpath d='M24 0V48M0 24H48M12 12L36 36M36 12L12 36'/%3E%3C/g%3E%3C/svg%3E");
+  --ac: #ea580c;
+}
+
+:root[data-theme="dark"] {
+  --uzumaki: #ff6a2b;
+  --uzumaki-bright: #fb923c;
+  --chakra: #0ea5e9;
+  --chakra-glow: #38bdf8;
+  --konoha: #237a4e;
+  --hokage-gold: #f59e0b;
+  --hokage-gold-lt: #fde68a;
+  --hanko-red: #dc2626;
+  --wood-dark: #26150b;
+  --wood-mid: #472816;
+  --scroll-bg: rgba(18, 22, 34, 0.86);
+  --scroll-bd: #8f6c36;
+  --hitai-cloth: linear-gradient(135deg, rgba(16, 22, 36, 0.92), rgba(29, 18, 24, 0.92));
+  --hitai-text: #f4ecda;
+  --asanoha-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 48 48'%3E%3Cg fill='none' stroke='%23fbbf24' stroke-opacity='.06' stroke-width='1'%3E%3Cpath d='M24 0L48 24L24 48L0 24Z'/%3E%3Cpath d='M24 0V48M0 24H48M12 12L36 36M36 12L12 36'/%3E%3C/g%3E%3C/svg%3E");
+  --ac: #ff6a2b;
+}
+
+/* ==========================================================================
+   1. TOPBAR — HITAI-ATE (BĂNG ĐEO TRÁN LÀNG LÁ)
+   ========================================================================== */
+
+.topbar {
+  background: var(--hitai-cloth);
+  color: var(--hitai-text);
+  border: 1.5px solid rgba(251, 191, 36, 0.35);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.35),
+    0 8px 24px rgba(0, 0, 0, 0.38);
+  padding: 7px 14px;
+}
+
+.hitai-plate {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 14px;
+  border-radius: 9px;
+  background: linear-gradient(160deg, #e2e8f0 0%, #cbd5e1 35%, #94a3b8 68%, #e2e8f0 100%);
+  color: #111827;
+  border: 1.5px solid #475569;
+  box-shadow:
+    inset 0 1px 2px #ffffffdd,
+    inset 0 -2px 3px #1e293b66,
+    0 2px 8px #00000055;
+  position: relative;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.brand:hover .hitai-plate {
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 2px #fff,
+    0 0 14px rgba(251, 191, 36, 0.55),
+    0 3px 10px #00000066;
+}
+.hitai-rivet {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #f8fafc, #475569);
+  box-shadow: inset 0 1px 1px #0006;
+  flex-shrink: 0;
+}
+.konoha-crest {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 1px 0 #ffffff99);
+}
+
+.topbar .btn-sm {
+  background: rgba(255, 250, 240, 0.1);
+  color: var(--hitai-text);
+  border: 1.5px solid rgba(251, 191, 36, 0.32);
+  font-weight: 600;
+}
+.topbar .btn-sm:hover:not(:disabled) {
+  background: rgba(234, 88, 12, 0.28);
+  border-color: var(--hokage-gold-lt);
+  box-shadow: 0 0 12px rgba(249, 115, 22, 0.35);
+}
+.topbar .btn-sm.go {
+  background: linear-gradient(135deg, var(--uzumaki), #c2410c);
+  border-color: var(--hokage-gold-lt);
+  color: #fff;
+}
+.topbar .vol-ctrl {
+  background: rgba(255, 250, 240, 0.1);
+  border: 1.5px solid rgba(251, 191, 36, 0.32);
+}
+.topbar .vol-pct {
+  color: #fde68a;
+}
+
+/* ==========================================================================
+   2. MENU & PANELS — CUỘN GIẤY MAKIMONO (SHINOBI SCROLL)
+   ========================================================================== */
+
+.hero-card,
+.panel {
+  position: relative;
+  background-color: var(--scroll-bg);
+  background-image: var(--asanoha-pattern);
+  border: 2px solid var(--scroll-bd);
+  border-radius: 12px;
+  padding: 36px 32px 34px;
+  box-shadow:
+    inset 0 0 28px rgba(139, 90, 43, 0.14),
+    0 24px 60px rgba(0, 0, 0, 0.5);
+  overflow: visible;
+}
+
+/* Top & bottom cylindrical wooden Makimono scroll rollers */
+.hero-card::before,
+.hero-card::after,
+.panel::before,
+.panel::after {
+  content: '';
+  position: absolute;
+  left: -14px;
+  right: -14px;
+  height: 15px;
+  border-radius: 999px;
+  background: linear-gradient(
+    180deg,
+    #8b5a2b 0%,
+    var(--wood-mid) 35%,
+    var(--wood-dark) 80%,
+    #1c0f07 100%
+  );
+  border: 1.5px solid #d97706aa;
+  box-shadow:
+    inset 0 2px 2px rgba(255, 232, 180, 0.35),
+    0 4px 12px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}
+.hero-card::before,
+.panel::before { top: -8px; }
+.hero-card::after,
+.panel::after { bottom: -8px; }
+
+/* Traditional Red Hanko Seal Stamp (忍) */
+.hanko-seal {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 38px;
+  height: 38px;
+  border: 2.5px solid var(--hanko-red);
+  border-radius: 6px;
+  color: var(--hanko-red);
+  font: 700 22px/33px var(--font-jp);
+  text-align: center;
+  transform: rotate(-8deg);
+  opacity: 0.85;
+  box-shadow: inset 0 0 0 1px rgba(185, 28, 28, 0.4);
+  pointer-events: none;
+  user-select: none;
+}
+
+.hero-badge {
+  background: linear-gradient(135deg, rgba(234, 88, 12, 0.16), rgba(217, 119, 6, 0.16));
+  border: 1px solid rgba(234, 88, 12, 0.45);
+  color: var(--uzumaki);
+}
+
+.hero-card h1 {
+  background: linear-gradient(180deg, var(--t) 30%, var(--uzumaki) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
+}
+
+/* Naruto Signature Action Buttons */
+button.go {
+  background: linear-gradient(135deg, var(--uzumaki-bright), var(--uzumaki) 60%, #c2410c);
+  border-color: #fbbf24aa;
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(234, 88, 12, 0.35);
+}
+button.go:hover:not(:disabled) {
+  border-color: #fde68a;
+  box-shadow: 0 6px 20px rgba(249, 115, 22, 0.55);
+}
+button.btn-online {
+  background: linear-gradient(135deg, #0ea5e9, #2563eb);
+  border-color: #7dd3fc99;
+  box-shadow: 0 4px 14px rgba(14, 165, 233, 0.35);
+}
+button.btn-online:hover:not(:disabled) {
+  border-color: #bae6fd;
+  box-shadow: 0 6px 20px rgba(56, 189, 248, 0.55);
+}
+button.btn-sandbox {
+  background: linear-gradient(135deg, #16a34a, #0f766e);
+  border-color: #6ee7b788;
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(15, 118, 110, 0.35);
+}
+button.btn-sandbox:hover:not(:disabled) {
+  border-color: #a7f3d0;
+  box-shadow: 0 6px 20px rgba(52, 211, 153, 0.5);
+}
+
+/* ==========================================================================
+   3. CHUNIN ARENA TABLE & FŪINJUTSU SEALING CIRCLE
+   ========================================================================== */
+
+.tb {
+  background: radial-gradient(
+    ellipse at 50% 42%,
+    rgba(20, 44, 38, 0.56) 0%,
+    rgba(11, 20, 28, 0.78) 65%,
+    rgba(8, 11, 18, 0.88) 100%
+  );
+  border: 2px solid rgba(217, 119, 6, 0.45);
+  box-shadow:
+    inset 0 0 60px rgba(0, 0, 0, 0.65),
+    inset 0 0 0 1px rgba(253, 230, 138, 0.14),
+    0 16px 40px rgba(0, 0, 0, 0.55);
+}
+
+/* Rotating Fūinjutsu Sealing Circle in the Arena center */
+.arena-seal {
+  position: absolute;
+  left: 50%;
+  top: 44%;
+  width: min(460px, 72vw);
+  height: min(460px, 72vw);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.12;
+  animation: sealSpin 95s linear infinite;
+}
+@keyframes sealSpin {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+.tb > .opp,
+.tb > .mid,
+.tb > .mine {
+  position: relative;
+  z-index: 2;
+}
+
+/* Battle Log Scroll Strip */
+.lg {
+  background: linear-gradient(180deg, rgba(12, 16, 26, 0.72), rgba(18, 22, 34, 0.65));
+  border: 1px solid rgba(251, 191, 36, 0.28);
+  border-left: 4px solid var(--uzumaki);
+  border-right: 4px solid var(--uzumaki);
+  box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.55);
+}
+
+.ban {
+  color: #fff7e6;
+  text-shadow: 0 2px 10px #000, 0 0 18px rgba(249, 115, 22, 0.45);
+}
+
+/* ==========================================================================
+   4. PLAYER SEATS — ULTIMATE NINJA STORM HUD (HP + 10-SEGMENT CHAKRA BAR)
+   ========================================================================== */
+
+.st {
+  background: linear-gradient(165deg, rgba(15, 22, 32, 0.84), rgba(9, 14, 22, 0.9));
+  border: 2px solid rgba(251, 191, 36, 0.28);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 8px 20px rgba(0, 0, 0, 0.45);
+}
+
+.st.cur {
+  border-color: var(--hokage-gold-lt);
+  box-shadow:
+    0 0 0 1px var(--uzumaki-bright),
+    0 0 22px rgba(249, 115, 22, 0.65),
+    inset 0 0 18px rgba(251, 191, 36, 0.16);
+}
+
+.st.tg {
+  border-color: #ef4444;
+  box-shadow:
+    0 0 0 2px rgba(239, 68, 68, 0.65),
+    0 0 24px rgba(220, 38, 38, 0.85);
+}
+
+.seat-crest {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.seat-crest svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Angled Anime HP Bar */
+.hp:not(.fl) {
+  height: 22px;
+  border-radius: 4px;
+  clip-path: polygon(7px 0, 100% 0, calc(100% - 7px) 100%, 0 100%);
+  background: rgba(0, 0, 0, 0.65);
+  border: 1px solid rgba(251, 191, 36, 0.45);
+  box-shadow: inset 0 2px 6px #000a;
+}
+.hp:not(.fl) .hp-lag {
+  position: absolute;
+  inset: 0 auto 0 0;
+  z-index: 0;
+  background: linear-gradient(90deg, #f59e0b 0%, #fde047 60%, #fef9c3 100%);
+  box-shadow: 0 0 8px rgba(250, 204, 21, 0.55);
+  pointer-events: none;
+}
+.hp:not(.fl) i {
+  position: relative;
+  z-index: 1;
+  background: linear-gradient(90deg, #b91c1c 0%, #ea580c 45%, #22c55e 100%);
+  box-shadow: inset 0 2px 3px rgba(255, 255, 255, 0.32);
+}
+.hp:not(.fl) span {
+  z-index: 2;
+  text-shadow: 0 1px 4px #000;
+  letter-spacing: 0.4px;
+}
+
+/* Anime Impact Frame Overlay (S-rank & KO) */
+.vfx-canvas {
+  z-index: 10;
+}
+.impact-frame-ov {
+  position: absolute;
+  inset: 0;
+  z-index: 45;
+  pointer-events: none;
+  opacity: 0;
+  border-radius: inherit;
+  transition: opacity 0.05s linear;
+}
+.impact-frame-ov.is-srank {
+  background:
+    repeating-conic-gradient(
+      from 0deg at 50% 50%,
+      rgba(255, 255, 255, 0.88) 0deg 4deg,
+      rgba(15, 23, 42, 0.86) 4deg 11deg
+    );
+  mix-blend-mode: exclusion;
+}
+.impact-frame-ov.is-ko {
+  background:
+    radial-gradient(circle at 50% 50%, rgba(254, 226, 226, 0.92) 0%, rgba(185, 28, 28, 0.85) 55%, rgba(0, 0, 0, 0.95) 100%);
+  mix-blend-mode: hard-light;
+}
+.impact-frame-ov.is-active {
+  opacity: 0.72;
+}
+
+/* 10-Segment Glowing Blue Chakra Gauge (SP) */
+.chakra-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 0 6px;
+}
+.sp-bar {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 2.5px;
+  padding: 2px 4px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  border-radius: 4px;
+  transform: skewX(-12deg);
+}
+.sp-pip {
+  height: 7px;
+  border-radius: 1.5px;
+  background: rgba(148, 163, 184, 0.2);
+  transition: background 0.25s ease, box-shadow 0.25s ease;
+}
+.sp-pip.on {
+  background: linear-gradient(180deg, #bae6fd, #38bdf8 50%, #0284c7);
+  box-shadow: 0 0 6px rgba(56, 189, 248, 0.75);
+}
+.sp-bar.is-low {
+  border-color: rgba(249, 115, 22, 0.75);
+}
+.sp-bar.is-low .sp-pip.on {
+  background: linear-gradient(180deg, #fef08a, #f97316);
+  box-shadow: 0 0 8px rgba(249, 115, 22, 0.85);
+}
+.chakra-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #bae6fd;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.hand-pill {
+  color: #fde68a;
+}
+
+/* ==========================================================================
+   5. JUTSU SCROLL CARDS — WASHI FRAME & HANKO RANK STAMPS
+   ========================================================================== */
+
+.cd.cd-holo .cd-front {
+  background-image:
+    var(--asanoha-pattern),
+    linear-gradient(175deg, #faf2dc 0%, #eadab4 100%);
+  box-shadow: inset 0 0 0 1px rgba(122, 85, 42, 0.28);
+}
+.cd.cd-holo.S .cd-front {
+  background-image:
+    var(--asanoha-pattern),
+    linear-gradient(165deg, #fff6d9 0%, #efd28c 58%, #dfbe68 100%);
+}
+.cd.cd-holo[data-rarity="rare rainbow"] .cd-front {
+  background-image:
+    var(--asanoha-pattern),
+    linear-gradient(165deg, #fdf4ff 0%, #ebd6ff 55%, #fbcfe8 100%);
+}
+
+/* Elemental Top Ribbon Accent */
+.cd.cd-holo[data-el="hỏa"] .cd-front { border-top-color: #ea580c; }
+.cd.cd-holo[data-el="thủy"] .cd-front { border-top-color: #0284c7; }
+.cd.cd-holo[data-el="lôi"] .cd-front { border-top-color: #eab308; }
+.cd.cd-holo[data-el="phong"] .cd-front { border-top-color: #16a34a; }
+
+/* Square Japanese Hanko Seal Rank Stamp */
+.rk {
+  font-family: var(--font-jp);
+  font-size: 12.5px;
+  font-weight: 700;
+  padding: 0px 6px;
+  border-radius: 4px;
+  border: 1.5px solid rgba(255, 255, 255, 0.72);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.22), 0 1px 4px rgba(0, 0, 0, 0.35);
+  line-height: 1.3;
+}
+.rk-S {
+  background: linear-gradient(135deg, #b91c1c, #d97706);
+  border-color: #fef08a;
+}
+
+/* ==========================================================================
+   6. ANIME CUT-IN CAST BANNER
+   ========================================================================== */
+
+.cast {
+  padding: 16px 0;
+  background:
+    repeating-linear-gradient(
+      -12deg,
+      rgba(255, 255, 255, 0.06) 0px,
+      rgba(255, 255, 255, 0.06) 2px,
+      transparent 2px,
+      transparent 10px
+    ),
+    linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.72) 20%, rgba(0, 0, 0, 0.72) 80%, transparent);
+  border-top: 2px solid rgba(253, 230, 138, 0.45);
+  border-bottom: 2px solid rgba(253, 230, 138, 0.45);
+}
+
+/* ==========================================================================
+   7. MODALS, BGM DOCK & VICTORY SEAL (勝)
+   ========================================================================== */
+
+.modal-card {
+  background-color: var(--scroll-bg);
+  background-image: var(--asanoha-pattern);
+  border: 2px solid var(--scroll-bd);
+  box-shadow: 0 22px 55px rgba(0, 0, 0, 0.6);
+}
+.modal-head {
+  border-bottom: 2px solid rgba(217, 119, 6, 0.35);
+  padding-bottom: 10px;
+}
+
+.bgm-dock {
+  background-color: var(--scroll-bg);
+  background-image: var(--asanoha-pattern);
+  border: 2px solid var(--scroll-bd);
+}
+.bgm-dock-head {
+  background: linear-gradient(135deg, rgba(59, 35, 20, 0.18), rgba(217, 119, 6, 0.14));
+  border-bottom: 1.5px solid rgba(182, 145, 86, 0.45);
+}
+
+.sandbox-bar {
+  background-color: var(--scroll-bg);
+  background-image: var(--asanoha-pattern);
+  border: 2px solid var(--scroll-bd);
+}
+
+/* Victory Overlay with Giant Red Hanko Victory Stamp (勝) */
+.win-box {
+  position: relative;
+  background-color: var(--scroll-bg);
+  background-image: var(--asanoha-pattern);
+  border: 2.5px solid var(--scroll-bd);
+  overflow: hidden;
+  box-shadow: 0 24px 65px rgba(0, 0, 0, 0.65);
+}
+.win-stamp {
+  position: absolute;
+  top: 14px;
+  right: 18px;
+  width: 78px;
+  height: 78px;
+  border: 4px solid rgba(185, 28, 28, 0.55);
+  border-radius: 12px;
+  color: rgba(185, 28, 28, 0.55);
+  font: 700 50px/70px var(--font-jp);
+  text-align: center;
+  transform: rotate(-12deg);
+  pointer-events: none;
+  user-select: none;
+}
+
+@media (max-width: 860px) {
+  .hero-card::before,
+  .hero-card::after,
+  .panel::before,
+  .panel::after {
+    left: -6px;
+    right: -6px;
+    height: 11px;
+  }
+  .hanko-seal {
+    width: 30px;
+    height: 30px;
+    font-size: 17px;
+    line-height: 26px;
+    top: 12px;
+    right: 12px;
+  }
+  .hitai-plate {
+    padding: 3px 10px;
+  }
+  .chakra-row {
+    flex-wrap: wrap;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .arena-seal {
+    animation: none;
+  }
+}

@@ -1,0 +1,534 @@
+{
+  "credit": "VFX: KanaWorks_AI (@KanaWorks_AI)",
+  "homepage": "https://github.com/kanaworksai-hue/kanaworks-sakuga-vfx",
+  "effects": {
+    "dark_aura_01": {
+      "id": "dark_aura_01",
+      "element": "dark",
+      "form": "aura",
+      "src": "/assets/vfx/dark_aura_01.webp",
+      "grid": [
+        8,
+        5
+      ],
+      "cell": [
+        192,
+        192
+      ],
+      "frames": 40,
+      "fps": 30,
+      "pivot": [
+        0.5,
+        0.935
+      ],
+      "blend": "alpha",
+      "contactFrame": 0
+    },
+    "dark_impact_01": {
+      "id": "dark_impact_01",
+      "element": "dark",
+      "form": "impact",
+      "src": "/assets/vfx/dark_impact_01.webp",
+      "grid": [
+        8,
+        8
+      ],
+      "cell": [
+        192,
+        192
+      ],
+      "frames": 64,
+      "fps": 30,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "blend": "alpha",
+      "contactFrame": 2
+    },
+    "fire_charge_01": {
+      "id": "fire_charge_01",
+      "element": "fire",
+      "form": "charge",
+      "src": "/assets/vfx/fire_charge_01.webp",
+      "grid": [
+        8,
+        8
+      ],
+      "cell": [
+        192,
+        192
+      ],
+      "frames": 64,
+      "fps": 30,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "blend": "alpha",
+      "contactFrame": 18
+    },
+    "fire_impact_01": {
+      "id": "fire_impact_01",
+      "element": "fire",
+      "form": "impact",
+      "src": "/assets/vfx/fire_impact_01.webp",
+      "grid": [
+        8,
+        8
+      ],
+      "cell": [
+        192,
+        192
+      ],
+      "frames": 64,
+      "fps": 30,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "blend": "alpha",
+      "contactFrame": 3
+    },
+    "fire_projectile_01": {
+      "id": "fire_projectile_01",
+      "element": "fire",
+      "form": "projectile",
+      "src": "/assets/vfx/fire_projectile_01.webp",
+      "grid": [
+        8,
+        5
+      ],
+      "cell": [
+        192,
+        192
+      ],
+      "frames": 40,
+      "fps": 30,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "blend": "alpha",
+      "contactFrame": 0
+    },
+    "fire_slash_01": {
+      "id": "fire_slash_01",
+      "element": "fire",
+      "form": "slash",
+      "src": "/assets/vfx/fire_slash_01.webp",
+      "grid": [
+        8,
+        8
+      ],
+      "cell": [
+        192,
+        192
+      ],
+      "frames": 64,
+      "fps": 30,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "blend": "alpha",
+      "contactFrame": 0
+    },
+    "ice_impact_01": {
+      "id": "ice_impact_01",
+      "element": "ice",
+      "form": "impact",
+      "src": "/assets/vfx/ice_impact_01.webp",
+      "grid": [
+        8,
+        8
+      ],
+      "cell": [
+        192,
+        192
+      ],
+      "frames": 64,
+      "fps": 30,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "blend": "alpha",
+      "contactFrame": 1
+    },
+    "ice_shield_01": {
+      "id": "ice_shield_01",
+      "element": "ice",
+      "form": "shield",
+      "src": "/assets/vfx/ice_shield_01.webp",
+      "grid": [
+        8,
+        5
+      ],
+      "cell": [
+        192,
+        192
+      ],
+      "frames": 40,
+      "fps": 30,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "blend": "alpha",
+      "contactFrame": 0
+    },
+    "light_aura_01": {
+      "id": "light_aura_01",
+      "element": "light",
+      "form": "aura",
+      "src": "/assets/vfx/light_aura_01.webp",
+      "grid": [
+        8,
+        5
+      ],
+      "cell": [
+        192,
+        192
+      ],
+      "frames": 40,
+      "fps": 30,
+      "pivot": [
+        0.5,
+        0.9375
+      ],
+      "blend": "alpha",
+      "contactFrame": 0
+    },
+    "light_impact_01": {
+      "id": "light_impact_01",
+      "element": "light",
+      "form": "impact",
+      "src": "/assets/vfx/light_impact_01.webp",
+      "grid": [
+        8,
+        8
+      ],
+      "cell": [
+        192,
+        192
+      ],
+      "frames": 64,
+      "fps": 30,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "blend": "alpha",
+      "contactFrame": 2
+    },
+    "poison_impact_01": {
+      "id": "poison_impact_01",
+      "element": "poison",
+      "form": "impact",
+      "src": "/assets/vfx/poison_impact_01.webp",
+      "grid": [
+        8,
+        8
+      ],
+      "cell": [
+        192,
+        192
+      ],
+      "frames": 64,
+      "fps": 30,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "blend": "alpha",
+      "contactFrame": 1
+    },
+    "rock_column_01": {
+      "id": "rock_column_01",
+      "element": "rock",
+      "form": "column",
+      "src": "/assets/vfx/rock_column_01.webp",
+      "grid": [
+        8,
+        7
+      ],
+      "cell": [
+        192,
+        192
+      ],
+      "frames": 56,
+      "fps": 30,
+      "pivot": [
+        0.5,
+        0.9
+      ],
+      "blend": "alpha",
+      "contactFrame": 2
+    },
+    "rock_impact_01": {
+      "id": "rock_impact_01",
+      "element": "rock",
+      "form": "impact",
+      "src": "/assets/vfx/rock_impact_01.webp",
+      "grid": [
+        8,
+        8
+      ],
+      "cell": [
+        192,
+        192
+      ],
+      "frames": 64,
+      "fps": 30,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "blend": "alpha",
+      "contactFrame": 0
+    },
+    "rock_shield_01": {
+      "id": "rock_shield_01",
+      "element": "rock",
+      "form": "shield",
+      "src": "/assets/vfx/rock_shield_01.webp",
+      "grid": [
+        8,
+        5
+      ],
+      "cell": [
+        192,
+        192
+      ],
+      "frames": 40,
+      "fps": 30,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "blend": "alpha",
+      "contactFrame": 0
+    },
+    "thunder_charge_01": {
+      "id": "thunder_charge_01",
+      "element": "thunder",
+      "form": "charge",
+      "src": "/assets/vfx/thunder_charge_01.webp",
+      "grid": [
+        8,
+        8
+      ],
+      "cell": [
+        192,
+        192
+      ],
+      "frames": 64,
+      "fps": 30,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "blend": "alpha",
+      "contactFrame": 18
+    },
+    "thunder_impact_01": {
+      "id": "thunder_impact_01",
+      "element": "thunder",
+      "form": "impact",
+      "src": "/assets/vfx/thunder_impact_01.webp",
+      "grid": [
+        8,
+        8
+      ],
+      "cell": [
+        192,
+        192
+      ],
+      "frames": 64,
+      "fps": 30,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "blend": "alpha",
+      "contactFrame": 1
+    },
+    "thunder_slash_01": {
+      "id": "thunder_slash_01",
+      "element": "thunder",
+      "form": "slash",
+      "src": "/assets/vfx/thunder_slash_01.webp",
+      "grid": [
+        8,
+        8
+      ],
+      "cell": [
+        192,
+        192
+      ],
+      "frames": 64,
+      "fps": 30,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "blend": "alpha",
+      "contactFrame": 0
+    },
+    "thunder_strike_01": {
+      "id": "thunder_strike_01",
+      "element": "thunder",
+      "form": "strike",
+      "src": "/assets/vfx/thunder_strike_01.webp",
+      "grid": [
+        8,
+        7
+      ],
+      "cell": [
+        192,
+        192
+      ],
+      "frames": 56,
+      "fps": 30,
+      "pivot": [
+        0.5,
+        0.917
+      ],
+      "blend": "alpha",
+      "contactFrame": 1
+    },
+    "water_column_01": {
+      "id": "water_column_01",
+      "element": "water",
+      "form": "column",
+      "src": "/assets/vfx/water_column_01.webp",
+      "grid": [
+        8,
+        7
+      ],
+      "cell": [
+        192,
+        192
+      ],
+      "frames": 56,
+      "fps": 30,
+      "pivot": [
+        0.5,
+        0.9125
+      ],
+      "blend": "alpha",
+      "contactFrame": 2
+    },
+    "water_impact_01": {
+      "id": "water_impact_01",
+      "element": "water",
+      "form": "impact",
+      "src": "/assets/vfx/water_impact_01.webp",
+      "grid": [
+        8,
+        8
+      ],
+      "cell": [
+        192,
+        192
+      ],
+      "frames": 45,
+      "fps": 30,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "blend": "alpha",
+      "contactFrame": 0
+    },
+    "water_shield_01": {
+      "id": "water_shield_01",
+      "element": "water",
+      "form": "shield",
+      "src": "/assets/vfx/water_shield_01.webp",
+      "grid": [
+        8,
+        5
+      ],
+      "cell": [
+        192,
+        192
+      ],
+      "frames": 40,
+      "fps": 30,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "blend": "alpha",
+      "contactFrame": 0
+    },
+    "wind_impact_01": {
+      "id": "wind_impact_01",
+      "element": "wind",
+      "form": "impact",
+      "src": "/assets/vfx/wind_impact_01.webp",
+      "grid": [
+        8,
+        8
+      ],
+      "cell": [
+        192,
+        192
+      ],
+      "frames": 41,
+      "fps": 30,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "blend": "alpha",
+      "contactFrame": 0
+    },
+    "wind_slash_01": {
+      "id": "wind_slash_01",
+      "element": "wind",
+      "form": "slash",
+      "src": "/assets/vfx/wind_slash_01.webp",
+      "grid": [
+        8,
+        8
+      ],
+      "cell": [
+        192,
+        192
+      ],
+      "frames": 64,
+      "fps": 30,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "blend": "alpha",
+      "contactFrame": 0
+    },
+    "wind_vortex_01": {
+      "id": "wind_vortex_01",
+      "element": "wind",
+      "form": "vortex",
+      "src": "/assets/vfx/wind_vortex_01.webp",
+      "grid": [
+        8,
+        8
+      ],
+      "cell": [
+        192,
+        192
+      ],
+      "frames": 64,
+      "fps": 30,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "blend": "alpha",
+      "contactFrame": 0
+    }
+  }
+}

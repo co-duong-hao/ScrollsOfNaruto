@@ -22,6 +22,7 @@ const io = new Server(httpServer);
 
 app.use(express.static(path.join(ROOT, 'public')));
 app.use('/shared', express.static(path.join(ROOT, 'shared')));
+app.use('/vendor/gsap', express.static(path.join(ROOT, 'node_modules', 'gsap', 'dist')));
 
 app.get('/health', (_req, res) => {
   res.json({ ok: true, rooms: rooms.size });
