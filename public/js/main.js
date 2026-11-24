@@ -18,6 +18,7 @@ import { SFX } from './sound.js';
 import { VFX } from './vfx.js';
 import { CombatAnim } from './combatAnim.js';
 import { initCardHolo, triggerShowcaseWobble } from './cardHolo.js';
+import { initCursorFire } from './cursorFire.js';
 import {
   esc,
   ECOL,
@@ -267,7 +268,7 @@ function topBarHtml(showLeave = false) {
         <span class="hitai-plate">
           <span class="hitai-rivet"></span>
           ${KONOHA_CREST_SVG}
-          <span>Scrolls of Naruto</span>
+          <span>Nhẫn Quyển</span>
           <span class="hitai-rivet"></span>
         </span>
       </div>
@@ -286,6 +287,7 @@ function topBarHtml(showLeave = false) {
         </div>
         <button class="btn-sm ${state.bgmOpen ? 'go' : ''}" onclick="appActions.toggleBgmDock()" title="Mở / Thu gọn trình phát nhạc nền (nhạc vẫn phát khi thu gọn)">Nhạc</button>
         <button class="btn-sm" onclick="appActions.toggleBgVideo()" title="Bật/tắt video nền Làng Lá">${state.bgVideo ? 'Nền động' : 'Nền tĩnh'}</button>
+        <button class="btn-sm" id="fsBtn" onclick="appActions.toggleFullscreen()" title="Bật / Tắt toàn màn hình">${document.fullscreenElement ? 'Thu nhỏ' : 'Toàn màn hình'}</button>
         <button class="btn-sm" onclick="appActions.toggleTheme()">${state.dark ? 'Tối' : 'Sáng'}</button>
       </div>
     </header>`;
@@ -502,13 +504,11 @@ function renderMenu() {
     <main class="hero">
       <div class="hero-card">
         <span class="hanko-seal" aria-hidden="true">忍</span>
-        <div class="hero-badge">TACTICAL ELEMENTAL TCG</div>
-        <h1>Scrolls of Naruto</h1>
-        <p class="hero-sub">Đấu thẻ bài chiến thuật 4 nguyên tố <b>Phong · Thủy · Hỏa · Lôi</b> với ${CARDS.length} nhẫn thuật, Pet hộ thể, Né tránh ẩn và 7 Phản ứng Nguyên tố.</p>
+        <h1>Nhẫn Quyển</h1>
         <div class="hero-btns">
-          <button class="go btn-lg btn-online" onclick="appActions.openOnlineMenu()">Chơi Online</button>
-          <button class="go btn-lg" onclick="appActions.openOfflineSetup()">Chơi Offline</button>
-          <button class="btn-lg btn-sandbox" onclick="appActions.startSandbox()">Thử Skill</button>
+          <button class="go btn-lg btn-online" onclick="appActions.openOnlineMenu()">Online</button>
+          <button class="go btn-lg" onclick="appActions.openOfflineSetup()">Offline</button>
+          <button class="btn-lg btn-sandbox" onclick="appActions.startSandbox()">Testing</button>
         </div>
         <div class="hero-links">
           <button onclick="appActions.openModal('codex')">Xem ${CARDS.length} Thẻ Bài</button>
@@ -588,42 +588,94 @@ function renderOnlineMenu() {
 
 function renderLobby() {
   const L = state.lobby;
-  const isHost = L.hostId === state.you;
-  const total = L.players.length + L.bots;
-  const maxBots = Math.max(0, 6 - L.players.length);
+  const myId = state.you || state.socket?.id;
+  const isHost = L.hostId === myId;
+  const bots = Array.isArray(L.bots) ? L.bots : [];
+  const total = L.players.length + bots.length;
   const shareUrl = `${window.location.origin}/?room=${L.code}`;
+
+  const renderTeamCol = (teamIdx, label, cls) => {
+    const teamHumans = L.players.filter((p) => (p.team ?? 0) === teamIdx);
+    const teamBots = bots.filter((b) => (b.team ?? 0) === teamIdx);
+    const members = [
+      ...teamHumans.map((p) => ({ kind: 'human', ...p })),
+      ...teamBots.map((b) => ({ kind: 'bot', ...b })),
+    ];
+    const me = L.players.find((p) => p.id === myId);
+    const canJoinTeam = me && (me.team ?? 0) !== teamIdx && members.length < 3;
+    const canAddBot = isHost && total < 6 && members.length < 3;
+
+    const slotsHtml = Array.from({ length: 3 }, (_, slotIdx) => {
+      const m = members[slotIdx];
+      if (m) {
+        if (m.kind === 'human') {
+          return `
+            <div class="lol-slot is-filled">
+              <span class="lol-name">${esc(m.name)}${m.id === myId ? ' (Bạn)' : ''}</span>
+              <span class="lol-role">${m.id === L.hostId ? 'Chủ phòng' : 'Người chơi'}</span>
+            </div>`;
+        }
+        return `
+          <div class="lol-slot is-bot">
+            <span class="lol-name">${esc(m.name)} (Bot)</span>
+            ${
+              isHost
+                ? `<button type="button" class="btn-sm" onclick="appActions.removeBot('${esc(m.id)}')">Xóa</button>`
+                : '<span class="lol-role">Máy</span>'
+            }
+          </div>`;
+      }
+      return `
+        <div class="lol-slot is-empty">
+          <span class="lol-empty-txt">Trống</span>
+          <div class="lol-slot-acts">
+            ${
+              slotIdx === members.length && canJoinTeam
+                ? `<button type="button" class="btn-sm" onclick="appActions.switchTeam(${teamIdx})">Gia nhập</button>`
+                : ''
+            }
+            ${
+              slotIdx === members.length && canAddBot
+                ? `<button type="button" class="btn-sm" onclick="appActions.addBot(${teamIdx})">Thêm máy</button>`
+                : ''
+            }
+          </div>
+        </div>`;
+    }).join('');
+
+    return `
+      <div class="lol-team ${cls}">
+        <div class="lol-team-head">
+          <span>${label}</span>
+          <small>${members.length}/3</small>
+        </div>
+        <div class="lol-slots">${slotsHtml}</div>
+      </div>`;
+  };
+
+  const t0Count =
+    L.players.filter((p) => (p.team ?? 0) === 0).length + bots.filter((b) => (b.team ?? 0) === 0).length;
+  const t1Count =
+    L.players.filter((p) => (p.team ?? 0) === 1).length + bots.filter((b) => (b.team ?? 0) === 1).length;
+  const canStart = total >= 2 && total <= 6 && t0Count >= 1 && t1Count >= 1;
 
   return `
     ${topBarHtml(false)}
     <main class="panel-wrap">
-      <div class="panel">
+      <div class="panel lol-lobby">
         <span class="hanko-seal" aria-hidden="true">忍</span>
         <div class="lobby-head">
           <h2>Phòng <span class="room-code">${L.code}</span></h2>
           <button class="btn-sm" onclick="appActions.copyInvite('${shareUrl}')">Copy link mời</button>
         </div>
-        <p class="hint">Người chơi (${L.players.length}/6):</p>
-        <ul class="lobby-list">
-          ${L.players
-            .map(
-              (p) =>
-                `<li><span>${esc(p.name)}</span><span>${p.id === L.hostId ? 'Chủ phòng' : ''}${
-                  p.id === state.you ? ' (Bạn)' : ''
-                }</span></li>`
-            )
-            .join('')}
-        </ul>
+        <div class="lol-teams">
+          ${renderTeamCol(0, 'Đội 1 · Phe Đỏ', 'is-red')}
+          ${renderTeamCol(1, 'Đội 2 · Phe Xanh', 'is-blue')}
+        </div>
         ${
           isHost
-            ? `<div class="row">
-                <label>Thêm Bot:</label>
-                <select onchange="appActions.setRoomBots(+this.value)">
-                  ${Array.from({ length: maxBots + 1 }, (_, k) => `<option value="${k}" ${k === L.bots ? 'selected' : ''}>${k} Bot</option>`).join('')}
-                </select>
-                <span class="hint">Tổng: ${total} người ${total >= 4 && total % 2 === 0 ? '· Chia 2 phe' : ''}</span>
-              </div>
-              <div class="row actions-row">
-                <button class="go" ${total < 2 || total > 6 ? 'disabled' : ''} onclick="appActions.startOnline()">Bắt đầu</button>
+            ? `<div class="row actions-row">
+                <button class="go" ${canStart ? '' : 'disabled'} onclick="appActions.startOnline()" title="${canStart ? 'Bắt đầu trận đấu' : 'Mỗi đội cần ít nhất 1 thành viên'}">Bắt đầu</button>
                 <button onclick="appActions.leaveLobby()">Rời phòng</button>
               </div>`
             : `<p class="hint">Đang chờ chủ phòng bắt đầu...</p>
@@ -824,6 +876,17 @@ window.appActions = {
     localStorage.setItem('son_theme', state.dark ? 'dark' : 'light');
     applyTheme();
     render();
+  },
+  toggleFullscreen() {
+    const doc = document;
+    const el = doc.documentElement;
+    if (!doc.fullscreenElement && !doc.webkitFullscreenElement) {
+      const req = el.requestFullscreen || el.webkitRequestFullscreen;
+      if (req) Promise.resolve(req.call(el)).catch(() => {});
+    } else {
+      const exit = doc.exitFullscreen || doc.webkitExitFullscreen;
+      if (exit) Promise.resolve(exit.call(doc)).catch(() => {});
+    }
   },
   toggleBgVideo() {
     state.bgVideo = !state.bgVideo;
@@ -1148,8 +1211,10 @@ window.appActions = {
     const s = connectSocket();
     if (!s) return;
     s.emit('room:create', { name: nick }, (res) => {
-      if (res?.ok) state.you = res.uid;
-      else {
+      if (res?.ok) {
+        state.you = res.uid;
+        render();
+      } else {
         state.msg = res?.error || 'Không tạo được phòng';
         render();
       }
@@ -1167,8 +1232,10 @@ window.appActions = {
     const s = connectSocket();
     if (!s) return;
     s.emit('room:join', { code, name: nick }, (res) => {
-      if (res?.ok) state.you = res.uid;
-      else {
+      if (res?.ok) {
+        state.you = res.uid;
+        render();
+      } else {
         state.msg = res?.error || 'Không vào được phòng';
         render();
       }
@@ -1179,8 +1246,14 @@ window.appActions = {
       alert('Đã copy link mời phòng: ' + url);
     });
   },
-  setRoomBots(bots) {
-    state.socket?.emit('room:setBots', { bots });
+  switchTeam(team) {
+    state.socket?.emit('room:switchTeam', { team });
+  },
+  addBot(team) {
+    state.socket?.emit('room:addBot', { team });
+  },
+  removeBot(botId) {
+    state.socket?.emit('room:removeBot', { botId });
   },
   startOnline() {
     state.socket?.emit('room:start');
@@ -1403,5 +1476,12 @@ document.addEventListener(
 if (new URLSearchParams(window.location.search).get('room')) {
   state.mode = 'online_menu';
 }
+document.addEventListener('fullscreenchange', () => {
+  const btn = $('fsBtn');
+  if (btn) btn.textContent = document.fullscreenElement ? 'Thu nhỏ' : 'Toàn màn hình';
+});
+
 initCardHolo();
+initCursorFire();
+SFX.initUiSounds();
 render();

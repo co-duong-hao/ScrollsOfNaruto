@@ -120,7 +120,7 @@ function renderCardBackHtml() {
           <circle cx="50" cy="50" r="4.5" fill="#f59e0b"/>
         </svg>
       </div>
-      <div class="cd-back-title">Scrolls of Naruto</div>
+      <div class="cd-back-title">Nhẫn Quyển</div>
       <div class="cd-back-sub">Shinobi Scroll</div>
     </div>`;
 }

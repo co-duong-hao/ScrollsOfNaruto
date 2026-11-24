@@ -47,14 +47,18 @@
    ========================================================================== */
 
 .topbar {
-  background: var(--hitai-cloth);
-  color: var(--hitai-text);
-  border: 1.5px solid rgba(251, 191, 36, 0.35);
+  position: relative;
+  overflow: visible;
+  background-color: var(--scroll-bg);
+  background-image: var(--asanoha-pattern);
+  color: var(--t);
+  border: 2px solid var(--scroll-bd);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.12),
-    inset 0 -2px 0 rgba(0, 0, 0, 0.35),
-    0 8px 24px rgba(0, 0, 0, 0.38);
-  padding: 7px 14px;
+    inset 0 0 18px rgba(139, 90, 43, 0.14),
+    0 10px 28px rgba(0, 0, 0, 0.32);
+  padding: 10px 14px;
+  margin-top: 6px;
+  margin-bottom: 6px;
 }
 
 .hitai-plate {
@@ -96,15 +100,15 @@
 }
 
 .topbar .btn-sm {
-  background: rgba(255, 250, 240, 0.1);
-  color: var(--hitai-text);
-  border: 1.5px solid rgba(251, 191, 36, 0.32);
+  background: var(--s2);
+  color: var(--t);
+  border: 1.5px solid var(--bd);
   font-weight: 600;
 }
 .topbar .btn-sm:hover:not(:disabled) {
-  background: rgba(234, 88, 12, 0.28);
-  border-color: var(--hokage-gold-lt);
-  box-shadow: 0 0 12px rgba(249, 115, 22, 0.35);
+  background: rgba(234, 88, 12, 0.16);
+  border-color: var(--uzumaki);
+  box-shadow: 0 0 10px rgba(249, 115, 22, 0.28);
 }
 .topbar .btn-sm.go {
   background: linear-gradient(135deg, var(--uzumaki), #c2410c);
@@ -112,11 +116,15 @@
   color: #fff;
 }
 .topbar .vol-ctrl {
-  background: rgba(255, 250, 240, 0.1);
-  border: 1.5px solid rgba(251, 191, 36, 0.32);
+  background: var(--s2);
+  border: 1.5px solid var(--bd);
+}
+.topbar .vol-mute {
+  color: var(--t);
 }
 .topbar .vol-pct {
-  color: #fde68a;
+  color: var(--uzumaki);
+  font-weight: 700;
 }
 
 /* ==========================================================================
@@ -138,6 +146,8 @@
 }
 
 /* Top & bottom cylindrical wooden Makimono scroll rollers */
+.topbar::before,
+.topbar::after,
 .hero-card::before,
 .hero-card::after,
 .panel::before,
@@ -161,10 +171,16 @@
     0 4px 12px rgba(0, 0, 0, 0.5);
   pointer-events: none;
 }
+.topbar::before,
 .hero-card::before,
 .panel::before { top: -8px; }
+.topbar::after,
 .hero-card::after,
 .panel::after { bottom: -8px; }
+.topbar::before,
+.topbar::after { height: 11px; }
+.topbar::before { top: -6px; }
+.topbar::after { bottom: -6px; }
 
 /* Traditional Red Hanko Seal Stamp (忍) */
 .hanko-seal {
@@ -577,6 +593,108 @@ button.btn-sandbox:hover:not(:disabled) {
   .chakra-row {
     flex-wrap: wrap;
   }
+}
+
+/* LoL-style 2-Team Online Lobby */
+.panel.lol-lobby {
+  max-width: 780px;
+  width: 100%;
+}
+.lol-teams {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin: 14px 0;
+}
+.lol-team {
+  border-radius: 10px;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.05);
+  border: 1.5px solid var(--bd);
+}
+.lol-team.is-red {
+  border-color: rgba(220, 38, 38, 0.45);
+}
+.lol-team.is-blue {
+  border-color: rgba(37, 99, 235, 0.45);
+}
+.lol-team-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 800;
+  font-size: 13.5px;
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--bd);
+}
+.lol-team.is-red .lol-team-head { color: #dc2626; }
+.lol-team.is-blue .lol-team-head { color: #2563eb; }
+.lol-slots {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.lol-slot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 40px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--bd);
+  background: var(--s);
+  font-size: 13px;
+}
+.lol-slot.is-empty {
+  border-style: dashed;
+  opacity: 0.85;
+}
+.lol-name {
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lol-role,
+.lol-empty-txt {
+  font-size: 12px;
+  color: var(--m);
+}
+.lol-slot-acts {
+  display: flex;
+  gap: 6px;
+}
+@media (max-width: 680px) {
+  .lol-teams {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Optimize 139-card Codex rendering so cursor fire stays 60 FPS */
+.codex-grid .cd {
+  content-visibility: auto;
+  contain-intrinsic-size: 168px 256px;
+}
+.codex-grid .cd:not(:hover) .cd-rotator,
+.codex-grid .cd:not(:hover) .cd__shine,
+.codex-grid .cd:not(:hover) .cd__glare {
+  will-change: auto !important;
+}
+
+/* Disable accidental blue text highlight when dragging fire cursor across UI */
+body {
+  user-select: none;
+  -webkit-user-select: none;
+}
+input,
+textarea {
+  user-select: text;
+  -webkit-user-select: text;
+}
+img {
+  -webkit-user-drag: none;
 }
 
 @media (prefers-reduced-motion: reduce) {

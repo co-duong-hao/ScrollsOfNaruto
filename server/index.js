@@ -49,7 +49,7 @@ function broadcastLobby(room) {
     hostId: room.hostId,
     bots: room.bots,
     started: !!room.game,
-    players: room.players.map((p) => ({ id: p.uid, name: p.name })),
+    players: room.players.map((p) => ({ id: p.uid, name: p.name, team: p.team })),
   };
   room.players.forEach((p) => {
     io.to(p.socketId).emit('room:lobby', payload);
@@ -183,8 +183,9 @@ io.on('connection', (socket) => {
     const room = {
       code,
       hostId: uid,
-      bots: 0,
-      players: [{ uid, socketId: socket.id, name: cleanName }],
+      bots: [],
+      nextBotNum: 1,
+      players: [{ uid, socketId: socket.id, name: cleanName, team: 0 }],
       game: null,
       botTimer: null,
     };
@@ -200,35 +201,75 @@ io.on('connection', (socket) => {
     const room = rooms.get(cleanCode);
     if (!room) return cb?.({ ok: false, error: 'Không tìm thấy phòng này.' });
     if (room.game) return cb?.({ ok: false, error: 'Trận đấu đã bắt đầu.' });
-    if (room.players.length + room.bots >= 6) return cb?.({ ok: false, error: 'Phòng đã đầy (tối đa 6 người).' });
+    if (room.players.length + room.bots.length >= 6) return cb?.({ ok: false, error: 'Phòng đã đầy (tối đa 6 người).' });
+
+    const countTeam = (t) =>
+      room.players.filter((p) => p.team === t).length + room.bots.filter((b) => b.team === t).length;
+    const team = countTeam(0) <= countTeam(1) ? 0 : 1;
 
     const cleanName = String(name || 'Ninja').trim().slice(0, 16) || 'Ninja';
-    room.players.push({ uid, socketId: socket.id, name: cleanName });
+    room.players.push({ uid, socketId: socket.id, name: cleanName, team });
     currentRoomCode = cleanCode;
     broadcastLobby(room);
     cb?.({ ok: true, code: cleanCode, uid });
   });
 
-  socket.on('room:setBots', ({ bots } = {}) => {
+  socket.on('room:switchTeam', ({ team } = {}) => {
+    const room = rooms.get(currentRoomCode);
+    if (!room || room.game) return;
+    const t = team === 1 ? 1 : 0;
+    const me = room.players.find((p) => p.uid === uid);
+    if (!me || me.team === t) return;
+    const count = room.players.filter((p) => p.team === t).length + room.bots.filter((b) => b.team === t).length;
+    if (count >= 3) return;
+    me.team = t;
+    broadcastLobby(room);
+  });
+
+  socket.on('room:addBot', ({ team } = {}) => {
     const room = rooms.get(currentRoomCode);
     if (!room || room.hostId !== uid || room.game) return;
-    const maxBots = Math.max(0, 6 - room.players.length);
-    room.bots = Math.min(maxBots, Math.max(0, Number(bots) || 0));
+    const t = team === 1 ? 1 : 0;
+    if (room.players.length + room.bots.length >= 6) return;
+    const count = room.players.filter((p) => p.team === t).length + room.bots.filter((b) => b.team === t).length;
+    if (count >= 3) return;
+    const num = room.nextBotNum++;
+    room.bots.push({ id: `bot_${num}`, name: `Bot ${num}`, team: t });
+    broadcastLobby(room);
+  });
+
+  socket.on('room:removeBot', ({ botId } = {}) => {
+    const room = rooms.get(currentRoomCode);
+    if (!room || room.hostId !== uid || room.game) return;
+    const idx = room.bots.findIndex((b) => b.id === botId);
+    if (idx < 0) return;
+    room.bots.splice(idx, 1);
     broadcastLobby(room);
   });
 
   socket.on('room:start', async () => {
     const room = rooms.get(currentRoomCode);
     if (!room || room.hostId !== uid || room.game) return;
-    const total = room.players.length + room.bots;
+    const total = room.players.length + room.bots.length;
     if (total < 2 || total > 6) return;
 
-    const humans = room.players.map((p) => ({ uid: p.uid, name: p.name, bot: false }));
-    const bots = Array.from({ length: room.bots }, (_, i) => ({ name: `Bot ${i + 1}`, bot: true }));
-    const all = [...humans, ...bots].sort(() => Math.random() - 0.5);
+    const humans = room.players.map((p) => ({ uid: p.uid, name: p.name, bot: false, team: p.team }));
+    const bots = room.bots.map((b) => ({ name: b.name, bot: true, team: b.team }));
+    const t0 = [...humans, ...bots].filter((x) => x.team === 0);
+    const t1 = [...humans, ...bots].filter((x) => x.team === 1);
+    if (t0.length === 0 || t1.length === 0) return;
+
+    // Interleave team 0 and team 1 seats around the table
+    const all = [];
+    const maxLen = Math.max(t0.length, t1.length);
+    for (let i = 0; i < maxLen; i++) {
+      if (t0[i]) all.push(t0[i]);
+      if (t1[i]) all.push(t1[i]);
+    }
 
     room.game = await createGame(all, {
       online: true,
+      teams: true,
       onAskAuto: (playerIdx, card, info) => askOnlineAuto(room, playerIdx, card, info),
     });
     broadcastState(room, null);

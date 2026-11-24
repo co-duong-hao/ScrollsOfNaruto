@@ -1,5 +1,6 @@
 :root {
   --font-jp: 'Yuji Syuku', 'Noto Serif JP', 'Noto Serif', Georgia, serif;
+  --font-title: 'Noto Serif', 'Noto Serif JP', Georgia, serif;
   --font-ui: 'Chakra Petch', system-ui, -apple-system, sans-serif;
   --font-num: 'Chakra Petch', system-ui, sans-serif;
   --bg: #f1ece0;
@@ -149,7 +150,7 @@ input, select {
   display: flex;
   align-items: center;
   gap: 8px;
-  font: 700 22px var(--font-jp);
+  font: 800 21px var(--font-title);
   letter-spacing: 0.4px;
   cursor: pointer;
 }
@@ -223,7 +224,7 @@ input, select {
   margin-bottom: 10px;
 }
 .hero-card h1 {
-  font: 700 42px/1.15 var(--font-jp);
+  font: 800 44px/1.15 var(--font-title);
   letter-spacing: 1px;
   margin: 4px 0 10px;
 }
@@ -404,7 +405,7 @@ input, select {
 .cd-art-img::after { content: ''; position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--art-c2, #fff) 45%, transparent); pointer-events: none; }
 .cd-art-img img { width: 100%; height: 100%; object-fit: cover; object-position: center; display: block; pointer-events: none; user-select: none; }
 .cd-name {
-  font-family: var(--font-jp);
+  font-family: var(--font-title);
   font-size: 13.5px;
   font-weight: 700;
   line-height: 1.15;
@@ -461,7 +462,7 @@ input, select {
   display: inline-block;
   margin: 0;
   padding: 8px 44px;
-  font: 700 clamp(24px, 5vw, 52px) var(--font-jp);
+  font: 800 clamp(24px, 5vw, 52px) var(--font-title);
   letter-spacing: 1.5px;
   color: #fff;
   text-shadow: 0 3px 10px #000b;

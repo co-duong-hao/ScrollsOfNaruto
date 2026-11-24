@@ -128,6 +128,24 @@ class SoundEngine {
       return;
     }
     switch (name) {
+      case 'uiHover':
+        this.tone(640, 0.035, 'triangle', 0.032, 0, 740);
+        break;
+      case 'uiCardHover':
+        this.noise(0.045, 0.028, 2500);
+        this.tone(520, 0.038, 'sine', 0.025, 0, 620);
+        break;
+      case 'uiClick':
+        this.noise(0.024, 0.035, 2600);
+        this.tone(460, 0.055, 'triangle', 0.085, 0, 620);
+        break;
+      case 'uiConfirm':
+        this.tone(392, 0.075, 'triangle', 0.095, 0, 523);
+        this.tone(587, 0.09, 'sine', 0.075, 0.035, 659);
+        break;
+      case 'uiSelect':
+        this.tone(540, 0.05, 'sine', 0.075, 0, 720);
+        break;
       case 'select':
         this.tone(520, 0.06, 'triangle', 0.08, 0, 660);
         break;
@@ -197,6 +215,51 @@ class SoundEngine {
         });
         break;
     }
+  }
+
+  initUiSounds() {
+    if (this._uiBound || typeof document === 'undefined') return;
+    this._uiBound = true;
+
+    let lastHoverEl = null;
+    let lastHoverAt = 0;
+
+    document.addEventListener(
+      'pointerover',
+      (e) => {
+        if (e.pointerType === 'touch') return;
+        const el = e.target?.closest?.('button:not(:disabled), select:not(:disabled), .cd, .st.tg, .brand');
+        if (!el || el === lastHoverEl) return;
+        lastHoverEl = el;
+        // Only play hover ticks once AudioContext is unlocked by a user gesture
+        if (!this.ctx || this.ctx.state !== 'running') return;
+        const now = performance.now();
+        if (now - lastHoverAt < 55) return;
+        lastHoverAt = now;
+        this.play(el.classList.contains('cd') ? 'uiCardHover' : 'uiHover');
+      },
+      { passive: true }
+    );
+
+    document.addEventListener('pointerout', (e) => {
+      if (lastHoverEl && !e.relatedTarget?.closest?.('button, select, .cd, .st.tg, .brand')) {
+        lastHoverEl = null;
+      }
+    });
+
+    document.addEventListener('click', (e) => {
+      const btn = e.target?.closest?.('button:not(:disabled), .brand');
+      if (!btn) return;
+      if (btn.id === 'sfxMuteBtn') return;
+      const isPrimary = btn.classList.contains('go') || btn.classList.contains('btn-lg');
+      this.play(isPrimary ? 'uiConfirm' : 'uiClick');
+    });
+
+    document.addEventListener('change', (e) => {
+      if (e.target?.matches?.('select')) {
+        this.play('uiSelect');
+      }
+    });
   }
 }
 

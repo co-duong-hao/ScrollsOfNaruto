@@ -1,0 +1,28 @@
+@charset "UTF-8";
+/*
+ *   ██████╗██╗   ██╗██████╗ ███████╗ ██████╗ ██████╗ ███████╗
+ *  ██╔════╝██║   ██║██╔══██╗██╔════╝██╔═══██╗██╔══██╗██╔════╝
+ *  ██║     ██║   ██║██████╔╝███████╗██║   ██║██████╔╝███████╗
+ *  ██║     ██║   ██║██╔══██╗╚════██║██║   ██║██╔══██╗╚════██║
+ *  ╚██████╗╚██████╔╝██║  ██║███████║╚██████╔╝██║  ██║███████║
+ *   ╚═════╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝
+ *                         ██╗  ██╗██╗   ██╗
+ *                         ██║  ██║██║   ██║
+ *  ████████████████████   ███████║██║   ██║
+ *                         ╚════██║██║   ██║
+ *                              ██║╚██████╔╝
+ *                              ╚═╝ ╚═════╝
+ *
+ *  Brought to you by https://www.cursors-4u.com
+ *
+ *  Cursor: Animated Spinning Kunai - Naruto
+ *  URL: https://www.cursors-4u.com/cursor/animated-spinning-kunai-naruto
+ */
+@keyframes cursor-anim {
+  0.00% { cursor: url("data:image/webp;base64,UklGRqIAAABXRUJQVlA4TJYAAAAvH8AHECcgECD8V1FmQyBA+K+ijECA8F9FmfkPAPBXUcFBJLt1oyQFII9FIB8CsQlEk+MP66mdEojov8K0bRjHnac0q5KlflV6jMrcZ2HGKHT2qXViFCb71CYxZg95svcsiERhSVCRBU5CkwTEWPTJfXVFa+1+9TDzqYeZ/WlEMTpo/QX0SB4WCR/j81N7yrdDaMzDvgg=") 0 0, auto; }
+  25.00% { cursor: url("data:image/webp;base64,UklGRqIAAABXRUJQVlA4TJYAAAAvH8AHECcgECD8V1FmQyBA+K+ijECA8F9FmfkPAPBXUcFBZLtxozCQIhFIhMAHAY0/f1j6PQhE9F9h2jaMY0jHJyYsRdXF1O3MykGsfZOnIq1XsefoLaT3FvZ093ZF+oiePU6HFAIgFEFRgLUEEPPqVzyvd5jZePsS0exLRP5UxHEjSJ0FUrUOqdqsFOuwdTMUISR2CQ8=") 0 0, auto; }
+  50.00% { cursor: url("data:image/webp;base64,UklGRqIAAABXRUJQVlA4TJYAAAAvH8AHECcgECD8V1FmQyBA+K+ijECA8F9FmfkPAPBXUcFBJLt1oyQFII9FIB8CsQlEk+MP66mdEojov8K0bRjHnac0q5KlflV6jMrcZ2HGKHT2qXViFCb71CYxZg95svcsiERhSVCRBU5CkwTEWPTJfXVFa+1+9TDzqYeZ/WlEMTpo/QX0SB4WCR/j81N7yrdDaMzDvgg=") 0 0, auto; }
+  75.00% { cursor: url("data:image/webp;base64,UklGRqAAAABXRUJQVlA4TJQAAAAvH8AHECcgECD8V1FmQyBA+K+ijECA8F9FmfkPAPBXUcFBbbttozCQahHIIOBB4B9//qyq30Egov8EkzQtiL0SpgapP0rHUMYzhcEhdDyz1pNDCDyzFuCYrdX3aT0rCPZdYUCSNYmKt8soSTLHUV7yvFpFRPSrjpnfdczsTxH2F1NkT4pgbhEsFefc6i6FM00sDtMD") 0 0, auto; }
+}
+html { animation: cursor-anim 532ms step-end infinite; }
+body, a, button, input, textarea, label, [role=button], select, option, .cd, .st.tg, .brand { cursor: inherit !important; }

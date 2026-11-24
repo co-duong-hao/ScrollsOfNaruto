@@ -141,12 +141,12 @@ function pickDestiny() {
   return pool.slice(0, 2);
 }
 
-export function createPlayer(name, bot, index, uid = null) {
+export function createPlayer(name, bot, index, uid = null, team = null) {
   return {
     name,
     bot,
     uid,
-    team: index % 2,
+    team: team === 0 || team === 1 ? team : index % 2,
     hp: 4000,
     sp: 10,
     dodge: 0,
@@ -187,11 +187,12 @@ export function createPlayer(name, bot, index, uid = null) {
 
 export async function createGame(playersConfig, options = {}) {
   const n = playersConfig.length;
+  const hasExplicitTeams = playersConfig.some((p) => p.team === 0 || p.team === 1);
   const G = {
     online: !!options.online,
     onAskAuto: options.onAskAuto || null,
-    teams: n >= 4 && n % 2 === 0,
-    ps: playersConfig.map((p, i) => createPlayer(p.name, !!p.bot, i, p.uid || null)),
+    teams: options.teams != null ? !!options.teams : hasExplicitTeams || (n >= 4 && n % 2 === 0),
+    ps: playersConfig.map((p, i) => createPlayer(p.name, !!p.bot, i, p.uid || null, p.team)),
     cur: 0,
     turnCount: 1,
     log: ['Trận đấu bắt đầu!'],
