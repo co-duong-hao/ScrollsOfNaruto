@@ -1,16 +1,27 @@
-// Sakuga Anime Flipbook + Energy Beam + Canvas 2D VFX Engine
-// Hand-drawn anime VFX assets credit: KanaWorks_AI (@KanaWorks_AI)
-// https://github.com/kanaworksai-hue/kanaworks-sakuga-vfx
+// 3-Layer Naruto VFX Engine:
+// 1. 48 Hand-drawn Anime Sakuga Flipbooks (KanaWorks_AI @KanaWorks_AI) with loopStyle fade envelope
+// 2. 17 Canon Naruto Special Effects (narutoSpecialFx.js)
+// 3. S-rank Multi-layer Energy Beams & Velocity Spark Streaks
+// Includes 4-layer ghost-image bug fix: full-buffer clearCanvas() on every frame & loop exit,
+// ResizeObserver sync, and clearAll() lifecycle cleanup.
+
+import { getCardFxProfile } from './skillFxMap.js';
+import { createSpecialFx, drawSpecialFx } from './narutoSpecialFx.js';
 
 class VfxEngine {
   constructor() {
     this.canvas = null;
     this.ctx = null;
+    this.dpr = 1;
+    this.resizeObs = null;
+    this.observedEl = null;
+
     this.particles = [];
     this.beams = [];
     this.energyBeams = [];
     this.rings = [];
     this.flipbooks = [];
+    this.specials = [];
     this.raf = null;
     this.lastTime = 0;
 
@@ -22,7 +33,7 @@ class VfxEngine {
 
   ensureManifest() {
     if (this.manifest) return Promise.resolve(this.manifest);
-    if (!this.manifestPromise) {
+    if (!this.manifestPromise && typeof fetch !== 'undefined') {
       this.manifestPromise = fetch('/assets/vfx/manifest.json')
         .then((r) => (r.ok ? r.json() : null))
         .then((data) => {
@@ -31,11 +42,11 @@ class VfxEngine {
         })
         .catch(() => null);
     }
-    return this.manifestPromise;
+    return this.manifestPromise || Promise.resolve(null);
   }
 
   loadEffectImage(id) {
-    if (!id || !this.manifest?.effects?.[id]) return null;
+    if (!id || !this.manifest?.effects?.[id] || typeof Image === 'undefined') return null;
     const cached = this.images.get(id);
     if (cached) return cached;
     const img = new Image();
@@ -64,18 +75,55 @@ class VfxEngine {
         'thunder_strike_01',
         'water_impact_01',
         'wind_impact_01',
+        'wind_vortex_01',
         'dark_impact_01',
         'light_impact_01',
+        'rock_impact_01',
         'rock_shield_01',
       ];
       coreIds.forEach((id) => this.loadEffectImage(id));
     });
   }
 
+  hasActiveFx() {
+    return (
+      this.particles.length > 0 ||
+      this.beams.length > 0 ||
+      this.energyBeams.length > 0 ||
+      this.rings.length > 0 ||
+      this.flipbooks.length > 0 ||
+      this.specials.length > 0
+    );
+  }
+
+  // Always clear the FULL backing buffer in physical pixels so DPR / layout shifts
+  // can NEVER leave a clipped or frozen image fragment over a player seat box!
+  clearCanvas() {
+    const ctx = this.ctx;
+    const c = this.canvas;
+    if (!ctx || !c) return;
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, c.width, c.height);
+    ctx.restore();
+  }
+
+  clearAll() {
+    this.particles.length = 0;
+    this.beams.length = 0;
+    this.energyBeams.length = 0;
+    this.rings.length = 0;
+    this.flipbooks.length = 0;
+    this.specials.length = 0;
+    if (this.raf) {
+      cancelAnimationFrame(this.raf);
+      this.raf = null;
+    }
+    this.clearCanvas();
+  }
+
   attach(container) {
     if (!container) return;
-    // Reuse the exact same canvas DOM node across render() calls so active
-    // Sakuga flipbooks, Energy Beams, and particles are NEVER wiped mid-animation!
     if (!this.canvas) {
       const c = document.createElement('canvas');
       c.id = 'vfxCanvas';
@@ -89,19 +137,33 @@ class VfxEngine {
       container.appendChild(this.canvas);
     }
     this.resize();
+    if (!this.hasActiveFx()) {
+      this.clearCanvas();
+    }
+
+    if (typeof ResizeObserver !== 'undefined' && this.observedEl !== container) {
+      if (this.resizeObs) this.resizeObs.disconnect();
+      this.observedEl = container;
+      this.resizeObs = new ResizeObserver(() => {
+        this.resize();
+        if (!this.hasActiveFx()) this.clearCanvas();
+      });
+      this.resizeObs.observe(container);
+    }
   }
 
   resize() {
     if (!this.canvas || !this.canvas.parentElement) return;
     const rect = this.canvas.parentElement.getBoundingClientRect();
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const targetW = Math.max(1, Math.floor(rect.width * dpr));
-    const targetH = Math.max(1, Math.floor(rect.height * dpr));
+    if (rect.width < 1 || rect.height < 1) return;
+    this.dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const targetW = Math.max(1, Math.floor(rect.width * this.dpr));
+    const targetH = Math.max(1, Math.floor(rect.height * this.dpr));
     if (this.canvas.width !== targetW || this.canvas.height !== targetH) {
       this.canvas.width = targetW;
       this.canvas.height = targetH;
     }
-    if (this.ctx) this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    if (this.ctx) this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
   }
 
   seatCenter(container, idx) {
@@ -113,6 +175,22 @@ class VfxEngine {
       x: r.left - tbRect.left + r.width / 2,
       y: r.top - tbRect.top + r.height / 2,
     };
+  }
+
+  spawnSpecial(spec, { x, y, from, to, scale = 1, duration = 0.95, delay = 0 } = {}) {
+    if (!spec?.type) return;
+    this.specials.push(
+      createSpecialFx(spec.type, {
+        x,
+        y,
+        from,
+        to,
+        variant: spec.variant || '',
+        scale,
+        duration,
+        delay,
+      })
+    );
   }
 
   spawnFlipbook(id, x, y, opts = {}) {
@@ -132,15 +210,15 @@ class VfxEngine {
     if (!imgRec || imgRec.failed) return false;
 
     const {
-      scale = 1.45,
+      scale = 1.4,
       rotation = 0,
-      speed = 1.15,
+      speed = 1.2,
       alpha = 1.0,
       additive = false,
       delay = 0,
       followFrom = null,
       followTo = null,
-      travelDuration = 0.45,
+      travelDuration = 0.44,
     } = opts;
 
     this.flipbooks.push({
@@ -165,7 +243,7 @@ class VfxEngine {
   }
 
   spawnEnergyBeam(from, to, style, opts = {}) {
-    const { duration = 0.72, width = 26 } = opts;
+    const { duration = 0.8, width = 30 } = opts;
     this.energyBeams.push({
       from,
       to,
@@ -182,8 +260,8 @@ class VfxEngine {
       speedMax = 210,
       sizeMin = 3,
       sizeMax = 7,
-      lifeMin = 0.35,
-      lifeMax = 0.78,
+      lifeMin = 0.32,
+      lifeMax = 0.72,
       gravity = 0,
       upward = 0,
       shape = 'streak',
@@ -209,7 +287,7 @@ class VfxEngine {
     }
   }
 
-  spawnRing(x, y, maxR, color, lineWidth = 4, life = 0.55) {
+  spawnRing(x, y, maxR, color, lineWidth = 4, life = 0.5) {
     this.rings.push({ x, y, r: 8, maxR, color, lineWidth, life, maxLife: life });
   }
 
@@ -217,207 +295,26 @@ class VfxEngine {
     const ang = Math.atan2(to.y - from.y, to.x - from.x);
     if (style.projectileFx) {
       this.spawnFlipbook(style.projectileFx, from.x, from.y, {
-        scale: style.isS ? 1.55 : 1.3,
+        scale: style.isS ? 1.5 : 1.25,
         rotation: ang,
-        speed: 1.4,
-        additive: style.additiveProjectile !== false,
+        speed: 1.45,
+        additive: style.kind !== 'poison' && style.kind !== 'darkfire',
         followFrom: from,
         followTo: to,
-        travelDuration: 0.46,
+        travelDuration: 0.44,
       });
     }
     this.beams.push({
       from,
       to,
       progress: 0,
-      speed: style.speed || 2.15,
+      speed: style.speed || 2.2,
       style,
-      done: false,
     });
   }
 
   getSkillStyle(cast) {
-    const n = (cast?.n || '').toLowerCase();
-    const el = cast?.el;
-    const s = (cast?.s || '').toLowerCase();
-    const isS = cast?.r === 'S';
-    const isDef = cast?.t === 'd';
-    const isHeal = cast?.t === 'h';
-
-    if (n.includes('thiên chiếu')) {
-      return {
-        kind: 'darkfire',
-        colors: ['#111111', '#991b1b', '#ef4444'],
-        glow: '#dc2626',
-        size: 24,
-        isS,
-        chargeFx: 'dark_aura_01',
-        projectileFx: 'fire_projectile_01',
-        impactFx: 'dark_impact_01',
-        impactFx2: 'fire_impact_01',
-        beam: isS,
-      };
-    }
-    if (n.includes('rasengan')) {
-      return {
-        kind: 'rasengan',
-        colors: ['#38bdf8', '#e0f2fe', '#0284c7'],
-        glow: '#38bdf8',
-        size: 24,
-        isS,
-        chargeFx: 'light_aura_01',
-        projectileFx: 'wind_vortex_01',
-        impactFx: 'wind_impact_01',
-        impactFx2: 'light_impact_01',
-        beam: isS,
-      };
-    }
-    if (n.includes('chidori') || n.includes('lôi thiết') || n.includes('kirin') || el === 'lôi') {
-      return {
-        kind: 'lightning',
-        colors: ['#fde047', '#fef08a', '#38bdf8'],
-        glow: '#facc15',
-        size: 20,
-        isS,
-        chargeFx: 'thunder_charge_01',
-        projectileFx: null,
-        impactFx: isS || n.includes('kirin') ? 'thunder_strike_01' : 'thunder_impact_01',
-        slashFx: 'thunder_slash_01',
-        beam: isS,
-      };
-    }
-    if (s === 'cửu vĩ') {
-      return {
-        kind: 'fire',
-        colors: ['#dc2626', '#f97316', '#facc15'],
-        glow: '#ef4444',
-        size: 26,
-        isS,
-        chargeFx: 'fire_charge_01',
-        projectileFx: 'fire_projectile_01',
-        impactFx: 'fire_impact_01',
-        beam: true,
-      };
-    }
-    if (s === 'ma kính băng tinh') {
-      return {
-        kind: 'ice',
-        colors: ['#bae6fd', '#38bdf8', '#ffffff'],
-        glow: '#7dd3fc',
-        size: 20,
-        isS,
-        chargeFx: 'light_aura_01',
-        impactFx: 'ice_impact_01',
-        shieldFx: 'ice_shield_01',
-      };
-    }
-    if (s === 'mộc độn' || s === 'sa mạc và máu' || n.includes('la sinh môn')) {
-      return {
-        kind: 'rock',
-        colors: ['#d97706', '#22c55e', '#fef3c7'],
-        glow: '#d97706',
-        size: 20,
-        isS,
-        chargeFx: 'light_aura_01',
-        impactFx: isS ? 'rock_column_01' : 'rock_impact_01',
-        shieldFx: 'rock_shield_01',
-      };
-    }
-    if (s === 'bộ rắn' || s === 'côn trùng' || s === 'nghệ thuật rối') {
-      return {
-        kind: 'poison',
-        colors: ['#9333ea', '#84cc16', '#c084fc'],
-        glow: '#a855f7',
-        size: 20,
-        isS,
-        chargeFx: 'dark_aura_01',
-        impactFx: 'poison_impact_01',
-      };
-    }
-    if (s === 'gió và cánh quạt' || el === 'phong') {
-      return {
-        kind: 'wind',
-        colors: ['#34d399', '#a7f3d0', '#ffffff'],
-        glow: '#10b981',
-        size: 20,
-        isS,
-        chargeFx: 'light_aura_01',
-        projectileFx: 'wind_vortex_01',
-        impactFx: 'wind_impact_01',
-        slashFx: 'wind_slash_01',
-        beam: isS,
-      };
-    }
-    if (el === 'hỏa' || s === 'bộ cóc' || n.includes('bom') || n.includes('bộc giấy') || n.includes('c0')) {
-      return {
-        kind: 'fire',
-        colors: ['#ff5a1f', '#fb923c', '#fde047'],
-        glow: '#ff5a1f',
-        size: 22,
-        isS,
-        chargeFx: 'fire_charge_01',
-        projectileFx: 'fire_projectile_01',
-        impactFx: 'fire_impact_01',
-        slashFx: 'fire_slash_01',
-        beam: isS,
-      };
-    }
-    if (el === 'thủy' || s === 'cá mập và sóng') {
-      return {
-        kind: 'water',
-        colors: ['#0ea5e9', '#38bdf8', '#bae6fd'],
-        glow: '#0284c7',
-        size: 20,
-        isS,
-        chargeFx: 'light_aura_01',
-        impactFx: isS ? 'water_column_01' : 'water_impact_01',
-        shieldFx: 'water_shield_01',
-        beam: isS,
-      };
-    }
-    if (s === 'rinnegan' || s === 'uchiha' || s === 'mangakyo' || s === 'ảo thuật' || n.includes('uế thổ')) {
-      return {
-        kind: 'genjutsu',
-        colors: ['#dc2626', '#a855f7', '#f87171'],
-        glow: '#ef4444',
-        size: 22,
-        isS,
-        chargeFx: 'dark_aura_01',
-        impactFx: 'dark_impact_01',
-        beam: isS && cast?.t === 'a',
-      };
-    }
-    if (isHeal || s === 'hoa anh đào') {
-      return {
-        kind: 'heal',
-        colors: ['#4ade80', '#f472b6', '#bbf7d0'],
-        glow: '#22c55e',
-        size: 16,
-        isS,
-        chargeFx: 'light_aura_01',
-        impactFx: 'light_impact_01',
-      };
-    }
-    if (isDef || cast?.t === 's') {
-      return {
-        kind: 'buff',
-        colors: ['#fbbf24', '#60a5fa', '#fef3c7'],
-        glow: '#f59e0b',
-        size: 18,
-        isS,
-        chargeFx: 'light_aura_01',
-        shieldFx: 'rock_shield_01',
-      };
-    }
-    return {
-      kind: 'slash',
-      colors: ['#f8fafc', '#fbbf24', '#ea580c'],
-      glow: '#f97316',
-      size: 18,
-      isS,
-      slashFx: 'wind_slash_01',
-      impactFx: 'rock_impact_01',
-    };
+    return getCardFxProfile(cast);
   }
 
   triggerCast(container, cast, flEvents = []) {
@@ -428,22 +325,42 @@ class VfxEngine {
     const style = this.getSkillStyle(cast);
     const srcIdx = cast.srcIdx ?? -1;
     const srcPos = srcIdx >= 0 ? this.seatCenter(container, srcIdx) : null;
-    const targets = [...new Set(flEvents.map((e) => e.t).filter((t) => t >= 0 && t !== srcIdx))];
+    const targets = [...new Set(flEvents.map((e) => e.t).filter((t) => t != null && t >= 0 && t !== srcIdx))];
+
+    const directionalSpecials = new Set([
+      'hiraishin_flash',
+      'ninja_weapons',
+      'shadow_bind',
+      'paper_storm',
+      'sand_wave',
+      'bug_swarm',
+      'puppet_threads',
+    ]);
 
     if (srcPos) {
-      if (style.shieldFx && cast.t === 'd') {
-        this.spawnFlipbook(style.shieldFx, srcPos.x, srcPos.y, { scale: 1.45, speed: 1.15 });
-      } else if (style.chargeFx) {
-        this.spawnFlipbook(style.chargeFx, srcPos.x, srcPos.y, {
-          scale: cast.r === 'S' ? 1.65 : 1.3,
-          speed: 1.2,
-          additive: style.kind !== 'genjutsu' && style.kind !== 'darkfire',
+      // Special canon Naruto effect on cast (caster-centered)
+      if (style.specialCast && !directionalSpecials.has(style.specialCast.type)) {
+        this.spawnSpecial(style.specialCast, {
+          x: srcPos.x,
+          y: srcPos.y,
+          scale: cast.r === 'S' ? 1.25 : 1.0,
+          duration: cast.r === 'S' ? 1.05 : 0.88,
         });
       }
-      this.spawnRing(srcPos.x, srcPos.y, cast.r === 'S' ? 115 : 75, style.glow, 3.5, 0.5);
-      this.spawnParticles(srcPos.x, srcPos.y, cast.r === 'S' ? 22 : 14, style.colors, {
+
+      if (style.shieldFx && cast.t === 'd') {
+        this.spawnFlipbook(style.shieldFx, srcPos.x, srcPos.y, { scale: 1.35, speed: 1.25 });
+      } else if (style.chargeFx) {
+        this.spawnFlipbook(style.chargeFx, srcPos.x, srcPos.y, {
+          scale: cast.r === 'S' ? 1.55 : 1.2,
+          speed: 1.25,
+          additive: style.kind !== 'genjutsu' && style.kind !== 'darkfire' && style.kind !== 'poison',
+        });
+      }
+      this.spawnRing(srcPos.x, srcPos.y, cast.r === 'S' ? 110 : 72, style.glow, 3.5, 0.48);
+      this.spawnParticles(srcPos.x, srcPos.y, cast.r === 'S' ? 20 : 12, style.colors, {
         speedMin: 45,
-        speedMax: 175,
+        speedMax: 170,
         upward: style.kind === 'heal' || style.kind === 'buff' ? 85 : 0,
       });
     }
@@ -451,9 +368,21 @@ class VfxEngine {
     if (targets.length && srcPos) {
       targets.forEach((ti) => {
         const toPos = this.seatCenter(container, ti);
+        // Directional canon special effects (Kunai, Hiraishin, Shadow, Paper, Sand, Bugs, Puppet Threads)
+        if (style.specialCast && directionalSpecials.has(style.specialCast.type)) {
+          this.spawnSpecial(style.specialCast, {
+            x: toPos.x,
+            y: toPos.y,
+            from: srcPos,
+            to: toPos,
+            scale: cast.r === 'S' ? 1.2 : 1.0,
+            duration: 0.82,
+          });
+        }
+
         if (style.beam && cast.r === 'S') {
-          this.spawnEnergyBeam(srcPos, toPos, style, { duration: 0.85, width: 32 });
-        } else {
+          this.spawnEnergyBeam(srcPos, toPos, style, { duration: 0.82, width: 30 });
+        } else if (!style.instantImpact) {
           this.spawnProjectile(srcPos, toPos, style);
         }
       });
@@ -469,120 +398,137 @@ class VfxEngine {
     const srcIdx = cast?.srcIdx ?? -1;
     const srcPos = srcIdx >= 0 ? this.seatCenter(container, srcIdx) : null;
 
-    // For defense / buff / heal cards that have no damage events, replay a crisp
-    // Sakuga shield / aura flipbook on the caster once the cut-in banner clears.
+    // Defense / Buff / Heal / Summon cards without damage events replay cleanly on caster
     if (cast && style && srcPos && !flEvents.some((e) => e.c === 'hp' || e.c === 'ko')) {
+      if (style.specialImpact) {
+        this.spawnSpecial(style.specialImpact, {
+          x: srcPos.x,
+          y: srcPos.y,
+          scale: cast.r === 'S' ? 1.2 : 1.0,
+          duration: 0.9,
+        });
+      }
       if (cast.t === 'd' && style.shieldFx) {
-        this.spawnFlipbook(style.shieldFx, srcPos.x, srcPos.y, { scale: 1.55, speed: 1.1 });
+        this.spawnFlipbook(style.shieldFx, srcPos.x, srcPos.y, { scale: 1.4, speed: 1.2 });
       } else if ((cast.t === 's' || cast.t === 'h') && (style.chargeFx || style.impactFx)) {
         this.spawnFlipbook(style.chargeFx || style.impactFx, srcPos.x, srcPos.y, {
-          scale: 1.45,
-          speed: 1.15,
-          additive: style.kind !== 'genjutsu',
+          scale: 1.35,
+          speed: 1.2,
+          additive: style.kind !== 'genjutsu' && style.kind !== 'poison',
         });
       }
     }
 
     flEvents.forEach((ev) => {
+      if (ev.t == null || ev.t < 0) return;
       const pos = this.seatCenter(container, ev.t);
       const ang = srcPos ? Math.atan2(pos.y - srcPos.y, pos.x - srcPos.x) : 0;
 
       if (ev.c === 'rx') {
-        this.spawnFlipbook('light_impact_01', pos.x, pos.y, { scale: 1.75, speed: 1.25, additive: true });
-        this.spawnFlipbook('thunder_impact_01', pos.x, pos.y, { scale: 1.5, speed: 1.3, delay: 0.06, additive: true });
-        this.spawnRing(pos.x, pos.y, 130, '#e0b3ff', 5, 0.55);
-        this.spawnParticles(pos.x, pos.y, 26, ['#e879f9', '#38bdf8', '#facc15', '#ff5a1f'], {
+        this.spawnFlipbook('light_impact_01', pos.x, pos.y, { scale: 1.65, speed: 1.3, additive: true });
+        this.spawnFlipbook('thunder_impact_01', pos.x, pos.y, { scale: 1.45, speed: 1.35, delay: 0.06, additive: true });
+        this.spawnRing(pos.x, pos.y, 128, '#e0b3ff', 5, 0.52);
+        this.spawnParticles(pos.x, pos.y, 24, ['#e879f9', '#38bdf8', '#facc15', '#ff5a1f'], {
           speedMin: 110,
-          speedMax: 310,
+          speedMax: 300,
           sizeMax: 9,
         });
       } else if (ev.c === 'ko') {
-        this.spawnFlipbook('dark_impact_01', pos.x, pos.y, { scale: 2.0, speed: 1.05 });
-        this.spawnFlipbook('fire_impact_01', pos.x, pos.y, { scale: 1.85, speed: 1.15, delay: 0.08, additive: true });
-        this.spawnRing(pos.x, pos.y, 175, '#ef4444', 7, 0.95);
-        this.spawnRing(pos.x, pos.y, 125, '#111827', 5, 0.8);
-        this.spawnParticles(pos.x, pos.y, 40, ['#ef4444', '#dc2626', '#fbbf24', '#111827'], {
+        this.spawnFlipbook('dark_impact_01', pos.x, pos.y, { scale: 1.9, speed: 1.1 });
+        this.spawnFlipbook('fire_impact_02', pos.x, pos.y, { scale: 1.8, speed: 1.2, delay: 0.08, additive: true });
+        this.spawnRing(pos.x, pos.y, 170, '#ef4444', 7, 0.9);
+        this.spawnRing(pos.x, pos.y, 120, '#111827', 5, 0.75);
+        this.spawnParticles(pos.x, pos.y, 38, ['#ef4444', '#dc2626', '#fbbf24', '#111827'], {
           speedMin: 100,
-          speedMax: 340,
+          speedMax: 330,
           sizeMin: 4,
           sizeMax: 11,
-          lifeMin: 0.55,
-          lifeMax: 1.1,
+          lifeMin: 0.5,
+          lifeMax: 1.05,
         });
       } else if (ev.c === 'hp') {
         const cols = style ? style.colors : ['#ff5448', '#fb923c', '#fff'];
+        if (style?.specialImpact) {
+          this.spawnSpecial(style.specialImpact, {
+            x: pos.x,
+            y: pos.y,
+            from: srcPos || pos,
+            to: pos,
+            scale: style.isS ? 1.2 : 1.0,
+            duration: 0.9,
+          });
+        }
         const impactFx = style?.impactFx || 'fire_impact_01';
         this.spawnFlipbook(impactFx, pos.x, pos.y, {
-          scale: style?.isS ? 1.85 : 1.45,
-          speed: 1.2,
+          scale: style?.isS ? 1.75 : 1.4,
+          speed: 1.25,
           additive: style?.kind !== 'genjutsu' && style?.kind !== 'darkfire' && style?.kind !== 'poison',
         });
         if (style?.impactFx2) {
           this.spawnFlipbook(style.impactFx2, pos.x, pos.y, {
-            scale: style.isS ? 1.7 : 1.35,
-            speed: 1.25,
+            scale: style.isS ? 1.65 : 1.3,
+            speed: 1.3,
             delay: 0.06,
             additive: true,
           });
         }
         if (style?.slashFx) {
           this.spawnFlipbook(style.slashFx, pos.x, pos.y, {
-            scale: 1.4,
+            scale: 1.35,
             rotation: ang,
-            speed: 1.4,
+            speed: 1.45,
             additive: true,
           });
         }
-        this.spawnRing(pos.x, pos.y, style?.isS ? 115 : 80, cols[0], 4, 0.45);
-        this.spawnParticles(pos.x, pos.y, style?.isS ? 24 : 16, cols, {
+        this.spawnRing(pos.x, pos.y, style?.isS ? 112 : 78, cols[0], 4, 0.44);
+        this.spawnParticles(pos.x, pos.y, style?.isS ? 22 : 15, cols, {
           speedMin: 90,
-          speedMax: 260,
+          speedMax: 255,
           gravity: 160,
         });
       } else if (ev.c === 'ar') {
         const shieldFx = style?.shieldFx || 'rock_shield_01';
-        this.spawnFlipbook(shieldFx, pos.x, pos.y, { scale: 1.4, speed: 1.2 });
-        this.spawnRing(pos.x, pos.y, 75, '#60a5fa', 4, 0.42);
-        this.spawnParticles(pos.x, pos.y, 12, ['#93c5fd', '#dbeafe', '#3b82f6'], { speedMax: 165 });
+        this.spawnFlipbook(shieldFx, pos.x, pos.y, { scale: 1.35, speed: 1.25 });
+        this.spawnRing(pos.x, pos.y, 72, '#60a5fa', 4, 0.42);
+        this.spawnParticles(pos.x, pos.y, 12, ['#93c5fd', '#dbeafe', '#3b82f6'], { speedMax: 160 });
       } else if (ev.c === 'dg') {
-        this.spawnFlipbook('wind_vortex_01', pos.x, pos.y, { scale: 1.25, speed: 1.45, alpha: 0.85 });
-        this.spawnParticles(pos.x, pos.y, 14, ['#ffffff', '#cbd5e1'], { speedMax: 190, upward: 45 });
+        this.spawnSpecial({ type: 'smoke_poof', variant: 'kawarimi' }, { x: pos.x, y: pos.y, scale: 0.9, duration: 0.72 });
+        this.spawnParticles(pos.x, pos.y, 12, ['#ffffff', '#cbd5e1'], { speedMax: 185, upward: 45 });
       } else if (ev.c === 'au') {
-        const auFx = ev.sfx === 'genjutsu' ? 'dark_aura_01' : 'light_aura_01';
-        this.spawnFlipbook(auFx, pos.x, pos.y, { scale: 1.5, speed: 1.15, additive: ev.sfx !== 'genjutsu' });
-        this.spawnRing(pos.x, pos.y, 92, ev.sfx === 'genjutsu' ? '#dc2626' : '#ffd24a', 4, 0.65);
-        this.spawnParticles(pos.x, pos.y, 16, ['#fde047', '#fff', '#f59e0b'], { upward: 75 });
+        if (ev.sfx === 'genjutsu') {
+          this.spawnSpecial({ type: 'mangekyo_eye' }, { x: pos.x, y: pos.y, scale: 0.95, duration: 0.82 });
+          this.spawnFlipbook('dark_aura_01', pos.x, pos.y, { scale: 1.4, speed: 1.25 });
+        } else {
+          this.spawnFlipbook('light_aura_01', pos.x, pos.y, { scale: 1.4, speed: 1.25, additive: true });
+        }
+        this.spawnRing(pos.x, pos.y, 88, ev.sfx === 'genjutsu' ? '#dc2626' : '#ffd24a', 4, 0.6);
+        this.spawnParticles(pos.x, pos.y, 14, ['#fde047', '#fff', '#f59e0b'], { upward: 75 });
       } else if (ev.c === 'pt') {
-        this.spawnFlipbook('rock_impact_01', pos.x, pos.y, { scale: 1.3, speed: 1.25 });
-        this.spawnParticles(pos.x, pos.y, 12, ['#fb923c', '#fde68a', '#fff'], { speedMax: 180 });
+        this.spawnFlipbook('rock_impact_01', pos.x, pos.y, { scale: 1.25, speed: 1.3 });
+        this.spawnParticles(pos.x, pos.y, 12, ['#fb923c', '#fde68a', '#fff'], { speedMax: 175 });
       }
     });
 
     this.startLoop();
   }
 
-  // Backward-compatible combined entry point
   trigger(container, cast, flEvents = []) {
     if (cast) this.triggerCast(container, cast, flEvents);
     else this.triggerImpact(container, null, flEvents);
   }
 
   startLoop() {
-    if (this.raf) return;
+    if (this.raf || typeof requestAnimationFrame === 'undefined') return;
     this.lastTime = performance.now();
     const tick = (now) => {
-      const dt = Math.min(0.05, (now - this.lastTime) / 1000);
+      const dt = Math.min(0.05, Math.max(0.001, (now - this.lastTime) / 1000));
       this.lastTime = now;
       this.updateAndDraw(dt);
-      if (
-        this.particles.length ||
-        this.beams.length ||
-        this.energyBeams.length ||
-        this.rings.length ||
-        this.flipbooks.length
-      ) {
+      if (this.hasActiveFx()) {
         this.raf = requestAnimationFrame(tick);
       } else {
+        // CRITICAL: always wipe the physical canvas buffer on exit so ZERO remnant frames remain!
+        this.clearCanvas();
         this.raf = null;
       }
     };
@@ -593,7 +539,7 @@ class VfxEngine {
     ctx.save();
     ctx.strokeStyle = color;
     ctx.shadowColor = color;
-    ctx.shadowBlur = 16;
+    ctx.shadowBlur = 14;
     ctx.lineWidth = width;
     ctx.lineCap = 'round';
     ctx.beginPath();
@@ -612,7 +558,6 @@ class VfxEngine {
 
   drawEnergyBeam(ctx, eb) {
     const p = Math.min(1, eb.elapsed / eb.duration);
-    // Fast extend (0..0.28), hold & pulse (0.28..0.72), snappy fade (0.72..1.0)
     const reach = p < 0.28 ? p / 0.28 : 1;
     const fade = p > 0.72 ? Math.max(0, 1 - (p - 0.72) / 0.28) : 1;
     const pulse = 1 + Math.sin(eb.elapsed * 42) * 0.16;
@@ -629,18 +574,16 @@ class VfxEngine {
     ctx.globalCompositeOperation = 'lighter';
     ctx.lineCap = 'round';
 
-    // Outer plasma aura
     ctx.globalAlpha = 0.34 * fade;
     ctx.strokeStyle = glow;
     ctx.shadowColor = glow;
-    ctx.shadowBlur = 28;
-    ctx.lineWidth = w * 2.15;
+    ctx.shadowBlur = 24;
+    ctx.lineWidth = w * 2.1;
     ctx.beginPath();
     ctx.moveTo(x1, y1);
     ctx.lineTo(x2, y2);
     ctx.stroke();
 
-    // Mid elemental beam
     ctx.globalAlpha = 0.78 * fade;
     ctx.strokeStyle = colMid;
     ctx.lineWidth = w * 1.1;
@@ -649,7 +592,6 @@ class VfxEngine {
     ctx.lineTo(x2, y2);
     ctx.stroke();
 
-    // White-hot inner core
     ctx.globalAlpha = 0.95 * fade;
     ctx.strokeStyle = '#ffffff';
     ctx.shadowColor = '#ffffff';
@@ -660,22 +602,20 @@ class VfxEngine {
     ctx.lineTo(x2, y2);
     ctx.stroke();
 
-    // Origin charge orb & tip flare
     ctx.globalAlpha = 0.85 * fade;
     ctx.fillStyle = '#ffffff';
     ctx.shadowColor = glow;
-    ctx.shadowBlur = 24;
+    ctx.shadowBlur = 20;
     ctx.beginPath();
-    ctx.arc(x1, y1, w * 0.65, 0, Math.PI * 2);
+    ctx.arc(x1, y1, w * 0.62, 0, Math.PI * 2);
     ctx.fill();
     ctx.beginPath();
-    ctx.arc(x2, y2, w * 0.85, 0, Math.PI * 2);
+    ctx.arc(x2, y2, w * 0.82, 0, Math.PI * 2);
     ctx.fill();
 
-    // Crackling lightning around beam
     if (fade > 0.2) {
-      ctx.globalAlpha = 0.85 * fade;
-      this.drawLightning(ctx, x1, y1, x2, y2, '#ffffff', 2.2, 26);
+      ctx.globalAlpha = 0.82 * fade;
+      this.drawLightning(ctx, x1, y1, x2, y2, '#ffffff', 2.2, 24);
     }
     ctx.restore();
   }
@@ -683,9 +623,8 @@ class VfxEngine {
   updateAndDraw(dt) {
     const ctx = this.ctx;
     if (!ctx || !this.canvas) return;
-    const w = this.canvas.clientWidth;
-    const h = this.canvas.clientHeight;
-    ctx.clearRect(0, 0, w, h);
+    this.clearCanvas();
+    ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
 
     // 1. S-rank Multi-layer Energy Beams
     for (let i = this.energyBeams.length - 1; i >= 0; i--) {
@@ -698,40 +637,40 @@ class VfxEngine {
       this.drawEnergyBeam(ctx, eb);
     }
 
-    // 2. Projectiles / Lightning trails
+    // 2. Projectiles / Lightning trails (remove BEFORE drawing if already finished)
     for (let i = this.beams.length - 1; i >= 0; i--) {
       const b = this.beams[i];
-      b.progress = Math.min(1, b.progress + b.speed * dt);
+      b.progress += b.speed * dt;
+      if (b.progress >= 1) {
+        this.beams.splice(i, 1);
+        continue;
+      }
       const x = b.from.x + (b.to.x - b.from.x) * b.progress;
       const y = b.from.y + (b.to.y - b.from.y) * b.progress;
 
       if (b.style.kind === 'lightning') {
-        this.drawLightning(ctx, b.from.x, b.from.y, x, y, b.style.glow, 3.2, 32);
+        this.drawLightning(ctx, b.from.x, b.from.y, x, y, b.style.glow, 3.2, 30);
         this.drawLightning(ctx, b.from.x, b.from.y, x, y, '#ffffff', 1.4, 18);
-      } else if (!b.style.projectileFx) {
+      } else if (!b.style.projectileFx && !b.style.specialCast) {
         ctx.save();
         ctx.globalCompositeOperation = 'lighter';
         ctx.fillStyle = b.style.colors[0];
         ctx.shadowColor = b.style.glow;
-        ctx.shadowBlur = 18;
+        ctx.shadowBlur = 16;
         ctx.beginPath();
-        ctx.arc(x, y, b.style.size * 0.45, 0, Math.PI * 2);
+        ctx.arc(x, y, (b.style.size || 18) * 0.42, 0, Math.PI * 2);
         ctx.fill();
         ctx.restore();
       }
 
       this.spawnParticles(x, y, 2, b.style.colors, {
         speedMin: 20,
-        speedMax: 85,
+        speedMax: 80,
         sizeMin: 2,
         sizeMax: 5,
         lifeMin: 0.14,
-        lifeMax: 0.28,
+        lifeMax: 0.26,
       });
-
-      if (b.progress >= 1) {
-        this.beams.splice(i, 1);
-      }
     }
 
     // 3. Expanding shockwave rings
@@ -748,7 +687,7 @@ class VfxEngine {
       ctx.globalAlpha = Math.max(0, (1 - p) * 0.85);
       ctx.strokeStyle = r.color;
       ctx.shadowColor = r.color;
-      ctx.shadowBlur = 12;
+      ctx.shadowBlur = 10;
       ctx.lineWidth = r.lineWidth * (1 - p * 0.65);
       ctx.beginPath();
       ctx.arc(r.x, r.y, curR, 0, Math.PI * 2);
@@ -756,7 +695,7 @@ class VfxEngine {
       ctx.restore();
     }
 
-    // 4. Sakuga Hand-Drawn Flipbook Spritesheets
+    // 4. Sakuga Hand-Drawn Flipbook Spritesheets (with smooth fade envelope on loopStyle sheets!)
     for (let i = this.flipbooks.length - 1; i >= 0; i--) {
       const fb = this.flipbooks[i];
       if (!fb.imgRec.loaded) {
@@ -779,15 +718,25 @@ class VfxEngine {
 
       let drawX = fb.x;
       let drawY = fb.y;
+      let progress = frameIdx / Math.max(1, fb.meta.frames - 1);
       if (fb.followFrom && fb.followTo) {
-        const tp = Math.min(1, fb.elapsed / fb.travelDuration);
-        drawX = fb.followFrom.x + (fb.followTo.x - fb.followFrom.x) * tp;
-        drawY = fb.followFrom.y + (fb.followTo.y - fb.followFrom.y) * tp;
+        const tp = fb.elapsed / fb.travelDuration;
         if (tp >= 1) {
           this.flipbooks.splice(i, 1);
           continue;
         }
+        drawX = fb.followFrom.x + (fb.followTo.x - fb.followFrom.x) * tp;
+        drawY = fb.followFrom.y + (fb.followTo.y - fb.followFrom.y) * tp;
+        progress = tp;
       }
+
+      // Apply smooth fade-in/fade-out envelope for looping sheets (shields, auras, projectiles)
+      let envAlpha = fb.alpha;
+      if (fb.meta.loopStyle) {
+        if (progress < 0.12) envAlpha *= progress / 0.12;
+        else if (progress > 0.72) envAlpha *= Math.max(0, (1 - progress) / 0.28);
+      }
+      if (envAlpha <= 0.005) continue;
 
       const [cols] = fb.meta.grid;
       const [cw, ch] = fb.meta.cell;
@@ -799,14 +748,29 @@ class VfxEngine {
 
       ctx.save();
       if (fb.additive) ctx.globalCompositeOperation = 'lighter';
-      ctx.globalAlpha = fb.alpha;
+      ctx.globalAlpha = envAlpha;
       ctx.translate(drawX, drawY);
       if (fb.rotation) ctx.rotate(fb.rotation);
       ctx.drawImage(fb.imgRec.img, sx, sy, cw, ch, -drawW * px, -drawH * py, drawW, drawH);
       ctx.restore();
     }
 
-    // 5. Crisp Anime Spark Streak Particles
+    // 5. Canon Naruto Special Procedural Effects (Sharingan, Bagua, Hiraishin, Kunai, Shadow, Paper...)
+    for (let i = this.specials.length - 1; i >= 0; i--) {
+      const sp = this.specials[i];
+      if (sp.delay > 0) {
+        sp.delay -= dt;
+        continue;
+      }
+      sp.elapsed += dt;
+      if (sp.elapsed >= sp.duration) {
+        this.specials.splice(i, 1);
+        continue;
+      }
+      drawSpecialFx(ctx, sp);
+    }
+
+    // 6. Crisp Anime Spark Streak Particles
     for (let i = this.particles.length - 1; i >= 0; i--) {
       const pt = this.particles[i];
       pt.life -= dt;
@@ -851,5 +815,4 @@ class VfxEngine {
 }
 
 export const VFX = new VfxEngine();
-// Warm up manifest immediately on module load
 VFX.ensureManifest();

@@ -2,6 +2,8 @@ import { CARDS, HIDDEN_CLANS, CLANS, REACTIONS, getCardTitle, formatCardLogName 
 
 export const TEAM_NAMES = ['Phe Đỏ', 'Phe Xanh'];
 export const EDO_HP = 1e9;
+export const CARD_MAX_AGE = { S: 6, A: 4, B: 3, C: 3 };
+export const getCardMaxAge = (c) => CARD_MAX_AGE[c?.r] || 3;
 
 export function totalArmor(p) {
   if (!p) return 0;
@@ -304,6 +306,20 @@ async function checkDeath(G, p, killer = null) {
       p.hp = 500;
       addTempArmor(p, 500, 1);
       addLog(G, `${p.name} kích hoạt Izanagi hồi sinh (500 máu, 500 giáp tạm 1 lượt)`);
+      G.q.push({
+        k: 'auto_cast',
+        id: revCard.id,
+        n: revCard.n,
+        jp: revCard.jp || revCard.n,
+        kj: revCard.kj || '',
+        r: revCard.r,
+        t: revCard.t,
+        s: revCard.s,
+        el: revCard.el || null,
+        who: p.name,
+        sub: 'tự kích hoạt hồi sinh',
+        isAuto: true,
+      });
       pushFloat(G, p, 'IZANAGI!', 'au');
       return;
     }
@@ -344,6 +360,23 @@ async function applyHit(G, source, target, dmg, card, ignoreEvasion = false, sta
       if (source.immune <= 0) {
         source.stun = Math.max(source.stun, 1);
         addLog(G, `Hồng Hồ Lô kích hoạt! ${source.name} bị Choáng 1 vòng`);
+        const gourdCard = CARDS.find((c) => c.gourdMark);
+        if (gourdCard) {
+          G.q.push({
+            k: 'auto_cast',
+            id: gourdCard.id,
+            n: gourdCard.n,
+            jp: gourdCard.jp || gourdCard.n,
+            kj: gourdCard.kj || '',
+            r: gourdCard.r,
+            t: gourdCard.t,
+            s: gourdCard.s,
+            el: gourdCard.el || null,
+            who: target.name,
+            sub: `→ ${source.name}`,
+            isAuto: true,
+          });
+        }
         pushFloat(G, source, 'CHOÁNG!', 'au');
       }
     }
@@ -370,6 +403,20 @@ async function applyHit(G, source, target, dmg, card, ignoreEvasion = false, sta
       if (idx >= 0) target.hand.splice(idx, 1);
       if (x.au !== 'izm') {
         addLog(G, `${target.name} kích hoạt ${formatCardLogName(x)}`);
+        G.q.push({
+          k: 'auto_cast',
+          id: x.id,
+          n: x.n,
+          jp: x.jp || x.n,
+          kj: x.kj || '',
+          r: x.r,
+          t: x.t,
+          s: x.s,
+          el: x.el || null,
+          who: target.name,
+          sub: 'phản đòn tự kích hoạt',
+          isAuto: true,
+        });
         pushFloat(G, target, `${getCardTitle(x)}!`, 'au', x.au === 'trap' ? 'genjutsu' : null);
       }
       if (x.au === 'kl' && card && card.t === 'a') target.hand.push({ ...card, age: 0 });
@@ -678,8 +725,9 @@ export async function endTurn(G, skipDraw = false, _chained = false) {
     p.hand = p.hand.filter((c) => {
       if (c.au) return true;
       c.age = (c.age || 0) + 1;
-      if (c.age >= 3) {
-        addLog(G, `Thẻ ${formatCardLogName(c)} của ${p.name} hết hạn (3 lượt)`);
+      const maxAge = getCardMaxAge(c);
+      if (c.age >= maxAge) {
+        addLog(G, `Thẻ ${formatCardLogName(c)} của ${p.name} hết hạn (${maxAge} lượt)`);
         return false;
       }
       return true;
@@ -746,6 +794,7 @@ export async function useCard(G, handIndex, targetIdx = -1, hitList = null) {
 
   G.q.push({
     k: 'cast',
+    id: c.id,
     n: c.n,
     jp: c.jp || c.n,
     kj: c.kj || '',
@@ -850,6 +899,7 @@ export async function useCard(G, handIndex, targetIdx = -1, hitList = null) {
         aoeTurn: c.pet[3] || 0,
         lock: c.pet[4] || 0,
         name: c.pet[5] || (c.pet[3] ? 'Shukaku' : ''),
+        cardId: c.id,
       });
       if (p.pets.length > 3) p.pets.shift();
     }

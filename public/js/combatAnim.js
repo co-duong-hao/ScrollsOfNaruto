@@ -27,32 +27,89 @@ export const CombatAnim = {
   },
 
   animateCastBanner(tbEl, cast) {
-    const g = getGsap();
-    if (!g || !tbEl || !cast || reducedMotion()) return;
+    if (!tbEl || !cast) return;
     const banner = tbEl.querySelector('.cast');
     if (!banner) return;
-    const kj = banner.querySelector('.cast-kj');
+    const g = getGsap();
+    if (!g || reducedMotion()) {
+      banner.classList.add('no-gsap');
+      return;
+    }
 
-    g.killTweensOf(banner);
-    g.fromTo(
+    const artWrap = banner.querySelector('.cast-art-wrap');
+    const artImg = banner.querySelector('.cast-art-img, .cast-art-svg');
+    const flash = banner.querySelector('.cast-art-flash');
+    const sheen = banner.querySelector('.cast-art-sheen');
+    const copy = banner.querySelector('.cast-copy');
+    const kj = banner.querySelector('.cast-kj');
+    const isS = cast.r === 'S';
+    const isAuto = !!cast.isAuto;
+    const holdDur = isAuto ? 0.65 : isS ? 1.05 : 0.9;
+
+    g.killTweensOf([banner, artWrap, artImg, flash, sheen, copy, kj].filter(Boolean));
+
+    const tl = g.timeline();
+    tl.fromTo(
       banner,
-      { opacity: 0, scale: 0.72, x: -72, skewX: -12 },
-      {
-        opacity: 1,
-        scale: 1,
-        x: 0,
-        skewX: 0,
-        duration: 0.32,
-        ease: 'expo.out',
-      }
+      { opacity: 0, scaleY: 0.25 },
+      { opacity: 1, scaleY: 1, duration: 0.2, ease: 'expo.out' },
+      0
     );
-    if (kj) {
-      g.fromTo(
-        kj,
-        { opacity: 0, scale: 1.45, y: -12 },
-        { opacity: 1, scale: 1, y: 0, duration: 0.36, ease: 'back.out(1.6)', delay: 0.05 }
+
+    if (artWrap) {
+      tl.fromTo(
+        artWrap,
+        { opacity: 0, x: -115, scale: 0.92 },
+        { opacity: 1, x: 0, scale: 1, duration: 0.3, ease: 'expo.out' },
+        0.02
       );
     }
+    if (artImg) {
+      tl.fromTo(
+        artImg,
+        { scale: isS ? 1.24 : 1.15 },
+        { scale: 1.02, duration: holdDur + 0.15, ease: 'power2.out' },
+        0.04
+      );
+    }
+    if (flash) {
+      tl.fromTo(
+        flash,
+        { opacity: isS ? 0.95 : 0.72 },
+        { opacity: 0, duration: 0.32, ease: 'power2.out' },
+        0.04
+      );
+    }
+    if (sheen) {
+      tl.fromTo(
+        sheen,
+        { xPercent: -160, opacity: 0.9 },
+        { xPercent: 320, opacity: 0, duration: 0.52, ease: 'power2.inOut' },
+        0.12
+      );
+    }
+    if (copy) {
+      tl.fromTo(
+        copy,
+        { opacity: 0, x: 85 },
+        { opacity: 1, x: 0, duration: 0.3, ease: 'expo.out' },
+        0.03
+      );
+    }
+    if (kj) {
+      tl.fromTo(
+        kj,
+        { opacity: 0, scale: 1.38, y: -10 },
+        { opacity: 1, scale: 1, y: 0, duration: 0.34, ease: 'back.out(1.6)' },
+        0.07
+      );
+    }
+
+    tl.to(
+      banner,
+      { opacity: 0, scaleY: 0.88, duration: 0.18, ease: 'power2.in' },
+      `+=${holdDur * 0.45}`
+    );
   },
 
   animateSeatAttack(tbEl, srcIdx, targetIndices = []) {

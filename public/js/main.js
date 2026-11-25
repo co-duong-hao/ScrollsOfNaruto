@@ -16,6 +16,7 @@ import {
 } from '/shared/engine.js';
 import { SFX } from './sound.js';
 import { VFX } from './vfx.js';
+import { getCardFxProfile } from './skillFxMap.js';
 import { CombatAnim } from './combatAnim.js';
 import { initCardHolo, triggerShowcaseWobble } from './cardHolo.js';
 import { initCursorFire } from './cursorFire.js';
@@ -32,6 +33,7 @@ import {
   renderVictoryOverlay,
   renderCardInspectModal,
   getFilteredCodexCards,
+  renderCastBanner,
   KONOHA_CREST_SVG,
   ARENA_SEAL_SVG,
 } from './ui.js';
@@ -231,10 +233,13 @@ function initBgmPlayer() {
 initBgmPlayer();
 
 function applyBgVideo() {
-  document.documentElement.setAttribute('data-bg-video', state.bgVideo ? 'on' : 'off');
+  const inGame = state.mode === 'game';
+  document.documentElement.setAttribute('data-in-game', inGame ? '1' : '0');
+  const showVideo = state.bgVideo && !inGame;
+  document.documentElement.setAttribute('data-bg-video', showVideo ? 'on' : 'off');
   const vid = $('bgVideo');
   if (!vid) return;
-  if (state.bgVideo) {
+  if (showVideo) {
     vid.muted = true;
     const p = vid.play?.();
     if (p && typeof p.catch === 'function') p.catch(() => {});
@@ -286,7 +291,7 @@ function topBarHtml(showLeave = false) {
           <span id="sfxVolPct" class="vol-pct">${curVol}%</span>
         </div>
         <button class="btn-sm ${state.bgmOpen ? 'go' : ''}" onclick="appActions.toggleBgmDock()" title="Mở / Thu gọn trình phát nhạc nền (nhạc vẫn phát khi thu gọn)">Nhạc</button>
-        <button class="btn-sm" onclick="appActions.toggleBgVideo()" title="Bật/tắt video nền Làng Lá">${state.bgVideo ? 'Nền động' : 'Nền tĩnh'}</button>
+        ${showLeave ? '' : `<button class="btn-sm" onclick="appActions.toggleBgVideo()" title="Bật/tắt video nền Làng Lá">${state.bgVideo ? 'Nền động' : 'Nền tĩnh'}</button>`}
         <button class="btn-sm" id="fsBtn" onclick="appActions.toggleFullscreen()" title="Bật / Tắt toàn màn hình">${document.fullscreenElement ? 'Thu nhỏ' : 'Toàn màn hình'}</button>
         <button class="btn-sm" onclick="appActions.toggleTheme()">${state.dark ? 'Tối' : 'Sáng'}</button>
       </div>
@@ -310,25 +315,41 @@ function askLocalAuto(playerIdx, card, info) {
   });
 }
 
+let fxRunId = 0;
+let fxTimers = [];
+
+function cancelActiveFx(clearCanvas = false) {
+  fxRunId++;
+  fxTimers.forEach((t) => clearTimeout(t));
+  fxTimers = [];
+  state.cast = null;
+  state.fl = [];
+  state.busy = false;
+  if (clearCanvas) VFX.clearAll();
+}
+
 function playFxEvents(events, onDone) {
   const list = events || [];
   const cs = list.find((e) => e.k === 'cast') || null;
+  const autoCast = list.find((e) => e.k === 'auto_cast') || null;
   const fl = list.filter((e) => !e.k);
 
-  if (!cs && !fl.length) {
+  cancelActiveFx(false);
+
+  if (!cs && !autoCast && !fl.length) {
     render();
     if (onDone) onDone();
     return;
   }
 
+  const runId = fxRunId;
+  const profile = cs ? getCardFxProfile(cs) : null;
   state.busy = true;
   state.cast = cs;
   state.fl = [];
 
   if (cs) {
-    if (cs.r === 'S') SFX.play('srank');
-    else if (cs.el) SFX.play(cs.el);
-    else SFX.play('cast');
+    SFX.play(profile?.sfxCast || (cs.r === 'S' ? 'srank' : cs.el || 'cast'));
   }
   render();
   const tbCast = document.querySelector('.tb');
@@ -339,31 +360,60 @@ function playFxEvents(events, onDone) {
     VFX.triggerCast(tbCast, cs, fl);
   }
 
-  setTimeout(() => {
-    state.cast = null;
-    state.fl = fl;
-    const customSfx = [...new Set(fl.map((e) => e.sfx).filter(Boolean))];
-    customSfx.forEach((name) => SFX.play(name));
-    if (fl.some((e) => e.c === 'ko')) SFX.play('ko');
-    else if (!customSfx.length && fl.some((e) => e.c === 'hp')) SFX.play('hit');
-    else if (!customSfx.length && fl.some((e) => e.c === 'dg')) SFX.play('dodge');
-    else if (!customSfx.length && fl.some((e) => e.c === 'ar')) SFX.play('armor');
-    else if (!customSfx.length && fl.some((e) => e.c === 'pt')) SFX.play('pet');
-    if (fl.some((e) => e.c === 'rx')) SFX.play('reaction');
-    render();
-    const tbHit = document.querySelector('.tb');
-    if (tbHit) {
-      VFX.triggerImpact(tbHit, cs, fl);
-      CombatAnim.animateImpactGroup(tbHit, cs, fl);
-    }
-  }, cs ? 1250 : 0);
+  fxTimers.push(
+    setTimeout(() => {
+      if (runId !== fxRunId) return;
+      state.cast = autoCast;
+      state.fl = fl;
+      const customSfx = [...new Set(fl.map((e) => e.sfx).filter(Boolean))];
+      customSfx.forEach((name) => SFX.play(name));
+      if (autoCast && !customSfx.length) {
+        const autoProfile = getCardFxProfile(autoCast);
+        SFX.play(autoProfile?.sfxCast || 'seal');
+      }
+      if (fl.some((e) => e.c === 'ko')) SFX.play('ko');
+      else if (!customSfx.length && fl.some((e) => e.c === 'hp')) {
+        SFX.play(profile?.sfxImpact || 'hit_deep');
+      } else if (!customSfx.length && fl.some((e) => e.c === 'dg')) SFX.play('dodge');
+      else if (!customSfx.length && fl.some((e) => e.c === 'ar')) SFX.play('armor');
+      else if (!customSfx.length && fl.some((e) => e.c === 'pt')) SFX.play('pet');
+      if (fl.some((e) => e.c === 'rx')) SFX.play('reaction');
+      render();
+      const tbHit = document.querySelector('.tb');
+      if (tbHit) {
+        if (autoCast) CombatAnim.animateCastBanner(tbHit, autoCast);
+        VFX.triggerImpact(tbHit, cs, fl);
+        CombatAnim.animateImpactGroup(tbHit, cs, fl);
+      }
+      if (autoCast) {
+        fxTimers.push(
+          setTimeout(() => {
+            if (runId === fxRunId && state.cast === autoCast) {
+              state.cast = null;
+              render();
+            }
+          }, 950)
+        );
+      }
+    }, cs ? 1250 : 0)
+  );
 
-  setTimeout(() => {
-    state.fl = [];
-    state.busy = false;
-    render();
-    if (onDone) setTimeout(onDone, 320);
-  }, cs ? 2650 : 1350);
+  fxTimers.push(
+    setTimeout(() => {
+      if (runId !== fxRunId) return;
+      state.cast = null;
+      state.fl = [];
+      state.busy = false;
+      render();
+      if (onDone) {
+        fxTimers.push(
+          setTimeout(() => {
+            if (runId === fxRunId) onDone();
+          }, 300)
+        );
+      }
+    }, cs ? 2650 : 1350)
+  );
 }
 
 function runOfflineBotStep() {
@@ -485,6 +535,17 @@ function renderModal() {
   if (state.modal === 'rules') out += renderRulesModal(state.rulebookText);
   else if (state.modal === 'codex') out += renderCodexModal(state.codexRank, state.codexSearch);
   else if (state.modal === 'reactions') out += renderQuickReactionsModal();
+  else if (state.modal === 'dungeon') {
+    out += `
+      <div class="modal" onclick="if(event.target===this)appActions.closeModal()">
+        <div class="panel" style="max-width:420px;width:92%;text-align:center">
+          <span class="hanko-seal" aria-hidden="true">忍</span>
+          <h2 style="margin-bottom:10px">Phụ Bản</h2>
+          <p class="hint" style="font-size:14.5px;margin-bottom:18px">Chế độ Phụ Bản đang được phát triển!</p>
+          <button class="go btn-lg" onclick="appActions.closeModal()">Đóng</button>
+        </div>
+      </div>`;
+  }
 
   if (state.inspectCardId != null) {
     const listIds = state.inspectFromCodex
@@ -507,6 +568,7 @@ function renderMenu() {
         <h1>Nhẫn Quyển</h1>
         <div class="hero-btns">
           <button class="go btn-lg btn-online" onclick="appActions.openOnlineMenu()">Online</button>
+          <button class="go btn-lg btn-dungeon" onclick="appActions.openDungeon()">Phụ Bản</button>
           <button class="go btn-lg" onclick="appActions.openOfflineSetup()">Offline</button>
           <button class="btn-lg btn-sandbox" onclick="appActions.startSandbox()">Testing</button>
         </div>
@@ -748,6 +810,14 @@ function renderGame() {
 
   const others = G.ps.map((_, i) => i).filter((i) => i !== viewIdx);
   const rotated = [...others.filter((i) => i > viewIdx), ...others.filter((i) => i < viewIdx)];
+  const allies = G.teams ? rotated.filter((i) => G.ps[i].team === V.team) : [];
+  const enemies = G.teams ? rotated.filter((i) => G.ps[i].team !== V.team) : rotated;
+  const oppHtml = G.teams && allies.length && enemies.length
+    ? `<div class="opp-side is-allies">${allies.map((i) => renderSeat(G, G.ps[i], i, cur, showSecret, false, state.fl)).join('')}</div>
+       <div class="opp-side is-enemies">${enemies.map((i) => renderSeat(G, G.ps[i], i, cur, showSecret, false, state.fl)).join('')}</div>`
+    : (G.teams ? [...allies, ...enemies] : rotated)
+        .map((i) => renderSeat(G, G.ps[i], i, cur, showSecret, false, state.fl))
+        .join('');
 
   let banner = cur.bot ? `${cur.name} đang suy nghĩ…` : on && isMyTurn ? 'Đến lượt bạn!' : `Lượt của ${cur.name}`;
   let msg = state.msg || '';
@@ -765,7 +835,6 @@ function renderGame() {
     ? `<div class="acts">
          <button class="go" onclick="appActions.endTurn()">Kết thúc lượt</button>
          ${selCard ? '<button onclick="appActions.cancelSelect()">Hủy chọn</button>' : ''}
-         <span class="hk-hint">Phím tắt: <b>1-9</b> chọn · <b>Space</b> hết lượt · <b>R</b> phản ứng</span>
        </div>`
     : '';
 
@@ -777,7 +846,6 @@ function renderGame() {
                selected: G.sel === i,
                dim: !canAct,
                interactive: true,
-               hotkey: canAct && i < 9 ? i + 1 : null,
              })
            )
            .join('')}
@@ -801,23 +869,12 @@ function renderGame() {
     <div class="tb ${ca && ca.r === 'S' ? 'shake' : ''}">
       ${ARENA_SEAL_SVG}
       <div class="opp">
-        ${rotated.map((i) => renderSeat(G, G.ps[i], i, cur, showSecret, false, state.fl)).join('')}
+        ${oppHtml}
       </div>
-      ${
-        ca
-          ? `<div class="cast">
-               ${ca.kj ? `<span class="cast-kj" style="--c:${castCol}">${esc(ca.kj)}</span>` : ''}
-               <h2 style="--c:${castCol}">${esc((ca.jp || ca.n).toUpperCase())}!</h2>
-               <small>${
-                 ca.n && !isSameJpViName(ca) ? `<span class="cast-vi">${esc(ca.n)}</span> · ` : ''
-               }${esc(ca.who)} · cấp ${ca.r} ${esc(ca.sub)}</small>
-             </div>`
-          : ''
-      }
+      ${ca ? renderCastBanner(ca) : ''}
       <div class="mid">
         <div class="ban">${esc(banner)}</div>
         <div class="msg">${esc(msg)}</div>
-        <div class="lg" id="lg">${G.log.slice(-40).map(esc).join('<br>')}</div>
       </div>
       <div class="mine">
         ${renderSeat(G, V, viewIdx, cur, showSecret, true, state.fl)}
@@ -853,6 +910,7 @@ function render() {
   if (newModal) newModal.scrollTop = modalScrollTop;
   const lg = $('lg');
   if (lg) lg.scrollTop = lg.scrollHeight;
+  applyBgVideo();
   if (state.mode === 'game' && state.G && !state.G.over) {
     VFX.preloadCore();
     const tb = document.querySelector('.tb');
@@ -1043,6 +1101,10 @@ window.appActions = {
     state.mode = 'offline_setup';
     render();
   },
+  openDungeon() {
+    state.modal = 'dungeon';
+    render();
+  },
   setOfflineCount(n) {
     state.offlineCount = n;
     render();
@@ -1057,6 +1119,7 @@ window.appActions = {
       bot: $('ty' + i)?.value === '1',
     }));
     state.lastOfflinePlayers = players;
+    cancelActiveFx(true);
     CombatAnim.resetMatch();
     state.G = await createGame(players, { online: false, onAskAuto: askLocalAuto });
     state.G.sel = null;
@@ -1100,6 +1163,7 @@ window.appActions = {
       { name: 'Hình nộm 2', bot: false },
     ];
     const G = await createGame(players, { online: false, onAskAuto: askLocalAuto });
+    cancelActiveFx(true);
     CombatAnim.resetMatch();
     G.sandbox = true;
     G.sel = null;
@@ -1148,6 +1212,8 @@ window.appActions = {
   sandboxReset() {
     const G = state.G;
     if (!G || !G.sandbox) return;
+    cancelActiveFx(true);
+    CombatAnim.resetMatch();
     G.ps.forEach((p) => {
       p.hp = 4000;
       p.sp = 10;
@@ -1268,6 +1334,7 @@ window.appActions = {
     if (state.G?.online) {
       state.socket?.emit('room:leave');
     }
+    cancelActiveFx(true);
     state.G = null;
     state.lobby = null;
     state.busy = false;
@@ -1429,34 +1496,6 @@ document.addEventListener('keydown', (e) => {
       window.appActions.toggleInspectFlip();
     }
     return;
-  }
-
-  if (e.key === 'r' || e.key === 'R') {
-    if (state.modal === 'reactions') window.appActions.closeModal();
-    else if (!state.modal) window.appActions.openModal('reactions');
-    return;
-  }
-
-  if (state.mode !== 'game' || !state.G || state.G.over || state.modal || state.busy || state.waitOnline) return;
-  const G = state.G;
-  const cur = G.ps[G.cur];
-  if (!cur || cur.bot) return;
-  if (G.online && cur.uid !== state.you) return;
-  const humCount = G.ps.filter((p) => !p.bot).length;
-  if (!G.online && humCount >= 2 && !G.ready) return;
-
-  if (e.key >= '1' && e.key <= '9') {
-    const idx = Number(e.key) - 1;
-    if (idx < cur.hand.length) {
-      e.preventDefault();
-      window.appActions.pickCard(idx);
-    }
-    return;
-  }
-
-  if ((e.key === ' ' || e.key === 'Enter') && G.sel == null) {
-    e.preventDefault();
-    window.appActions.endTurn();
   }
 });
 

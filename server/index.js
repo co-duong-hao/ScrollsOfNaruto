@@ -109,30 +109,32 @@ function scheduleBotIfNeeded(room) {
     if (!p || !p.bot) return;
 
     room.resolving = true;
+    let nextDelay = null;
     try {
       const act = pickBotAction(room.game);
       if (act.type === 'end') {
         const endRes = await endTurn(room.game);
         const ev = endRes?.events?.length ? endRes.events : null;
         broadcastState(room, ev);
-        if (ev) setTimeout(() => scheduleBotIfNeeded(room), 1500);
-        else scheduleBotIfNeeded(room);
+        nextDelay = ev ? 1500 : 120;
       } else {
         const res = await useCard(room.game, act.index, act.target, act.hitList);
         if (res.ok) {
           broadcastState(room, res.events);
           const hasCast = res.events.some((e) => e.k === 'cast');
-          setTimeout(() => scheduleBotIfNeeded(room), hasCast ? 2900 : 1400);
+          nextDelay = hasCast ? 2900 : 1400;
         } else {
           const endRes = await endTurn(room.game);
           const ev = endRes?.events?.length ? endRes.events : null;
           broadcastState(room, ev);
-          if (ev) setTimeout(() => scheduleBotIfNeeded(room), 1500);
-          else scheduleBotIfNeeded(room);
+          nextDelay = ev ? 1500 : 120;
         }
       }
     } finally {
       room.resolving = false;
+    }
+    if (nextDelay != null) {
+      setTimeout(() => scheduleBotIfNeeded(room), nextDelay);
     }
   }, 1500);
 }
@@ -308,14 +310,17 @@ io.on('connection', (socket) => {
     if (!cur || cur.bot || cur.uid !== uid) return;
 
     room.resolving = true;
+    let nextDelay = null;
     try {
       const endRes = await endTurn(G);
       const ev = endRes?.events?.length ? endRes.events : null;
       broadcastState(room, ev);
-      if (ev) setTimeout(() => scheduleBotIfNeeded(room), 1500);
-      else scheduleBotIfNeeded(room);
+      nextDelay = ev ? 1500 : 120;
     } finally {
       room.resolving = false;
+    }
+    if (nextDelay != null) {
+      setTimeout(() => scheduleBotIfNeeded(room), nextDelay);
     }
   });
 

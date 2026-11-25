@@ -15,10 +15,13 @@ import {
   EDO_HP,
 } from '../shared/engine.js';
 
-test('CARDS has all 139 cards with unique sequential IDs', () => {
-  assert.equal(CARDS.length, 139);
+test('CARDS has all 200 cards with unique sequential IDs', () => {
+  assert.equal(CARDS.length, 200);
   const ids = new Set(CARDS.map((c) => c.id));
-  assert.equal(ids.size, 139);
+  assert.equal(ids.size, 200);
+  for (let i = 0; i < 200; i++) {
+    assert.equal(CARDS[i].id, i);
+  }
 });
 
 test('createGame initializes players with 4000 HP, 10 SP, and 3 cards', async () => {
@@ -164,20 +167,23 @@ test('destiny sets are assigned (2 clans) and hidden from opponents', async () =
   assert.equal(view.ps[1].destiny, null);
 });
 
-test('card age expires non-auto cards after 3 turns while keeping auto cards', async () => {
+test('card age expires non-auto cards by rank (S=6, A=4, B/C=3) while keeping auto cards', async () => {
   const G = await createGame([
     { name: 'P1', bot: false },
     { name: 'P2', bot: false },
   ]);
   G.ps[0].hand = [
-    { ...CARDS.find((c) => c.n === 'rasengan'), age: 0 },
-    { ...CARDS.find((c) => c.n === 'izanagi'), age: 0 },
+    { ...CARDS.find((c) => c.n === 'ném kunai'), age: 0 }, // C -> 3 turns
+    { ...CARDS.find((c) => c.n === 'rasengan'), age: 0 },  // A -> 4 turns
+    { ...CARDS.find((c) => c.n === 'izanagi'), age: 0 },   // auto -> never expires
   ];
+  for (let k = 0; k < 5; k++) await endTurn(G, true); // P1 finished 3 turns
+  assert.equal(G.ps[0].hand.some((c) => c.n === 'ném kunai'), false);
+  assert.equal(G.ps[0].hand.some((c) => c.n === 'rasengan'), true);
+  assert.equal(G.ps[0].hand.some((c) => c.n === 'izanagi'), true);
+
   await endTurn(G, true);
-  await endTurn(G, true);
-  await endTurn(G, true);
-  await endTurn(G, true);
-  await endTurn(G, true);
+  await endTurn(G, true); // P1 finished 4 turns
   assert.equal(G.ps[0].hand.length, 1);
   assert.equal(G.ps[0].hand[0].n, 'izanagi');
 });
@@ -604,7 +610,7 @@ test('armor break (Lôi Thiết) destroys both timed and permanent armor', async
   assert.equal(G.ps[1].hp, 3700);
 });
 
-test('all 139 cards have authentic Japanese Romaji (jp) and Kanji/Kana (kj) names', () => {
+test('all 200 cards have authentic Japanese Romaji (jp) and Kanji/Kana (kj) names', () => {
   for (const c of CARDS) {
     assert.ok(typeof c.jp === 'string' && c.jp.trim().length > 0, `Missing jp for card ${c.id} (${c.n})`);
     assert.ok(typeof c.kj === 'string' && c.kj.trim().length > 0, `Missing kj for card ${c.id} (${c.n})`);
@@ -617,19 +623,143 @@ test('all 139 cards have authentic Japanese Romaji (jp) and Kanji/Kana (kj) name
   assert.equal(normalizeSearchText('hỏa cầu chi thuật').includes('hoa cau'), true);
 });
 
-test('cast event includes both Japanese (jp, kj) and Vietnamese (n) names', async () => {
+test('cast event includes card id, Japanese (jp, kj), and Vietnamese (n) names', async () => {
   const G = await createGame([
     { name: 'Itachi', bot: false },
     { name: 'Sasuke', bot: false },
   ]);
   G.ps[1].dodge = 0;
   G.ps[1].hand = [];
-  G.ps[0].hand = [{ ...CARDS.find((c) => c.n === 'thiên chiếu'), age: 0 }];
+  const amaterasu = CARDS.find((c) => c.n === 'thiên chiếu');
+  G.ps[0].hand = [{ ...amaterasu, age: 0 }];
   const res = await useCard(G, 0, 1);
   assert.equal(res.ok, true);
   const castEv = res.events.find((e) => e.k === 'cast');
   assert.ok(castEv);
+  assert.equal(castEv.id, amaterasu.id);
   assert.equal(castEv.jp, 'Amaterasu');
   assert.equal(castEv.kj, '天照');
   assert.equal(castEv.n, 'thiên chiếu');
+});
+
+test('public auto-trigger cards emit auto_cast with card id while Izanami stays secret', async () => {
+  const G = await createGame([
+    { name: 'P1', bot: false },
+    { name: 'P2', bot: false },
+  ]);
+  const trap = CARDS.find((c) => c.n === 'bẫy ảo thuật');
+  const atk = CARDS.find((c) => c.n === 'rasengan');
+  G.ps[0].hand = [{ ...atk, age: 0 }];
+  G.ps[1].hand = [{ ...trap, age: 0 }];
+  const resTrap = await useCard(G, 0, 1);
+  const autoTrap = resTrap.events.find((e) => e.k === 'auto_cast');
+  assert.ok(autoTrap);
+  assert.equal(autoTrap.id, trap.id);
+  assert.equal(autoTrap.isAuto, true);
+
+  // Izanami (au === 'izm') must stay secret and NOT emit auto_cast
+  const G2 = await createGame([
+    { name: 'P1', bot: false },
+    { name: 'P2', bot: false },
+  ]);
+  const izm = CARDS.find((c) => c.au === 'izm');
+  G2.ps[0].hand = [{ ...atk, age: 0 }]; // rank A triggers izm
+  G2.ps[1].hand = [{ ...izm, age: 0 }];
+  const resIzm = await useCard(G2, 0, 1);
+  assert.equal(resIzm.events.some((e) => e.k === 'auto_cast'), false);
+});
+
+test('all 200 cards resolve valid VFX+SFX profiles and all manifest/SFX asset files exist', async () => {
+  const fs = await import('fs');
+  const path = await import('path');
+  const { getCardFxProfile } = await import('../public/js/skillFxMap.js');
+  const { SFX_CLIPS } = await import('../public/js/sound.js');
+
+  const manifest = JSON.parse(fs.readFileSync(path.resolve('public/assets/vfx/manifest.json'), 'utf8'));
+  const vfxIds = new Set(Object.keys(manifest.effects));
+  assert.ok(vfxIds.size >= 40, `Expected >=40 Sakuga VFX, got ${vfxIds.size}`);
+
+  // Verify every WebP in manifest exists on disk
+  for (const [id, info] of Object.entries(manifest.effects)) {
+    const fp = path.resolve('public', info.src.replace(/^\//, ''));
+    assert.ok(fs.existsSync(fp), `Missing VFX WebP: ${id} -> ${fp}`);
+  }
+
+  // Verify every MP3 in SFX_CLIPS exists on disk
+  for (const [key, url] of Object.entries(SFX_CLIPS)) {
+    const fp = path.resolve('public', url.replace(/^\//, ''));
+    assert.ok(fs.existsSync(fp), `Missing SFX MP3: ${key} -> ${fp}`);
+  }
+
+  // Verify every single card (0..199) resolves valid VFX+SFX profile & valid Sakuga IDs
+  const fxFields = ['chargeFx', 'projectileFx', 'impactFx', 'impactFx2', 'slashFx', 'shieldFx'];
+  for (const c of CARDS) {
+    const prof = getCardFxProfile(c);
+    assert.ok(prof && Array.isArray(prof.colors) && prof.colors.length >= 2, `Missing colors for card #${c.id}`);
+    assert.ok(typeof prof.sfxCast === 'string' && prof.sfxCast.length > 0, `Missing sfxCast for card #${c.id}`);
+    assert.ok(typeof prof.sfxImpact === 'string' && prof.sfxImpact.length > 0, `Missing sfxImpact for card #${c.id}`);
+    for (const f of fxFields) {
+      if (prof[f]) {
+        assert.ok(vfxIds.has(prof[f]), `Unknown Sakuga VFX "${prof[f]}" on card #${c.id} (${c.jp})`);
+      }
+    }
+  }
+});
+
+test('expansion cards (139..199): describeCard, cardArtSvg fallback, positive SP recovery, and Jinton armor/pet/corpse erase work cleanly', async () => {
+  const { describeCard } = await import('../shared/cards.js');
+  const { cardArtSvg } = await import('../public/js/cardArt.js');
+
+  for (const c of CARDS) {
+    const desc = describeCard(c);
+    assert.ok(typeof desc === 'string' && desc.trim().length > 0, `Empty description for card #${c.id}`);
+    const art = cardArtSvg(c);
+    assert.ok(typeof art === 'string' && art.length > 20, `Invalid art for card #${c.id}`);
+  }
+
+  // Positive SP recovery (Kyūbi Chakura Mōdo #146)
+  const kcm = CARDS[146];
+  assert.ok(describeCard(kcm).includes('+2 tinh thần bản thân'));
+  const G = await createGame([
+    { name: 'Naruto', bot: false },
+    { name: 'Sasuke', bot: false },
+  ]);
+  G.ps[0].sp = 6;
+  G.ps[0].hand = [{ ...kcm, age: 0 }];
+  await useCard(G, 0);
+  assert.equal(G.ps[0].sp, 8);
+  assert.equal(G.ps[0].dodge, 75);
+
+  // Jinton: Genkai Hakuri (#199) breaks armor, kills pets, and erases Edo corpse
+  const jinton = CARDS[199];
+  const G2 = await createGame([
+    { name: 'Onoki', bot: false },
+    { name: 'Madara', bot: false },
+  ]);
+  G2.ps[1].dodge = 0;
+  G2.ps[1].hand = [];
+  G2.ps[1].armor = 200;
+  G2.ps[1].pets = [
+    { hp: 50, mx: 50, atk: 10 },
+    { hp: 100, mx: 100, atk: 20 },
+  ];
+  G2.ps[0].hand = [{ ...jinton, age: 0 }];
+  await useCard(G2, 0, 1);
+  assert.equal(G2.ps[1].armor, 0);
+  assert.equal(G2.ps[1].pets.length, 0);
+
+  // Uchiha Katon (#166) + Kirin (#165) triggers hỏa+lôi Stun reaction
+  const G3 = await createGame([
+    { name: 'Sasuke', bot: false },
+    { name: 'Itachi', bot: false },
+  ]);
+  G3.ps[1].dodge = 0;
+  G3.ps[1].hand = [];
+  G3.ps[0].hand = [
+    { ...CARDS[166], age: 0 }, // Katon: Ryūka (hỏa)
+    { ...CARDS[165], age: 0 }, // Raiton: Kirin (lôi)
+  ];
+  await useCard(G3, 0, 1);
+  await useCard(G3, 0, 1);
+  assert.equal(G3.ps[1].stun, 1);
 });

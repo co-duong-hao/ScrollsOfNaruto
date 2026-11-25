@@ -24,6 +24,11 @@ export const CLANS = {
   NINE_TAILS: 'cửu vĩ',
   INSECT: 'côn trùng',
   WIND_FAN: 'gió và cánh quạt',
+  CLOUD_LIGHTNING: 'lôi vân',
+  SEVEN_SWORDS: 'thất kiếm',
+  BONE_PULSE: 'thi cốt mạch',
+  BLOOD_CURSE: 'huyết tế',
+  EARTH_DUST: 'trần thổ',
 };
 
 export const HIDDEN_CLANS = [CLANS.MANGEKYO, CLANS.RINNEGAN];
@@ -201,6 +206,67 @@ export const CARD_JP_NAMES = {
   136: ['Kyūkyoku Geijutsu: C0', '究極芸術・C0'],
   137: ['Hitokugutsu', '人傀儡'],
   138: ['Suna no Mayu', '砂の繭'],
+  139: ["Sen'ei Jashu", '潜影蛇手'],
+  140: ["Sen'ei Tajashu", '潜影多蛇手'],
+  141: ['Kusanagi no Tsurugi', '草薙の剣'],
+  142: ['Kuchiyose: Manda', '口寄せ・マンダ'],
+  143: ['Yamata no Jutsu', '八岐の術'],
+  144: ['Yōko no Koromo', '妖狐の衣'],
+  145: ['Kyūbi no Tsume', '九尾の爪'],
+  146: ['Kyūbi Chakura Mōdo', '九尾チャクラモード'],
+  147: ['Bijūdama', '尾獣玉'],
+  148: ['Renzoku Bijūdama', '連続尾獣玉'],
+  149: ['Hiraishin: Ni no Dan', '飛雷神・二の段'],
+  150: ['Jikūkan Kekkai', '時空間結界'],
+  151: ['Rasen Senkō Chō Rinbukō Sanshiki', '螺旋閃光超輪舞吼参式'],
+  152: ['Gogyō Fūin', '五行封印'],
+  153: ['Shishō Fūin', '四象封印'],
+  154: ['Nehan Shōja no Jutsu', '涅槃精舎の術'],
+  155: ['Kokuangyō no Jutsu', '黒暗行の術'],
+  156: ['Kageyose no Jutsu', '影寄せの術'],
+  157: ['Kage Tsukami no Jutsu', '影掴みの術'],
+  158: ['Doton: Shinjū Zanshu no Jutsu', '土遁・心中斬首の術'],
+  159: ['Raiden', '雷伝'],
+  160: ['Mokuton: Mokuryū no Jutsu', '木遁・木龍の術'],
+  161: ['Senpō: Mokuton — Shin Sūsenju', '仙法・木遁・真数千手'],
+  162: ['Ninpō: Hari Jizō', '忍法・針地蔵'],
+  163: ['Magen: Gama Rinshō', '魔幻・蝦蟇臨唱'],
+  164: ['Katon: Gōka Mekkyaku', '火遁・豪火滅却'],
+  165: ['Raiton: Kirin', '雷遁・麒麟'],
+  166: ['Katon: Ryūka no Jutsu', '火遁・龍火の術'],
+  167: ['Fūton: Rasenshuriken', '風遁・螺旋手裏剣'],
+  168: ['Suiton: Suiryūdan no Jutsu', '水遁・水龍弾の術'],
+  169: ['Ninpō: Chōjū Giga', '忍法・超獣偽画'],
+  170: ['Gatsūga', '牙通牙'],
+  171: ['Chō Baika no Jutsu', '超倍化の術'],
+  172: ['Shintenshin no Jutsu', '心転身の術'],
+  173: ['Hirudora', '昼虎'],
+  174: ['Yagai', '夜ガイ'],
+  175: ['Raiton: Kuropansa', '雷遁・黒斑差'],
+  176: ['Raiton Chakura Mōdo', '雷遁チャクラモード'],
+  177: ['Rariatto', '雷犂熱刀'],
+  178: ['Jigokuzuki: Ippon Nukite', '地獄突き・一本貫手'],
+  179: ['Bijū Hachimaki', '尾獣八巻'],
+  180: ['Kirigakure no Jutsu', '霧隠れの術'],
+  181: ['Kubikiribōchō', '首斬り包丁'],
+  182: ['Kiba: Ikazuchi no Kiba', '牙・雷の牙'],
+  183: ['Hiramekarei Kaihō', 'ヒラメカレイ解放'],
+  184: ['Samehada Yūgō', '鮫肌融合'],
+  185: ['Teshi Sendan', '十指穿弾'],
+  186: ['Yanagi no Mai', '柳の舞'],
+  187: ['Karamatsu no Mai', '唐松の舞'],
+  188: ['Tessenka no Mai: Hana', '鉄線花の舞・花'],
+  189: ['Sawarabi no Mai', '早蕨の舞'],
+  190: ['Sanjin no Ōgama', '三刃の大鎌'],
+  191: ['Doton: Domu', '土遁・土矛'],
+  192: ['Jiongu', '地怨虞'],
+  193: ['Katon: Zukokku', '火遁・頭刻苦'],
+  194: ['Jujutsu: Shiji Hyōketsu', '呪術・死司憑血'],
+  195: ['Doton: Doryūdan', '土遁・土龍弾'],
+  196: ['Doton: Yomi Numa', '土遁・黄泉沼'],
+  197: ['Doton: Gōremu no Jutsu', '土遁・剛隷武の術'],
+  198: ['Doton: Sando no Jutsu', '土遁・山土の術'],
+  199: ['Jinton: Genkai Hakuri no Jutsu', '塵遁・原界剥離の術'],
 };
 
 export function normalizeSearchText(s) {
@@ -238,6 +304,7 @@ const {
   TOOLS: TL, BOMB: BM, SHARK: SH, SEAL: SL, SAND: SD, GENJUTSU: GJ,
   YELLOW_FLASH: YF, TAIJUTSU: TJ, SAKURA: SK, SHADOW: SW, COPY_NINJA: CN, PAPER_ANGEL: PA,
   WOOD: WD, ICE_MIRROR: IM, TOAD: TD, SNAKE: SN, NINE_TAILS: NT, INSECT: IN, WIND_FAN: WF,
+  CLOUD_LIGHTNING: CL, SEVEN_SWORDS: SS, BONE_PULSE: BP, BLOOD_CURSE: BC, EARTH_DUST: ED,
 } = CLANS;
 
 export const CARDS = [
@@ -382,6 +449,85 @@ export const CARDS = [
   card(136, 'Nghệ Thuật Chân Chính: Tự Bạo C0', 'S', 'a', BM, { c0: { lossPct: 99, dmgPct: 80 } }),
   card(137, 'Bí Thuật: Bách Cơ Thao Diễn', 'S', 'x', R, { rv: 1, puppetRevive: 1 }),
   card(138, 'Sa Chiến: Sa Mạc Bảo Hộ', 'A', 's', SD, { ar: 100, b: { m: 0, clanM: { clan: SD, m: 0.3 }, clanArmor: { clan: SD, amt: 50 } } }),
+  // 61 New Canon Naruto Expansion Cards (IDs 139..199 -> 200 total)
+  // Bộ Rắn (Orochimaru / Sasuke / Kabuto)
+  card(139, 'Tiềm Ảnh Xà Thủ', 'C', 'a', SN, { d: 65, dt: 15 }),
+  card(140, 'Tiềm Ảnh Đa Xà Thủ', 'B', 'a', SN, { h: [55, 55, 55] }),
+  card(141, 'Thảo Thế Kiếm', 'A', 'a', SN, { d: 230, ba: 1 }),
+  card(142, 'Triệu Hồi Manda', 'A', 's', SN, { pet: [1, 260, 55] }),
+  card(143, 'Bát Kỳ Đại Xà Thuật', 'S', 's', SN, { hpl: 25, ar: 220, pet: [1, 420, 95] }),
+  // Cửu Vĩ (Naruto / Kurama)
+  card(144, 'Áo Choàng Vĩ Thú', 'B', 'd', NT, { ar: 120, b: { m: 0.15, ua: 1, rf: 25 } }),
+  card(145, 'Cửu Vĩ Trảo Kích', 'B', 'a', NT, { d: 145, bl: 100, el: 'hỏa' }),
+  card(146, 'Trạng Thái Chakra Cửu Vĩ', 'A', 's', NT, { dg: 75, sf: 2, b: { m: 0.35, t: 3, clanM: { clan: NT, m: 0.3 } } }),
+  card(147, 'Vĩ Thú Ngọc', 'S', 'a', NT, { a: 320, dt: 30, el: 'hỏa' }),
+  card(148, 'Liên Tục Vĩ Thú Ngọc', 'A', 'a', NT, { h: [110, 110, 110], el: 'hỏa' }),
+  // Tia Chớp Vàng (Namikaze Minato)
+  card(149, 'Phi Lôi Thần: Nhị Đoạn', 'A', 'a', YF, { d: 210, dg: 60, el: 'lôi' }),
+  card(150, 'Thời Không Gian Kết Giới', 'A', 'd', YF, { dg: 100, ar: 100, at: 2 }),
+  card(151, 'Loa Toàn Thiểm Quang Siêu Luân Vũ Hống Tam Thức', 'S', 'a', YF, { h: [110, 110, 110, 110], dg: 50, el: 'lôi' }),
+  // Phong Ấn (Uzumaki / Orochimaru)
+  card(152, 'Ngũ Hành Phong Ấn', 'B', 'a', SL, { d: 90, ms: 2 }),
+  card(153, 'Tứ Tượng Phong Ấn', 'A', 'a', SL, { d: 140, st: 1, rd: 1 }),
+  // Ảo Thuật (Kabuto / Hashirama / Tobirama)
+  card(154, 'Niết Bàn Tinh Xá Chi Thuật', 'A', 'a', GJ, { a: 70, ma: 2 }),
+  card(155, 'Hắc Ám Hành Chi Thuật', 'S', 'a', GJ, { d: 140, st: 1, ms: 3, dt: 50 }),
+  // Khiển Bóng (Tộc Nara)
+  card(156, 'Ảnh Ký Chi Thuật', 'C', 'a', SW, { d: 65, dt: 25 }),
+  card(157, 'Ảnh Tróc Chi Thuật', 'A', 'a', SW, { a: 140, ma: 1, dt: 30 }),
+  // Ninja Sao Chép (Hatake Kakashi)
+  card(158, 'Thổ Độn: Tâm Trung Trảm Thủ', 'B', 'a', CN, { d: 45, st: 1 }),
+  card(159, 'Lôi Truyền', 'S', 'a', CN, { a: 230, ba: 1, el: 'lôi' }),
+  // Mộc Độn (Senju Hashirama)
+  card(160, 'Mộc Độn: Mộc Long Chi Thuật', 'A', 'a', WD, { d: 210, ms: 2, healSelf: 150 }),
+  card(161, 'Tiên Pháp Mộc Độn: Chân Số Thiên Thủ', 'S', 'a', WD, { split: 1100, ar: 150 }),
+  // Bộ Cóc (Jiraiya / Tiên Nhân Cóc)
+  card(162, 'Nhẫn Pháp: Châm Địa Tạng', 'B', 'd', TD, { ar: 140, at: 2, b: { m: 0, rf: 45, ua: 1 } }),
+  card(163, 'Ma Huyễn: Hà Mô Lâm Xướng', 'S', 'a', TD, { d: 180, st: 1, ms: 3, rd: 1 }),
+  // Uchiha (Madara / Sasuke)
+  card(164, 'Hỏa Độn: Hào Hỏa Diệt Khước', 'S', 'a', U, { a: 280, bl: 100, el: 'hỏa' }),
+  card(165, 'Lôi Độn: Kỳ Lân', 'S', 'a', U, { d: 360, ba: 1, dt: 50, el: 'lôi' }),
+  card(166, 'Hỏa Độn: Long Hỏa Chi Thuật', 'C', 'a', U, { d: 85, el: 'hỏa' }),
+  // Thường — Nhẫn Thuật Kinh Điển Làng Lá (Naruto, Tobirama, Sai, Kiba, Choji, Ino)
+  card(167, 'Phong Độn: Loa Toàn Thủ Lý Kiếm', 'S', 'a', T, { d: 340, j: 90, ba: 1, el: 'phong' }),
+  card(168, 'Thủy Độn: Thủy Long Đạn Thuật', 'A', 'a', T, { d: 215, dt: 25, el: 'thủy' }),
+  card(169, 'Nhẫn Pháp: Siêu Thú Ngụy Họa', 'B', 's', T, { pet: [2, 110, 25] }),
+  card(170, 'Nha Thông Nha', 'B', 'a', T, { h: [75, 75], el: 'phong' }),
+  card(171, 'Siêu Bội Hóa Thuật', 'A', 's', T, { ar: 200, b: { m: 0.35, t: 3 } }),
+  card(172, 'Tâm Chuyển Thân Thuật', 'A', 'x', T, { koto: 1 }),
+  // Thể Thuật (Might Guy — Thất Môn & Tử Môn)
+  card(173, 'Trú Hổ', 'S', 'a', TJ, { d: 340, j: 80, ba: 1 }),
+  card(174, 'Dạ Khải', 'S', 'a', TJ, { hpl: 35, d: 520, ba: 1 }),
+  // Tộc Mới: Lôi Vân (Làng Mây — Raikage Đệ Tam, Đệ Tứ, Killer Bee, Darui)
+  card(175, 'Lôi Độn: Hắc Báo', 'B', 'a', CL, { d: 135, j: 35, el: 'lôi' }),
+  card(176, 'Lôi Độn Giáp Chakra', 'A', 's', CL, { dg: 65, ar: 140, b: { m: 0.25, t: 3, clanM: { clan: CL, m: 0.3 } } }),
+  card(177, 'Lôi Lê Nhiệt Đao', 'A', 'a', CL, { d: 245, dt: 30, el: 'lôi' }),
+  card(178, 'Địa Ngục Đột Thích: Nhất Chỉ Quán Thủ', 'S', 'a', CL, { d: 350, ba: 1, el: 'lôi' }),
+  card(179, 'Vĩ Thú Bát Quyển', 'S', 'a', CL, { a: 270, dt: 40, el: 'phong' }),
+  // Tộc Mới: Thất Kiếm (Thất Kiếm Làng Sương Mù)
+  card(180, 'Vụ Ẩn Chi Thuật', 'C', 'x', SS, { stealth: 1, dg: 35 }),
+  card(181, 'Thủ Trảm Bao Đao', 'B', 'a', SS, { d: 110, bl: 100, healSelf: 60 }),
+  card(182, 'Song Kiếm Nha Lôi', 'B', 'a', SS, { h: [75, 75], el: 'lôi' }),
+  card(183, 'Song Đao Quang Phóng', 'A', 'a', SS, { d: 230, ba: 1, el: 'thủy' }),
+  card(184, 'Giao Cơ Dung Hợp', 'S', 's', SS, { ar: 180, sf: 2, b: { m: 0.15, t: 4, clanHeal: { clan: SS, amt: 120 }, clanM: { clan: SS, m: 0.35 } } }),
+  // Tộc Mới: Thi Cốt Mạch (Tộc Kaguya — Kimimaro)
+  card(185, 'Thập Chỉ Xuyên Đạn', 'C', 'a', BP, { h: [28, 28, 28] }),
+  card(186, 'Liễu Vũ', 'B', 'a', BP, { d: 115, dg: 45 }),
+  card(187, 'Đường Tùng Vũ', 'B', 'd', BP, { ar: 130, b: { m: 0, ua: 1, rf: 55 } }),
+  card(188, 'Thiết Tuyến Hoa Vũ: Hoa', 'A', 'a', BP, { d: 255, ba: 1, bl: 100 }),
+  card(189, 'Tảo Quyết Vũ', 'S', 'a', BP, { a: 270, ar: 160, bl: 150 }),
+  // Tộc Mới: Huyết Tế (Cặp Đôi Bất Tử Akatsuki — Hidan & Kakuzu)
+  card(190, 'Tam Nhận Đại Liêm', 'C', 'a', BC, { d: 65, bl: 100 }),
+  card(191, 'Thổ Độn: Thổ Mâu', 'B', 'd', BC, { ar: 170, at: 2 }),
+  card(192, 'Địa Oán Ngu', 'A', 's', BC, { pet: [2, 160, 35], healSelf: 150 }),
+  card(193, 'Hỏa Độn: Đầu Khắc Khổ', 'A', 'a', BC, { a: 210, el: 'hỏa' }),
+  card(194, 'Chú Thuật: Tử Tư Bằng Huyết', 'S', 'a', BC, { hpl: 25, d: 420, bl: 250 }),
+  // Tộc Mới: Trần Thổ (Làng Đá — Tsuchikage Ōnoki, Mū & Kitsuchi)
+  card(195, 'Thổ Độn: Thổ Long Đạn', 'C', 'a', ED, { d: 75, dt: 15 }),
+  card(196, 'Thổ Độn: Hoàng Tuyền Chiểu', 'B', 'a', ED, { d: 80, st: 1, dt: 30 }),
+  card(197, 'Thổ Độn: Cương Lệ Võ', 'A', 's', ED, { ar: 120, pet: [1, 280, 45] }),
+  card(198, 'Thổ Độn: Sơn Thổ Chi Thuật', 'A', 'a', ED, { d: 230, st: 1 }),
+  card(199, 'Trần Độn: Nguyên Giới Bác Ly', 'S', 'a', ED, { d: 360, ba: 1, ds: 1, kp: 1 }),
 ];
 
 export function describeCard(c) {
@@ -408,7 +554,7 @@ export function describeCard(c) {
   if (c.koto) o.push(`điều khiển mục tiêu tấn công đồng đội trong ${c.koto} vòng`);
   if (c.gourdMark) o.push('đánh dấu bí mật: lượt sau nếu mục tiêu đánh bạn sẽ bị choáng 1 vòng');
   if (c.bugMark) o.push(`đánh dấu ${c.bugMark.t} lượt: mỗi lần mục tiêu hành động mất ${c.bugMark.dmg} máu`);
-  if (c.sf) o.push(`${c.sf} tinh thần bản thân`);
+  if (c.sf) o.push(`${c.sf > 0 ? `+${c.sf}` : c.sf} tinh thần bản thân`);
   if (c.ar) o.push(`+${c.ar} giáp${c.at ? ` (${c.at} lượt)` : ''}`);
   if (c.heal) o.push(`hồi ${c.heal} máu (bản thân hoặc mục tiêu)`);
   if (c.healSelf) o.push(`hồi ${c.healSelf} máu bản thân`);

@@ -444,31 +444,33 @@ input, select {
   position: absolute;
   left: 0;
   right: 0;
-  top: 29%;
+  top: 26%;
   text-align: center;
   z-index: 8;
   pointer-events: none;
+}
+.cast.no-gsap {
   animation: ci 1.8s ease-out forwards;
 }
 .cast-kj {
   display: block;
-  font: 700 clamp(18px, 3vw, 30px) var(--font-jp);
-  letter-spacing: 6px;
+  font: 700 clamp(17px, 2.6vw, 28px) var(--font-jp);
+  letter-spacing: 5px;
   color: #fde68a;
   text-shadow: 0 2px 12px #000e, 0 0 18px var(--c);
-  margin-bottom: 2px;
+  margin-bottom: 3px;
 }
 .cast h2 {
   display: inline-block;
   margin: 0;
-  padding: 8px 44px;
-  font: 800 clamp(24px, 5vw, 52px) var(--font-title);
-  letter-spacing: 1.5px;
+  padding: 7px 34px;
+  font: 800 clamp(22px, 4.2vw, 44px) var(--font-title);
+  letter-spacing: 1.2px;
   color: #fff;
   text-shadow: 0 3px 10px #000b;
-  background: linear-gradient(100deg, transparent, var(--c) 15%, var(--c) 85%, transparent);
+  background: linear-gradient(100deg, transparent, var(--c) 14%, var(--c) 86%, transparent);
 }
-.cast small { display: block; margin-top: 5px; font-size: 15.5px; font-weight: 700; color: #fff; text-shadow: 0 1px 6px #000; }
+.cast small { display: block; margin-top: 6px; font-size: 14.5px; font-weight: 700; color: #fff; text-shadow: 0 1px 6px #000; }
 .cast-vi { color: #fde68a; text-transform: capitalize; }
 @keyframes ci {
   0% { opacity: 0; transform: scale(2.1); }

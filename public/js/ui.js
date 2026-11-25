@@ -14,8 +14,9 @@ import {
   previewReaction,
   calcExpectedDamage,
   totalArmor,
+  getCardMaxAge,
 } from '/shared/engine.js';
-import { cardArtSvg } from './cardArt.js';
+import { cardArtSvg, CARD_IMAGE_IDS } from './cardArt.js';
 
 export const esc = (s) =>
   String(s).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
@@ -143,7 +144,7 @@ export function renderCard(
   const foil = getCardFoilInfo(c);
   const mode = holoMode || (isInspector ? 'inspector' : interactive ? 'hand' : 'codex');
   const elTag = c.el ? `<span class="el-tag el-${c.el}">${EL_BADGE[c.el]}</span>` : '';
-  const rem = 3 - (c.age || 0);
+  const rem = getCardMaxAge(c) - (c.age || 0);
   const ageTag =
     interactive && !c.au
       ? `<span class="age-tag ${rem <= 1 ? 'age-warn' : ''}" title="Còn ${rem} lượt trước khi tự hủy">${rem}L</span>`
@@ -239,24 +240,35 @@ function renderChips(p, showSecret) {
       )
       .join('') || '<span class="ch-empty">—</span>';
 
-  const petsHtml =
-    p.pets
-      .map(
-        (q) =>
-          `<span class="ch pet" title="Pet: đỡ đòn, đánh ${q.atk} mỗi hit">Pet ${q.hp}<u style="width:${Math.max(
-            0,
-            (q.hp / q.mx) * 100
-          )}%"></u></span>`
-      )
-      .join('') || '<span class="ch-empty">—</span>';
-
   return {
     bad,
     html: `
       <div class="rw"><i>Xấu</i>${mk(bad, 'bad')}</div>
-      <div class="rw"><i>Lợi</i>${mk(good, 'good')}</div>
-      <div class="rw"><i>Pet</i>${petsHtml}</div>`,
+      <div class="rw"><i>Lợi</i>${mk(good, 'good')}</div>`,
   };
+}
+
+function renderSidePets(pets) {
+  if (!Array.isArray(pets) || pets.length === 0) return '';
+  return `<div class="seat-pets">
+    ${pets
+      .map((q) => {
+        const pct = Math.max(0, Math.min(100, (q.hp / (q.mx || 1)) * 100));
+        const hasImg = q.cardId != null && CARD_IMAGE_IDS.has(q.cardId);
+        const title = `${q.name ? q.name + ' · ' : ''}HP ${q.hp}/${q.mx} · Đánh ${q.atk} mỗi hit`;
+        return `
+          <div class="pet-unit" title="${esc(title)}">
+            <div class="pet-hp">
+              <i style="width:${pct}%"></i>
+              <span>${q.hp}</span>
+            </div>
+            <div class="pet-art">
+              ${hasImg ? `<img src="/assets/cards/${q.cardId}.webp" alt="" loading="lazy" decoding="async" draggable="false">` : '<span class="pet-fallback">PET</span>'}
+            </div>
+          </div>`;
+      })
+      .join('')}
+  </div>`;
 }
 
 export function renderSeat(G, p, i, cur, showSecret, isMe, flList = []) {
@@ -327,7 +339,10 @@ export function renderSeat(G, p, i, cur, showSecret, isMe, flList = []) {
     }
   }
 
+  const sidePetsHtml = renderSidePets(p.pets);
+
   return `
+    <div class="seat-wrap ${isMe ? 'is-me' : ''}">
     <div class="st ${isMe ? 'me' : ''} ${i === G.cur ? 'cur' : ''} ${p.dead ? 'dead' : ''} ${canTarget ? 'tg' : ''} ${statusClasses} ${
     fl.some((e) => e.c === 'hp') ? 'hit' : ''
   } ${fl.some((e) => e.c === 'ko') ? 'ko-flash' : ''}" data-seat-idx="${i}" onclick="appActions.targetPlayer(${i})">
@@ -360,6 +375,8 @@ export function renderSeat(G, p, i, cur, showSecret, isMe, flList = []) {
              </div>`
           : ''
       }
+    </div>
+    ${sidePetsHtml}
     </div>`;
 }
 
@@ -645,10 +662,6 @@ export function renderQuickReactionsModal() {
           <b>Thứ tự nhận sát thương:</b>
           <span>1. Tự kích hoạt / Né</span> → <span>2. Pet đỡ (FIFO)</span> → <span>3. Giáp</span> → <span>4. Máu</span>
         </div>
-        <div class="rx-shortcuts">
-          <b>Phím tắt (Desktop):</b>
-          <kbd>1</kbd>–<kbd>9</kbd> Chọn thẻ · <kbd>Space</kbd>/<kbd>Enter</kbd> Kết thúc lượt · <kbd>Esc</kbd> Hủy / Đóng · <kbd>R</kbd> Bảng phản ứng
-        </div>
       </div>
     </div>`;
 }
@@ -705,6 +718,48 @@ export function renderVictoryOverlay(G, { canRematch = true, isOnline = false } 
                 : ''
           }
           <button class="btn-lg" onclick="appActions.leaveGame()">Về Menu</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+export function renderCastBanner(ca) {
+  if (!ca) return '';
+  const castCol = ECOL[ca.el] || RCOL[ca.r] || '#ea580c';
+  const matchedCard =
+    (ca.id != null ? CARDS.find((x) => x.id === ca.id) : null) ||
+    CARDS.find((x) => x.n === ca.n);
+  const cardId = matchedCard ? matchedCard.id : ca.id;
+  const hasWebp = cardId != null && CARD_IMAGE_IDS.has(cardId);
+  const artHtml = hasWebp
+    ? `<img class="cast-art-img" src="/assets/cards/${cardId}.webp" alt="" decoding="sync" draggable="false">`
+    : matchedCard
+      ? `<div class="cast-art-svg">${cardArtSvg(matchedCard)}</div>`
+      : '';
+
+  const titleText = (ca.jp || ca.n || '').toUpperCase();
+  const viPart = ca.n && !isSameJpViName(ca) ? `<span class="cast-vi">${esc(ca.n)}</span> · ` : '';
+
+  return `
+    <div class="cast cast-r-${esc(ca.r || 'C')} ${ca.isAuto ? 'cast-auto' : ''}" style="--c:${castCol}">
+      <div class="cast-inner">
+        ${
+          artHtml
+            ? `<div class="cast-art-wrap">
+                 <div class="cast-art-frame">
+                   ${artHtml}
+                   <span class="cast-art-flash" aria-hidden="true"></span>
+                   <span class="cast-art-sheen" aria-hidden="true"></span>
+                 </div>
+                 <span class="rk rk-${esc(ca.r || 'C')} cast-rk">${esc(ca.r || 'C')}</span>
+               </div>`
+            : ''
+        }
+        <div class="cast-copy">
+          ${ca.isAuto ? '<span class="cast-auto-tag">Tự Kích Hoạt</span>' : ''}
+          ${ca.kj ? `<span class="cast-kj">${esc(ca.kj)}</span>` : ''}
+          <h2>${esc(titleText)}!</h2>
+          <small>${viPart}${esc(ca.who || '')} · cấp ${esc(ca.r || '')} ${esc(ca.sub || '')}</small>
         </div>
       </div>
     </div>`;

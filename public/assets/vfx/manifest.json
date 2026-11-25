@@ -22,7 +22,31 @@
         0.935
       ],
       "blend": "alpha",
-      "contactFrame": 0
+      "contactFrame": 0,
+      "loopStyle": true
+    },
+    "dark_charge_01": {
+      "id": "dark_charge_01",
+      "element": "dark",
+      "form": "charge",
+      "src": "/assets/vfx/dark_charge_01.webp",
+      "grid": [
+        8,
+        8
+      ],
+      "cell": [
+        192,
+        192
+      ],
+      "frames": 64,
+      "fps": 30,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "blend": "alpha",
+      "contactFrame": 18,
+      "loopStyle": false
     },
     "dark_impact_01": {
       "id": "dark_impact_01",
@@ -44,7 +68,100 @@
         0.5
       ],
       "blend": "alpha",
-      "contactFrame": 2
+      "contactFrame": 2,
+      "loopStyle": false
+    },
+    "dark_projectile_01": {
+      "id": "dark_projectile_01",
+      "element": "dark",
+      "form": "projectile",
+      "src": "/assets/vfx/dark_projectile_01.webp",
+      "grid": [
+        8,
+        5
+      ],
+      "cell": [
+        192,
+        192
+      ],
+      "frames": 40,
+      "fps": 30,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "blend": "alpha",
+      "contactFrame": 0,
+      "loopStyle": true
+    },
+    "dark_shield_01": {
+      "id": "dark_shield_01",
+      "element": "dark",
+      "form": "shield",
+      "src": "/assets/vfx/dark_shield_01.webp",
+      "grid": [
+        8,
+        5
+      ],
+      "cell": [
+        192,
+        192
+      ],
+      "frames": 40,
+      "fps": 30,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "blend": "alpha",
+      "contactFrame": 0,
+      "loopStyle": true
+    },
+    "dark_slash_01": {
+      "id": "dark_slash_01",
+      "element": "dark",
+      "form": "slash",
+      "src": "/assets/vfx/dark_slash_01.webp",
+      "grid": [
+        8,
+        8
+      ],
+      "cell": [
+        192,
+        192
+      ],
+      "frames": 64,
+      "fps": 30,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "blend": "alpha",
+      "contactFrame": 0,
+      "loopStyle": false
+    },
+    "fire_aura_01": {
+      "id": "fire_aura_01",
+      "element": "fire",
+      "form": "aura",
+      "src": "/assets/vfx/fire_aura_01.webp",
+      "grid": [
+        8,
+        5
+      ],
+      "cell": [
+        192,
+        192
+      ],
+      "frames": 40,
+      "fps": 30,
+      "pivot": [
+        0.5,
+        0.935
+      ],
+      "blend": "alpha",
+      "contactFrame": 0,
+      "loopStyle": true
     },
     "fire_charge_01": {
       "id": "fire_charge_01",
@@ -66,7 +183,8 @@
         0.5
       ],
       "blend": "alpha",
-      "contactFrame": 18
+      "contactFrame": 18,
+      "loopStyle": false
     },
     "fire_impact_01": {
       "id": "fire_impact_01",
@@ -88,7 +206,31 @@
         0.5
       ],
       "blend": "alpha",
-      "contactFrame": 3
+      "contactFrame": 3,
+      "loopStyle": false
+    },
+    "fire_impact_02": {
+      "id": "fire_impact_02",
+      "element": "fire",
+      "form": "impact",
+      "src": "/assets/vfx/fire_impact_02.webp",
+      "grid": [
+        8,
+        8
+      ],
+      "cell": [
+        192,
+        192
+      ],
+      "frames": 64,
+      "fps": 30,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "blend": "alpha",
+      "contactFrame": 3,
+      "loopStyle": false
     },
     "fire_projectile_01": {
       "id": "fire_projectile_01",
@@ -110,7 +252,31 @@
         0.5
       ],
       "blend": "alpha",
-      "contactFrame": 0
+      "contactFrame": 0,
+      "loopStyle": true
+    },
+    "fire_shield_01": {
+      "id": "fire_shield_01",
+      "element": "fire",
+      "form": "shield",
+      "src": "/assets/vfx/fire_shield_01.webp",
+      "grid": [
+        8,
+        5
+      ],
+      "cell": [
+        192,
+        192
+      ],
+      "frames": 40,
+      "fps": 30,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "blend": "alpha",
+      "contactFrame": 0,
+      "loopStyle": true
     },
     "fire_slash_01": {
       "id": "fire_slash_01",
@@ -132,7 +298,8 @@
         0.5
       ],
       "blend": "alpha",
-      "contactFrame": 0
+      "contactFrame": 0,
+      "loopStyle": false
     },
     "ice_impact_01": {
       "id": "ice_impact_01",
@@ -154,7 +321,31 @@
         0.5
       ],
       "blend": "alpha",
-      "contactFrame": 1
+      "contactFrame": 1,
+      "loopStyle": false
+    },
+    "ice_projectile_01": {
+      "id": "ice_projectile_01",
+      "element": "ice",
+      "form": "projectile",
+      "src": "/assets/vfx/ice_projectile_01.webp",
+      "grid": [
+        8,
+        5
+      ],
+      "cell": [
+        192,
+        192
+      ],
+      "frames": 40,
+      "fps": 30,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "blend": "alpha",
+      "contactFrame": 0,
+      "loopStyle": true
     },
     "ice_shield_01": {
       "id": "ice_shield_01",
@@ -176,7 +367,31 @@
         0.5
       ],
       "blend": "alpha",
-      "contactFrame": 0
+      "contactFrame": 0,
+      "loopStyle": true
+    },
+    "ice_slash_01": {
+      "id": "ice_slash_01",
+      "element": "ice",
+      "form": "slash",
+      "src": "/assets/vfx/ice_slash_01.webp",
+      "grid": [
+        8,
+        8
+      ],
+      "cell": [
+        192,
+        192
+      ],
+      "frames": 64,
+      "fps": 30,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "blend": "alpha",
+      "contactFrame": 0,
+      "loopStyle": false
     },
     "light_aura_01": {
       "id": "light_aura_01",
@@ -198,7 +413,31 @@
         0.9375
       ],
       "blend": "alpha",
-      "contactFrame": 0
+      "contactFrame": 0,
+      "loopStyle": true
+    },
+    "light_column_01": {
+      "id": "light_column_01",
+      "element": "light",
+      "form": "column",
+      "src": "/assets/vfx/light_column_01.webp",
+      "grid": [
+        8,
+        7
+      ],
+      "cell": [
+        192,
+        192
+      ],
+      "frames": 56,
+      "fps": 30,
+      "pivot": [
+        0.5,
+        0.905
+      ],
+      "blend": "alpha",
+      "contactFrame": 5,
+      "loopStyle": false
     },
     "light_impact_01": {
       "id": "light_impact_01",
@@ -220,7 +459,77 @@
         0.5
       ],
       "blend": "alpha",
-      "contactFrame": 2
+      "contactFrame": 2,
+      "loopStyle": false
+    },
+    "light_shield_01": {
+      "id": "light_shield_01",
+      "element": "light",
+      "form": "shield",
+      "src": "/assets/vfx/light_shield_01.webp",
+      "grid": [
+        8,
+        5
+      ],
+      "cell": [
+        192,
+        192
+      ],
+      "frames": 40,
+      "fps": 30,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "blend": "alpha",
+      "contactFrame": 0,
+      "loopStyle": true
+    },
+    "light_slash_01": {
+      "id": "light_slash_01",
+      "element": "light",
+      "form": "slash",
+      "src": "/assets/vfx/light_slash_01.webp",
+      "grid": [
+        8,
+        8
+      ],
+      "cell": [
+        192,
+        192
+      ],
+      "frames": 64,
+      "fps": 30,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "blend": "alpha",
+      "contactFrame": 0,
+      "loopStyle": false
+    },
+    "poison_aura_01": {
+      "id": "poison_aura_01",
+      "element": "poison",
+      "form": "aura",
+      "src": "/assets/vfx/poison_aura_01.webp",
+      "grid": [
+        8,
+        5
+      ],
+      "cell": [
+        192,
+        192
+      ],
+      "frames": 40,
+      "fps": 30,
+      "pivot": [
+        0.5,
+        0.935
+      ],
+      "blend": "alpha",
+      "contactFrame": 0,
+      "loopStyle": true
     },
     "poison_impact_01": {
       "id": "poison_impact_01",
@@ -242,7 +551,54 @@
         0.5
       ],
       "blend": "alpha",
-      "contactFrame": 1
+      "contactFrame": 1,
+      "loopStyle": false
+    },
+    "poison_projectile_01": {
+      "id": "poison_projectile_01",
+      "element": "poison",
+      "form": "projectile",
+      "src": "/assets/vfx/poison_projectile_01.webp",
+      "grid": [
+        8,
+        5
+      ],
+      "cell": [
+        192,
+        192
+      ],
+      "frames": 40,
+      "fps": 30,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "blend": "alpha",
+      "contactFrame": 0,
+      "loopStyle": true
+    },
+    "rock_charge_01": {
+      "id": "rock_charge_01",
+      "element": "rock",
+      "form": "charge",
+      "src": "/assets/vfx/rock_charge_01.webp",
+      "grid": [
+        8,
+        8
+      ],
+      "cell": [
+        192,
+        192
+      ],
+      "frames": 64,
+      "fps": 30,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "blend": "alpha",
+      "contactFrame": 18,
+      "loopStyle": false
     },
     "rock_column_01": {
       "id": "rock_column_01",
@@ -264,7 +620,8 @@
         0.9
       ],
       "blend": "alpha",
-      "contactFrame": 2
+      "contactFrame": 2,
+      "loopStyle": false
     },
     "rock_impact_01": {
       "id": "rock_impact_01",
@@ -286,7 +643,8 @@
         0.5
       ],
       "blend": "alpha",
-      "contactFrame": 0
+      "contactFrame": 0,
+      "loopStyle": false
     },
     "rock_shield_01": {
       "id": "rock_shield_01",
@@ -308,7 +666,54 @@
         0.5
       ],
       "blend": "alpha",
-      "contactFrame": 0
+      "contactFrame": 0,
+      "loopStyle": true
+    },
+    "rock_slash_01": {
+      "id": "rock_slash_01",
+      "element": "rock",
+      "form": "slash",
+      "src": "/assets/vfx/rock_slash_01.webp",
+      "grid": [
+        8,
+        8
+      ],
+      "cell": [
+        192,
+        192
+      ],
+      "frames": 64,
+      "fps": 30,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "blend": "alpha",
+      "contactFrame": 0,
+      "loopStyle": false
+    },
+    "thunder_aura_01": {
+      "id": "thunder_aura_01",
+      "element": "thunder",
+      "form": "aura",
+      "src": "/assets/vfx/thunder_aura_01.webp",
+      "grid": [
+        8,
+        5
+      ],
+      "cell": [
+        192,
+        192
+      ],
+      "frames": 40,
+      "fps": 30,
+      "pivot": [
+        0.5,
+        0.935
+      ],
+      "blend": "alpha",
+      "contactFrame": 0,
+      "loopStyle": true
     },
     "thunder_charge_01": {
       "id": "thunder_charge_01",
@@ -330,7 +735,8 @@
         0.5
       ],
       "blend": "alpha",
-      "contactFrame": 18
+      "contactFrame": 18,
+      "loopStyle": false
     },
     "thunder_impact_01": {
       "id": "thunder_impact_01",
@@ -352,7 +758,31 @@
         0.5
       ],
       "blend": "alpha",
-      "contactFrame": 1
+      "contactFrame": 1,
+      "loopStyle": false
+    },
+    "thunder_shield_01": {
+      "id": "thunder_shield_01",
+      "element": "thunder",
+      "form": "shield",
+      "src": "/assets/vfx/thunder_shield_01.webp",
+      "grid": [
+        8,
+        5
+      ],
+      "cell": [
+        192,
+        192
+      ],
+      "frames": 40,
+      "fps": 30,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "blend": "alpha",
+      "contactFrame": 0,
+      "loopStyle": true
     },
     "thunder_slash_01": {
       "id": "thunder_slash_01",
@@ -374,7 +804,8 @@
         0.5
       ],
       "blend": "alpha",
-      "contactFrame": 0
+      "contactFrame": 0,
+      "loopStyle": false
     },
     "thunder_strike_01": {
       "id": "thunder_strike_01",
@@ -396,7 +827,54 @@
         0.917
       ],
       "blend": "alpha",
-      "contactFrame": 1
+      "contactFrame": 1,
+      "loopStyle": false
+    },
+    "thunder_strike_02": {
+      "id": "thunder_strike_02",
+      "element": "thunder",
+      "form": "strike",
+      "src": "/assets/vfx/thunder_strike_02.webp",
+      "grid": [
+        8,
+        7
+      ],
+      "cell": [
+        192,
+        192
+      ],
+      "frames": 56,
+      "fps": 30,
+      "pivot": [
+        0.5,
+        0.9417
+      ],
+      "blend": "alpha",
+      "contactFrame": 11,
+      "loopStyle": false
+    },
+    "water_aura_01": {
+      "id": "water_aura_01",
+      "element": "water",
+      "form": "aura",
+      "src": "/assets/vfx/water_aura_01.webp",
+      "grid": [
+        8,
+        5
+      ],
+      "cell": [
+        192,
+        192
+      ],
+      "frames": 40,
+      "fps": 30,
+      "pivot": [
+        0.5,
+        0.9375
+      ],
+      "blend": "alpha",
+      "contactFrame": 0,
+      "loopStyle": true
     },
     "water_column_01": {
       "id": "water_column_01",
@@ -418,7 +896,8 @@
         0.9125
       ],
       "blend": "alpha",
-      "contactFrame": 2
+      "contactFrame": 2,
+      "loopStyle": false
     },
     "water_impact_01": {
       "id": "water_impact_01",
@@ -440,7 +919,8 @@
         0.5
       ],
       "blend": "alpha",
-      "contactFrame": 0
+      "contactFrame": 0,
+      "loopStyle": false
     },
     "water_shield_01": {
       "id": "water_shield_01",
@@ -462,7 +942,77 @@
         0.5
       ],
       "blend": "alpha",
-      "contactFrame": 0
+      "contactFrame": 0,
+      "loopStyle": true
+    },
+    "water_slash_01": {
+      "id": "water_slash_01",
+      "element": "water",
+      "form": "slash",
+      "src": "/assets/vfx/water_slash_01.webp",
+      "grid": [
+        8,
+        8
+      ],
+      "cell": [
+        192,
+        192
+      ],
+      "frames": 64,
+      "fps": 30,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "blend": "alpha",
+      "contactFrame": 0,
+      "loopStyle": false
+    },
+    "wind_aura_01": {
+      "id": "wind_aura_01",
+      "element": "wind",
+      "form": "aura",
+      "src": "/assets/vfx/wind_aura_01.webp",
+      "grid": [
+        8,
+        5
+      ],
+      "cell": [
+        192,
+        192
+      ],
+      "frames": 40,
+      "fps": 30,
+      "pivot": [
+        0.5,
+        0.9375
+      ],
+      "blend": "alpha",
+      "contactFrame": 0,
+      "loopStyle": true
+    },
+    "wind_charge_01": {
+      "id": "wind_charge_01",
+      "element": "wind",
+      "form": "charge",
+      "src": "/assets/vfx/wind_charge_01.webp",
+      "grid": [
+        8,
+        8
+      ],
+      "cell": [
+        192,
+        192
+      ],
+      "frames": 64,
+      "fps": 30,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "blend": "alpha",
+      "contactFrame": 14,
+      "loopStyle": false
     },
     "wind_impact_01": {
       "id": "wind_impact_01",
@@ -484,7 +1034,8 @@
         0.5
       ],
       "blend": "alpha",
-      "contactFrame": 0
+      "contactFrame": 0,
+      "loopStyle": false
     },
     "wind_slash_01": {
       "id": "wind_slash_01",
@@ -506,7 +1057,8 @@
         0.5
       ],
       "blend": "alpha",
-      "contactFrame": 0
+      "contactFrame": 0,
+      "loopStyle": false
     },
     "wind_vortex_01": {
       "id": "wind_vortex_01",
@@ -528,7 +1080,31 @@
         0.5
       ],
       "blend": "alpha",
-      "contactFrame": 0
+      "contactFrame": 0,
+      "loopStyle": false
+    },
+    "wind_vortex_02": {
+      "id": "wind_vortex_02",
+      "element": "wind",
+      "form": "vortex",
+      "src": "/assets/vfx/wind_vortex_02.webp",
+      "grid": [
+        8,
+        7
+      ],
+      "cell": [
+        192,
+        192
+      ],
+      "frames": 56,
+      "fps": 30,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "blend": "alpha",
+      "contactFrame": 2,
+      "loopStyle": false
     }
   }
 }
