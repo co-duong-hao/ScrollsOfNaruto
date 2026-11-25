@@ -258,11 +258,19 @@ export function drawCard(p) {
   return fallback;
 }
 
-function pushFloat(G, targetPlayer, tx, cls, sfx = null) {
+function pushFloat(G, targetPlayer, tx, cls, sfx = null, fx = null) {
   const ev = { t: G.ps.indexOf(targetPlayer), tx, c: cls };
   if (sfx) ev.sfx = sfx;
+  if (fx) ev.fx = fx;
   G.q.push(ev);
 }
+
+const EL_LABEL = {
+  hỏa: 'Hỏa',
+  thủy: 'Thủy',
+  lôi: 'Lôi',
+  phong: 'Phong',
+};
 
 function addLog(G, msg) {
   G.log.push(msg);
@@ -272,12 +280,15 @@ function addLog(G, msg) {
 function adjustSp(G, p, delta) {
   if (delta < 0 && p.immune > 0) return;
   p.sp = Math.min(10, p.sp + delta);
+  if (delta < 0) {
+    pushFloat(G, p, `${delta} Tinh thần`, 'db', 'sp_drain', 'sp_drain');
+  }
   if (p.sp <= 0) {
     p.sp = 5;
     if (p.immune <= 0) {
       p.stun = Math.max(p.stun, 1);
       addLog(G, `${p.name} cạn tinh thần: hồi 5, bị Choáng`);
-      pushFloat(G, p, 'Cạn tinh thần!', 'au');
+      pushFloat(G, p, 'Cạn tinh thần!', 'db', 'sp_empty', 'sp_empty');
     } else {
       addLog(G, `${p.name} cạn tinh thần: hồi 5 (miễn Choáng)`);
     }
@@ -336,7 +347,7 @@ async function checkDeath(G, p, killer = null) {
   pushFloat(G, p, 'KẾT LIỄU!', 'ko');
 }
 
-async function directDamage(G, p, dmg, emitFloat = true, creditSource = null) {
+async function directDamage(G, p, dmg, emitFloat = true, creditSource = null, fx = null, sfx = null) {
   if (p.hp >= EDO_HP) return;
   dmg = Math.round(dmg);
   if (dmg > 0) {
@@ -345,7 +356,7 @@ async function directDamage(G, p, dmg, emitFloat = true, creditSource = null) {
     if (creditSource && creditSource !== p && creditSource.stats) {
       creditSource.stats.dmgDealt += dmg;
     }
-    if (emitFloat) pushFloat(G, p, `-${dmg}`, 'hp');
+    if (emitFloat) pushFloat(G, p, `-${dmg}`, 'hp', sfx, fx);
   }
   await checkDeath(G, p, creditSource);
 }
@@ -377,7 +388,7 @@ async function applyHit(G, source, target, dmg, card, ignoreEvasion = false, sta
             isAuto: true,
           });
         }
-        pushFloat(G, source, 'CHOÁNG!', 'au');
+        pushFloat(G, source, 'CHOÁNG!', 'db', 'stun', 'stun_apply');
       }
     }
   }
@@ -514,7 +525,10 @@ async function applyHit(G, source, target, dmg, card, ignoreEvasion = false, sta
 async function applyMark(G, target, el, actor = null) {
   if (target.dead || target.immune > 0) return;
   target.marks.push(el);
-  if (target.marks.length < 2) return;
+  if (target.marks.length < 2) {
+    pushFloat(G, target, `Ấn ${EL_LABEL[el] || el}`, 'db', null, `mark_${el}`);
+    return;
+  }
 
   const credit = actor || G.ps[G.cur] || null;
   const [a, b] = target.marks;
@@ -541,14 +555,21 @@ async function applyMark(G, target, el, actor = null) {
   } else if (key === 'hỏa+thủy') {
     await applyHit(G, null, target, 100, null, true, credit);
   } else if (key === 'hỏa+hỏa') {
-    if (target.immune <= 0) target.bleed += 150;
+    if (target.immune <= 0) {
+      target.bleed += 150;
+      pushFloat(G, target, 'Chảy máu +150', 'db', 'bleed_tick', 'bleed_apply');
+    }
   } else if (key === 'thủy+thủy') {
     target.dodge = Math.max(0, target.dodge - 30);
+    pushFloat(G, target, '-30 Né', 'db', 'dodge_down', 'dodge_down');
   } else if (key === 'lôi+lôi') {
     adjustSp(G, target, -1);
     await directDamage(G, target, 30, true, credit);
   } else if (key === 'hỏa+lôi') {
-    if (target.immune <= 0) target.stun = Math.max(target.stun, 1);
+    if (target.immune <= 0) {
+      target.stun = Math.max(target.stun, 1);
+      pushFloat(G, target, 'CHOÁNG!', 'db', 'stun', 'stun_apply');
+    }
   }
 }
 
@@ -587,9 +608,18 @@ export async function startTurn(G, _chained = false) {
   if (p.stealth > 0) p.stealth--;
 
   if (p.bleed > 0) {
+    const isAmaterasu = p.bleed > 1e9;
     p.bleed = Math.max(0, p.bleed - 50);
-    addLog(G, `${p.name} chảy máu −50`);
-    await directDamage(G, p, 50, true);
+    addLog(G, `${p.name} ${isAmaterasu ? 'Hắc Hỏa thiêu đốt' : 'chảy máu'} −50`);
+    pushFloat(
+      G,
+      p,
+      isAmaterasu ? 'Hắc Hỏa thiêu!' : 'Chảy máu!',
+      'db',
+      isAmaterasu ? 'amaterasu' : 'bleed_tick',
+      isAmaterasu ? 'amaterasu_tick' : 'bleed_tick'
+    );
+    await directDamage(G, p, 50, true, null, isAmaterasu ? 'amaterasu_tick' : 'bleed_tick', null);
   }
   if (!p.dead) {
     for (const b of p.buffs) {
@@ -602,7 +632,8 @@ export async function startTurn(G, _chained = false) {
       if (b.maxHpDrain && !p.dead) {
         const drain = Math.round(4000 * (b.maxHpDrain / 100));
         addLog(G, `${b.n}: ${p.name} mất ${drain} máu`);
-        await directDamage(G, p, drain, true);
+        pushFloat(G, p, 'Chú Ấn rút máu!', 'db', 'curse_drain', 'curse_drain');
+        await directDamage(G, p, drain, true, null, 'curse_drain', null);
       }
     }
   }
@@ -659,7 +690,7 @@ export async function startTurn(G, _chained = false) {
   if (p.stun > 0) {
     p.stun--;
     addLog(G, `${p.name} bị Choáng, mất lượt`);
-    pushFloat(G, p, 'CHOÁNG', 'au');
+    pushFloat(G, p, 'CHOÁNG · Mất lượt', 'db', 'stun', 'stun_skip');
     return endTurn(G, true, true);
   }
   if (p.izm) {
@@ -781,11 +812,13 @@ export async function useCard(G, handIndex, targetIdx = -1, hitList = null) {
       hitList = hitList.map((x) => redirectOne(x));
       targetIdx = hitList[0];
       addLog(G, `Kotoamatsukami điều khiển ${p.name} đổi mục tiêu!`);
+      pushFloat(G, p, 'BỊ THAO TÚNG!', 'db', 'genjutsu', 'koto_redirect');
     } else {
       const nextTgt = redirectOne(targetIdx);
       if (nextTgt !== targetIdx) {
         targetIdx = nextTgt;
         addLog(G, `Kotoamatsukami ép ${p.name} tấn công ${G.ps[targetIdx].name}!`);
+        pushFloat(G, p, 'BỊ THAO TÚNG!', 'db', 'genjutsu', 'koto_redirect');
       }
     }
   }
@@ -822,7 +855,8 @@ export async function useCard(G, handIndex, targetIdx = -1, hitList = null) {
   if (p.bugMark && p.bugMark.t > 0 && !p.dead) {
     const srcP = p.bugMark.srcIdx != null ? G.ps[p.bugMark.srcIdx] : null;
     addLog(G, `Trùng Bám Đuổi cắn ${p.name} −${p.bugMark.dmg} máu`);
-    await directDamage(G, p, p.bugMark.dmg, true, srcP);
+    pushFloat(G, p, 'Trùng cắn!', 'db', 'poison_hit', 'bug_bite');
+    await directDamage(G, p, p.bugMark.dmg, true, srcP, 'bug_bite', null);
     if (p.dead) {
       const events = [...G.q];
       if (!checkWin(G)) await endTurn(G);
@@ -923,7 +957,7 @@ export async function useCard(G, handIndex, targetIdx = -1, hitList = null) {
     if (T.immune <= 0) {
       T.koto = { t: c.koto, casterIdx: G.cur };
       addLog(G, `${T.name} trúng Kotoamatsukami (${c.koto} vòng)!`);
-      pushFloat(G, T, 'BỊ ĐIỀU KHIỂN!', 'au');
+      pushFloat(G, T, 'BỊ ĐIỀU KHIỂN!', 'db', 'genjutsu', 'koto_apply');
     } else {
       addLog(G, `${T.name} miễn nhiễm Kotoamatsukami`);
     }
@@ -1058,25 +1092,40 @@ export async function useCard(G, handIndex, targetIdx = -1, hitList = null) {
     if (!t || t.dead || !landed[k]) continue;
     if (Number(k) !== G.cur) hitTargetCount++;
     if (c.el) await applyMark(G, t, c.el, p);
-    if (c.st && t.immune <= 0) t.stun = Math.max(t.stun, c.st);
+    if (c.st && t.immune <= 0) {
+      t.stun = Math.max(t.stun, c.st);
+      pushFloat(G, t, c.st > 1 ? `CHOÁNG ${c.st}L!` : 'CHOÁNG!', 'db', 'stun', 'stun_apply');
+    }
     if (c.ms) adjustSp(G, t, -c.ms);
     if (c.ma) adjustSp(G, t, -c.ma);
-    if (c.dt) t.dodge = Math.max(0, t.dodge - c.dt);
-    if (c.bl && t.immune <= 0) t.bleed += c.bl;
+    if (c.dt) {
+      t.dodge = Math.max(0, t.dodge - c.dt);
+      pushFloat(G, t, `-${c.dt} Né`, 'db', 'dodge_down', 'dodge_down');
+    }
+    if (c.bl && t.immune <= 0) {
+      t.bleed += c.bl;
+      if (c.bl > 1e9) {
+        pushFloat(G, t, 'HẮC HỎA ∞', 'db', 'amaterasu', 'amaterasu_apply');
+      } else {
+        pushFloat(G, t, `Chảy máu +${c.bl}`, 'db', 'bleed_tick', 'bleed_apply');
+      }
+    }
     if (c.bugMark && t.immune <= 0) {
       t.bugMark = { dmg: c.bugMark.dmg, t: c.bugMark.t, srcIdx: G.cur };
       addLog(G, `${t.name} bị Trùng Bám Đuổi đánh dấu (${c.bugMark.t} lượt)`);
-      pushFloat(G, t, 'TRÙNG BÁM!', 'au');
+      pushFloat(G, t, 'TRÙNG BÁM!', 'db', 'bugs', 'bug_apply');
     }
     if (c.kp) t.pets = [];
     if (c.rd && t.hand.length) {
       const removed = t.hand.splice(Math.floor(Math.random() * t.hand.length), 1)[0];
       addLog(G, `Hủy thẻ ${formatCardLogName(removed)} của ${t.name}`);
+      pushFloat(G, t, 'HỦY 1 THẺ!', 'db', 'paper', 'card_burn');
     }
     if (c.rs && t.hand.length) {
       const stolen = t.hand.splice(Math.floor(Math.random() * t.hand.length), 1)[0];
       p.hand.push({ ...stolen, age: 0 });
       addLog(G, `Cướp 1 thẻ từ ${t.name}`);
+      pushFloat(G, t, 'BỊ CƯỚP THẺ!', 'db', 'paper', 'card_steal');
     }
   }
 

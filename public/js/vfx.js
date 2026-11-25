@@ -424,6 +424,113 @@ class VfxEngine {
       const pos = this.seatCenter(container, ev.t);
       const ang = srcPos ? Math.atan2(pos.y - srcPos.y, pos.x - srcPos.x) : 0;
 
+      // Dedicated debuff VFX handler (runs for 'db' events and debuff-tagged damage ticks)
+      if (ev.fx) {
+        if (ev.c === 'hp') {
+          // Damage tick paired with a 'db' event (bleed_tick, amaterasu_tick, bug_bite, curse_drain):
+          // avoid spawning a generic fire explosion over the dedicated debuff VFX.
+          return;
+        }
+        if (ev.fx === 'bleed_apply' || ev.fx === 'bleed_tick') {
+          this.spawnSpecial({ type: 'blood_bleed', variant: 'normal' }, { x: pos.x, y: pos.y, scale: 1.0, duration: 0.9 });
+          this.spawnRing(pos.x, pos.y, 76, '#ef4444', 3.5, 0.48);
+          this.spawnParticles(pos.x, pos.y, 14, ['#ef4444', '#b91c1c', '#fca5a5'], {
+            speedMin: 40,
+            speedMax: 145,
+            gravity: 260,
+            shape: 'dot',
+          });
+          return;
+        }
+        if (ev.fx === 'amaterasu_apply' || ev.fx === 'amaterasu_tick') {
+          this.spawnSpecial({ type: 'blood_bleed', variant: 'amaterasu' }, { x: pos.x, y: pos.y, scale: 1.12, duration: 1.05 });
+          this.spawnFlipbook('dark_impact_01', pos.x, pos.y, { scale: 1.25, speed: 1.25 });
+          this.spawnRing(pos.x, pos.y, 88, '#dc2626', 4, 0.55);
+          this.spawnParticles(pos.x, pos.y, 16, ['#111827', '#dc2626', '#991b1b'], {
+            speedMin: 50,
+            speedMax: 160,
+            upward: 90,
+          });
+          return;
+        }
+        if (ev.fx === 'stun_apply' || ev.fx === 'stun_skip') {
+          this.spawnSpecial({ type: 'stun_shock' }, { x: pos.x, y: pos.y, scale: 1.05, duration: 1.05 });
+          this.spawnFlipbook('thunder_impact_01', pos.x, pos.y, { scale: 1.15, speed: 1.35, additive: true });
+          this.spawnRing(pos.x, pos.y, 82, '#facc15', 3.5, 0.46);
+          this.spawnParticles(pos.x, pos.y, 14, ['#fde047', '#38bdf8', '#ffffff'], {
+            speedMin: 80,
+            speedMax: 210,
+          });
+          return;
+        }
+        if (ev.fx === 'bug_apply' || ev.fx === 'bug_bite') {
+          this.spawnSpecial(
+            { type: 'bug_swarm', variant: 'toxic' },
+            {
+              x: pos.x,
+              y: pos.y,
+              from: { x: pos.x - 42, y: pos.y - 26 },
+              to: { x: pos.x + 18, y: pos.y + 10 },
+              scale: 1.0,
+              duration: 0.92,
+            }
+          );
+          this.spawnFlipbook('poison_impact_01', pos.x, pos.y, { scale: 1.2, speed: 1.3 });
+          this.spawnRing(pos.x, pos.y, 74, '#84cc16', 3.5, 0.48);
+          this.spawnParticles(pos.x, pos.y, 14, ['#84cc16', '#a855f7', '#3f6212'], {
+            speedMin: 55,
+            speedMax: 165,
+          });
+          return;
+        }
+        if (ev.fx === 'koto_apply' || ev.fx === 'koto_redirect') {
+          this.spawnSpecial({ type: 'mangekyo_eye' }, { x: pos.x, y: pos.y, scale: 1.05, duration: 1.0 });
+          this.spawnFlipbook('dark_aura_01', pos.x, pos.y, { scale: 1.35, speed: 1.2 });
+          this.spawnRing(pos.x, pos.y, 94, '#dc2626', 4, 0.62);
+          this.spawnRing(pos.x, pos.y, 64, '#a855f7', 3, 0.52);
+          return;
+        }
+        if (ev.fx === 'sp_drain' || ev.fx === 'sp_empty') {
+          const isEmpty = ev.fx === 'sp_empty';
+          this.spawnSpecial(
+            { type: 'chakra_drain', variant: isEmpty ? 'empty' : 'drain' },
+            { x: pos.x, y: pos.y, scale: isEmpty ? 1.1 : 0.95, duration: 0.9 }
+          );
+          if (isEmpty) {
+            this.spawnSpecial({ type: 'stun_shock' }, { x: pos.x, y: pos.y, scale: 0.95, duration: 0.95, delay: 0.12 });
+            this.spawnFlipbook('dark_impact_01', pos.x, pos.y, { scale: 1.2, speed: 1.3 });
+          }
+          this.spawnRing(pos.x, pos.y, isEmpty ? 92 : 68, isEmpty ? '#ef4444' : '#38bdf8', 3.5, 0.5);
+          return;
+        }
+        if (ev.fx === 'dodge_down') {
+          this.spawnSpecial({ type: 'dodge_snare' }, { x: pos.x, y: pos.y, scale: 0.95, duration: 0.85 });
+          this.spawnRing(pos.x, pos.y, 68, '#38bdf8', 3, 0.44);
+          return;
+        }
+        if (ev.fx.startsWith('mark_')) {
+          const el = ev.fx.slice(5);
+          const colMap = { hỏa: '#ff5a1f', thủy: '#38bdf8', lôi: '#facc15', phong: '#4ade80' };
+          this.spawnSpecial({ type: 'element_seal', variant: el }, { x: pos.x, y: pos.y, scale: 0.95, duration: 0.86 });
+          this.spawnRing(pos.x, pos.y, 68, colMap[el] || '#facc15', 3, 0.44);
+          return;
+        }
+        if (ev.fx === 'curse_drain') {
+          this.spawnSpecial({ type: 'curse_seal_pulse' }, { x: pos.x, y: pos.y, scale: 1.05, duration: 0.95 });
+          this.spawnFlipbook('dark_aura_01', pos.x, pos.y, { scale: 1.25, speed: 1.25 });
+          this.spawnRing(pos.x, pos.y, 80, '#a855f7', 3.5, 0.52);
+          return;
+        }
+        if (ev.fx === 'card_burn' || ev.fx === 'card_steal') {
+          this.spawnSpecial(
+            { type: 'scroll_shatter', variant: ev.fx === 'card_burn' ? 'burn' : 'steal' },
+            { x: pos.x, y: pos.y, scale: 1.0, duration: 0.88 }
+          );
+          this.spawnRing(pos.x, pos.y, 74, ev.fx === 'card_burn' ? '#f97316' : '#facc15', 3.5, 0.45);
+          return;
+        }
+      }
+
       if (ev.c === 'rx') {
         this.spawnFlipbook('light_impact_01', pos.x, pos.y, { scale: 1.65, speed: 1.3, additive: true });
         this.spawnFlipbook('thunder_impact_01', pos.x, pos.y, { scale: 1.45, speed: 1.35, delay: 0.06, additive: true });

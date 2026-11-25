@@ -517,6 +517,36 @@ class SoundEngine {
         this.tone(135, 0.55, 'sawtooth', 0.11, 0.04, 58);
         break;
 
+      // Negative Status / Debuff SFX
+      case 'bleed_tick':
+        this.playClip('water_bubble', { gain: 0.55, rate: 0.62 });
+        this.tone(145, 0.18, 'triangle', 0.1, 0, 62);
+        this.noise(0.14, 0.08, 950, 0.02, 360, 2.2);
+        break;
+      case 'stun':
+        this.playClip('metal_clash', { gain: 0.62, rate: 1.48 });
+        this.tone(980, 0.16, 'sine', 0.085, 0, 560);
+        this.tone(1420, 0.18, 'triangle', 0.06, 0.06, 780);
+        this.noise(0.22, 0.11, 3400, 0, 1400, 3.0);
+        break;
+      case 'sp_drain':
+        this.playClip('teleport', { gain: 0.58, rate: 0.72 });
+        this.tone(540, 0.24, 'sine', 0.08, 0, 190);
+        break;
+      case 'sp_empty':
+        this.playClip('seal_lock', { gain: 0.8, rate: 0.74 });
+        this.playClip('bass_drop', { gain: 0.72, delay: 0.05 });
+        this.tone(420, 0.28, 'sawtooth', 0.075, 0.02, 110);
+        break;
+      case 'dodge_down':
+        this.playClip('metal_heavy', { gain: 0.55, rate: 0.78 });
+        this.tone(240, 0.18, 'triangle', 0.09, 0, 95);
+        break;
+      case 'curse_drain':
+        this.playClip('earth_rumble', { gain: 0.58, rate: 0.72 });
+        this.tone(128, 0.3, 'sawtooth', 0.07, 0, 74);
+        break;
+
       // Core Combat Events
       case 'pet':
         this.playClip('hit_heavy', { gain: 0.75, rate: 1.1 });

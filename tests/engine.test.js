@@ -763,3 +763,50 @@ test('expansion cards (139..199): describeCard, cardArtSvg fallback, positive SP
   await useCard(G3, 0, 1);
   assert.equal(G3.ps[1].stun, 1);
 });
+
+test('negative statuses emit semantic debuff fx & sfx events on apply and on tick', async () => {
+  const G = await createGame([
+    { name: 'Caster', bot: false },
+    { name: 'Target', bot: false },
+  ]);
+  G.ps.forEach((p) => {
+    p.dodge = 0;
+    p.hand = [];
+  });
+
+  // 1. Amaterasu applies infinite bleed with amaterasu_apply fx
+  G.ps[0].hand = [{ ...CARDS[47], age: 0 }]; // Amaterasu (bl: Infinity)
+  const rAma = await useCard(G, 0, 1);
+  assert.ok(rAma.events.some((e) => e.c === 'db' && e.fx === 'amaterasu_apply' && e.sfx === 'amaterasu'));
+
+  // 2. Kuroari applies stun with stun_apply fx
+  G.ps[0].hand = [{ ...CARDS[14], age: 0 }]; // Kuroari (st: 1)
+  const rStun = await useCard(G, 0, 1);
+  assert.ok(rStun.events.some((e) => e.c === 'db' && e.fx === 'stun_apply' && e.sfx === 'stun'));
+
+  // 3. Elemental mark (1st mark) emits mark_hỏa
+  G.ps[0].hand = [{ ...CARDS[4], age: 0 }]; // Katon (hỏa)
+  const rMark = await useCard(G, 0, 1);
+  assert.ok(rMark.events.some((e) => e.c === 'db' && e.fx === 'mark_hỏa'));
+
+  // 4. Bug mark applies bug_apply
+  G.ps[0].hand = [{ ...CARDS[125], age: 0 }]; // Kidaichū: Mushikui
+  const rBug = await useCard(G, 0, 1);
+  assert.ok(rBug.events.some((e) => e.c === 'db' && e.fx === 'bug_apply' && e.sfx === 'bugs'));
+
+  // 5. SP drain emits sp_drain
+  G.ps[0].hand = [{ ...CARDS[58], age: 0 }]; // Ningendō (ms: 5)
+  const rSp = await useCard(G, 0, 1);
+  assert.ok(rSp.events.some((e) => e.c === 'db' && e.fx === 'sp_drain' && e.sfx === 'sp_drain'));
+
+  // 6. Kotoamatsukami applies koto_apply
+  G.ps[0].hand = [{ ...CARDS[117], age: 0 }]; // Kotoamatsukami
+  const rKoto = await useCard(G, 0, 1);
+  assert.ok(rKoto.events.some((e) => e.c === 'db' && e.fx === 'koto_apply' && e.sfx === 'genjutsu'));
+
+  // 7. End turn -> Target startTurn triggers amaterasu_tick AND stun_skip
+  const rTick = await endTurn(G, true);
+  assert.ok(rTick.events.some((e) => e.t === 1 && e.fx === 'amaterasu_tick' && e.c === 'db'));
+  assert.ok(rTick.events.some((e) => e.t === 1 && e.tx === '-50' && e.c === 'hp' && e.fx === 'amaterasu_tick'));
+  assert.ok(rTick.events.some((e) => e.t === 1 && e.fx === 'stun_skip' && e.sfx === 'stun'));
+});

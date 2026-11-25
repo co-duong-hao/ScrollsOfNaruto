@@ -42,11 +42,15 @@ export function createSpecialFx(type, opts = {}) {
   // Deterministic pseudo-random seeds per instance for swarms/petals/papers
   const items = [];
   const seedCount =
-    type === 'paper_storm' || type === 'bug_swarm' || type === 'sand_wave'
+    type === 'paper_storm' || type === 'bug_swarm' || type === 'sand_wave' || type === 'blood_bleed'
       ? 24
-      : type === 'sakura_petals' || type === 'wood_roots' || type === 'ninja_weapons'
+      : type === 'sakura_petals' ||
+          type === 'wood_roots' ||
+          type === 'ninja_weapons' ||
+          type === 'chakra_drain' ||
+          type === 'scroll_shatter'
         ? 14
-        : type === 'eight_gates'
+        : type === 'eight_gates' || type === 'stun_shock'
           ? 16
           : 10;
   for (let i = 0; i < seedCount; i++) {
@@ -705,6 +709,288 @@ export function drawSpecialFx(ctx, fx) {
         ctx.fill();
         ctx.stroke();
       }
+      break;
+    }
+
+    // === DEBUFF PROCEDURAL NARUTO EFFECTS (7 CANON STATUS VISUALS) ===
+    case 'blood_bleed': {
+      const amaterasu = fx.variant === 'amaterasu';
+      ctx.translate(fx.x, fx.y);
+      if (amaterasu) {
+        // Swirling obsidian-black flames with burning crimson edges
+        const g = ctx.createRadialGradient(0, 0, 8 * sc, 0, 0, 68 * sc);
+        g.addColorStop(0, 'rgba(15, 23, 42, 0.88)');
+        g.addColorStop(0.55, 'rgba(153, 27, 27, 0.55)');
+        g.addColorStop(1, 'rgba(153, 27, 27, 0)');
+        ctx.globalAlpha = env * 0.92;
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(0, 0, 68 * sc, 0, Math.PI * 2);
+        ctx.fill();
+
+        fx.items.forEach((it) => {
+          const prog = Math.max(0, Math.min(1, (p - it.d * 0.6) / 0.85));
+          const xx = Math.cos(it.a + prog * 1.4) * (24 + it.r * 34) * sc;
+          const yy = (26 - prog * 96 * it.r) * sc;
+          const sz = (8 + it.s * 9) * (1 - prog * 0.45) * sc;
+          ctx.globalAlpha = env * 0.92;
+          ctx.fillStyle = '#09090b';
+          ctx.strokeStyle = it.r > 0.6 ? '#ef4444' : '#7f1d1d';
+          ctx.lineWidth = 2.2 * sc;
+          ctx.beginPath();
+          ctx.moveTo(xx, yy - sz * 1.4);
+          ctx.quadraticCurveTo(xx + sz, yy, xx, yy + sz * 0.7);
+          ctx.quadraticCurveTo(xx - sz, yy, xx, yy - sz * 1.4);
+          ctx.fill();
+          ctx.stroke();
+        });
+      } else {
+        // Crimson blood-slash burst & falling scarlet droplets
+        ctx.globalAlpha = env * 0.86;
+        const g = ctx.createRadialGradient(0, 0, 6 * sc, 0, 0, 64 * sc);
+        g.addColorStop(0, 'rgba(220, 38, 38, 0.58)');
+        g.addColorStop(0.65, 'rgba(127, 29, 29, 0.3)');
+        g.addColorStop(1, 'rgba(127, 29, 29, 0)');
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(0, 0, 64 * sc, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Diagonal crimson wound slash
+        ctx.strokeStyle = '#ef4444';
+        ctx.shadowColor = '#dc2626';
+        ctx.shadowBlur = 12;
+        ctx.lineWidth = 4.5 * sc * (1 - p * 0.5);
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(-42 * sc, -24 * sc);
+        ctx.lineTo(42 * sc, 24 * sc);
+        ctx.stroke();
+
+        // Falling blood droplets
+        fx.items.forEach((it) => {
+          const xx = Math.cos(it.a) * (16 + it.r * 46) * sc;
+          const yy = (-18 + it.o * 0.4 + p * (62 + it.s * 54)) * sc;
+          const r = (3.2 + it.s * 4.2) * sc;
+          ctx.globalAlpha = env * 0.92;
+          ctx.fillStyle = it.r > 0.55 ? '#ef4444' : '#991b1b';
+          ctx.beginPath();
+          ctx.moveTo(xx, yy - r * 1.8);
+          ctx.quadraticCurveTo(xx + r, yy, xx, yy + r);
+          ctx.quadraticCurveTo(xx - r, yy, xx, yy - r * 1.8);
+          ctx.fill();
+        });
+      }
+      break;
+    }
+
+    case 'stun_shock': {
+      ctx.translate(fx.x, fx.y - 12 * sc);
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.globalAlpha = env * 0.95;
+
+      // Tilted orbiting dizzy ring + 4 golden 4-point stun stars
+      const rx = 56 * sc;
+      const ry = 20 * sc;
+      ctx.strokeStyle = '#fde047';
+      ctx.shadowColor = '#f59e0b';
+      ctx.shadowBlur = 14;
+      ctx.lineWidth = 2.6 * sc;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
+      ctx.stroke();
+
+      for (let k = 0; k < 4; k++) {
+        const ang = p * Math.PI * 4.4 + (k * Math.PI) / 2;
+        const sx = Math.cos(ang) * rx;
+        const sy = Math.sin(ang) * ry;
+        const sr = (8 + (k % 2) * 3) * sc;
+        ctx.save();
+        ctx.translate(sx, sy);
+        ctx.rotate(p * 6 + k);
+        ctx.fillStyle = k % 2 === 0 ? '#fef08a' : '#38bdf8';
+        ctx.beginPath();
+        for (let j = 0; j < 8; j++) {
+          const rad = j % 2 === 0 ? sr : sr * 0.36;
+          const a = (j * Math.PI) / 4;
+          if (j === 0) ctx.moveTo(Math.cos(a) * rad, Math.sin(a) * rad);
+          else ctx.lineTo(Math.cos(a) * rad, Math.sin(a) * rad);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // Crackling paralysis lightning arcs around the seat
+      ctx.strokeStyle = '#7dd3fc';
+      ctx.lineWidth = 2.2 * sc;
+      for (let k = 0; k < 3; k++) {
+        const a0 = p * 5 + k * 2.1;
+        const x1 = Math.cos(a0) * 58 * sc;
+        const y1 = Math.sin(a0) * 28 * sc + 14 * sc;
+        const x2 = Math.cos(a0 + 1.3) * 58 * sc;
+        const y2 = Math.sin(a0 + 1.3) * 28 * sc + 14 * sc;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo((x1 + x2) * 0.5 + Math.sin(p * 30 + k) * 14 * sc, (y1 + y2) * 0.5 + Math.cos(p * 26 + k) * 10 * sc);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+      }
+      break;
+    }
+
+    case 'element_seal': {
+      const map = {
+        hỏa: { kj: '火', col: '#ff5a1f', glow: '#fb923c', bg: 'rgba(154, 52, 18, 0.55)' },
+        thủy: { kj: '水', col: '#38bdf8', glow: '#bae6fd', bg: 'rgba(12, 74, 110, 0.55)' },
+        lôi: { kj: '雷', col: '#facc15', glow: '#fef08a', bg: 'rgba(113, 63, 18, 0.55)' },
+        phong: { kj: '風', col: '#4ade80', glow: '#bbf7d0', bg: 'rgba(20, 83, 45, 0.55)' },
+      };
+      const cfg = map[fx.variant] || map.hỏa;
+      const pop = p < 0.25 ? 1.55 - (p / 0.25) * 0.55 : 1 + (p - 0.25) * 0.08;
+      const r = 42 * sc * pop;
+      ctx.translate(fx.x, fx.y);
+      ctx.globalAlpha = env * 0.94;
+
+      ctx.fillStyle = cfg.bg;
+      ctx.strokeStyle = cfg.col;
+      ctx.shadowColor = cfg.glow;
+      ctx.shadowBlur = 18;
+      ctx.lineWidth = 3 * sc;
+      ctx.beginPath();
+      ctx.arc(0, 0, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.save();
+      ctx.rotate(p * Math.PI * 1.4);
+      ctx.setLineDash([7 * sc, 5 * sc]);
+      ctx.strokeStyle = cfg.glow;
+      ctx.lineWidth = 1.8 * sc;
+      ctx.beginPath();
+      ctx.arc(0, 0, r * 1.18, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = `700 ${Math.round(36 * sc * pop)}px "Yuji Syuku", "Noto Serif JP", serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(cfg.kj, 0, 2 * sc);
+      break;
+    }
+
+    case 'chakra_drain': {
+      const empty = fx.variant === 'empty';
+      ctx.translate(fx.x, fx.y);
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.globalAlpha = env * 0.92;
+
+      if (empty) {
+        // Imploding chakra collapse + fractured ring
+        const r = (68 * (1 - p * 0.45) + 12) * sc;
+        ctx.strokeStyle = '#ef4444';
+        ctx.shadowColor = '#38bdf8';
+        ctx.shadowBlur = 16;
+        ctx.lineWidth = 4 * sc;
+        ctx.setLineDash([12 * sc, 8 * sc]);
+        ctx.beginPath();
+        ctx.arc(0, 0, r, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      // Spiraling drained blue-violet chakra wisps rising away
+      fx.items.forEach((it) => {
+        const ang = it.a + p * 3.8;
+        const dist = (14 + p * (empty ? 84 : 62) * it.r) * sc;
+        const cx = Math.cos(ang) * dist;
+        const cy = Math.sin(ang) * dist * 0.55 - p * 68 * sc;
+        ctx.fillStyle = empty ? (it.r > 0.5 ? '#f87171' : '#38bdf8') : it.r > 0.5 ? '#38bdf8' : '#a855f7';
+        ctx.beginPath();
+        ctx.arc(cx, cy, (3.2 + it.s * 3.6) * (1 - p * 0.45) * sc, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      break;
+    }
+
+    case 'dodge_snare': {
+      ctx.translate(fx.x, fx.y);
+      ctx.globalAlpha = env * 0.92;
+      const clamp = 1.45 - Math.min(1, p * 2.4) * 0.45;
+      const r = 48 * sc * clamp;
+
+      // Clamping frost/weight binding ring + downward pressure chevrons
+      ctx.strokeStyle = '#38bdf8';
+      ctx.shadowColor = '#0284c7';
+      ctx.shadowBlur = 12;
+      ctx.lineWidth = 3.2 * sc;
+      ctx.setLineDash([10 * sc, 6 * sc]);
+      ctx.beginPath();
+      ctx.arc(0, 0, r, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // 2 downward chevrons indicating reduced agility/dodge
+      ctx.strokeStyle = '#bae6fd';
+      ctx.lineWidth = 3.4 * sc;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      for (let k = 0; k < 2; k++) {
+        const yy = (-14 + k * 18 + p * 26) * sc;
+        ctx.beginPath();
+        ctx.moveTo(-18 * sc, yy - 8 * sc);
+        ctx.lineTo(0, yy + 6 * sc);
+        ctx.lineTo(18 * sc, yy - 8 * sc);
+        ctx.stroke();
+      }
+      break;
+    }
+
+    case 'curse_seal_pulse': {
+      ctx.translate(fx.x, fx.y);
+      ctx.globalAlpha = env * 0.92;
+      const r = (36 + p * 24) * sc;
+      const g = ctx.createRadialGradient(0, 0, 4, 0, 0, r * 1.6);
+      g.addColorStop(0, 'rgba(126, 34, 206, 0.78)');
+      g.addColorStop(0.6, 'rgba(59, 7, 100, 0.45)');
+      g.addColorStop(1, 'rgba(59, 7, 100, 0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(0, 0, r * 1.6, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = '#c084fc';
+      ctx.lineWidth = 2.4 * sc;
+      ctx.beginPath();
+      ctx.arc(0, 0, r, 0, Math.PI * 2);
+      ctx.stroke();
+
+      const spin = p * Math.PI * 2.5;
+      for (let k = 0; k < 3; k++) {
+        drawTomoe(ctx, r * 0.56, spin + (k * Math.PI * 2) / 3, 6.8 * sc);
+      }
+      break;
+    }
+
+    case 'scroll_shatter': {
+      const burn = fx.variant === 'burn';
+      ctx.translate(fx.x, fx.y);
+      fx.items.forEach((it) => {
+        const dist = (14 + p * 92 * it.r) * sc;
+        const px = Math.cos(it.a) * dist;
+        const py = Math.sin(it.a) * dist - (burn ? p * 28 : p * 44) * sc;
+        ctx.save();
+        ctx.globalAlpha = env * 0.92;
+        ctx.translate(px, py);
+        ctx.rotate(it.p + p * 7);
+        ctx.fillStyle = burn ? (it.r > 0.5 ? '#ef4444' : '#f59e0b') : '#fef3c7';
+        ctx.strokeStyle = burn ? '#7f1d1d' : '#d97706';
+        ctx.lineWidth = 1.4;
+        ctx.fillRect(-7 * sc * it.s, -4.5 * sc * it.s, 14 * sc * it.s, 9 * sc * it.s);
+        ctx.strokeRect(-7 * sc * it.s, -4.5 * sc * it.s, 14 * sc * it.s, 9 * sc * it.s);
+        ctx.restore();
+      });
       break;
     }
 

@@ -42,6 +42,13 @@ export const EL_BADGE = {
   phong: 'Phong',
 };
 
+const EL_KANJI = {
+  hỏa: '火',
+  thủy: '水',
+  lôi: '雷',
+  phong: '風',
+};
+
 export const KONOHA_CREST_SVG = `<svg class="konoha-crest" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
   <path d="M5 24.5 L12 24.5 C10.5 21 10.8 14.5 16.5 11.2 C21.8 8.2 28.5 11.2 28.8 17.5 C29.1 22.8 24.5 26.8 19.2 26.2 C15 25.7 13 22 14.2 18.2 C15.2 15.2 18.6 14 21.4 15.5 C23.6 16.7 24.2 19.6 22.5 21.5 C21 23.1 18.4 22.8 17.8 20.8 C17.3 19.2 18.6 18 19.8 18.6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
   <path d="M23.5 11 L29.5 6.5 L26.5 14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -205,11 +212,23 @@ export function renderCard(
 
 function renderChips(p, showSecret) {
   const bad = [
-    ...p.marks.map((e) => [`ấn ${e}`, 'Ấn nguyên tố: thêm 1 ấn nữa sẽ gây phản ứng']),
-    p.bleed ? [`chảy máu ${p.bleed > 1e9 ? '∞' : p.bleed}`, 'Mất 50 máu đầu mỗi lượt, bỏ qua giáp và pet'] : null,
-    p.stun ? ['choáng', 'Mất lượt kế tiếp, không rút bài, vẫn chịu sát thương'] : null,
-    p.bugMark ? [`trùng bám -${p.bugMark.dmg} · ${p.bugMark.t}L`, 'Mỗi lần dùng thẻ sẽ nhận thêm sát thương trực tiếp'] : null,
-    p.koto ? [`koto · ${p.koto.t}L`, 'Bị Kotoamatsukami điều khiển tấn công đồng đội'] : null,
+    ...p.marks.map((e) => [`ấn ${e}`, 'Ấn nguyên tố: thêm 1 ấn nữa sẽ gây phản ứng', `bad ch-mark-${e}`]),
+    p.bleed
+      ? [
+          p.bleed > 1e9 ? 'hắc hỏa ∞' : `chảy máu ${p.bleed}`,
+          p.bleed > 1e9
+            ? 'Amaterasu bất diệt: mất 50 máu đầu mỗi lượt, bỏ qua giáp và pet'
+            : 'Mất 50 máu đầu mỗi lượt, bỏ qua giáp và pet',
+          p.bleed > 1e9 ? 'bad ch-amaterasu' : 'bad ch-bleed',
+        ]
+      : null,
+    p.stun ? [`choáng${p.stun > 1 ? ` · ${p.stun}L` : ''}`, 'Mất lượt kế tiếp, không rút bài, vẫn chịu sát thương', 'bad ch-stun'] : null,
+    p.bugMark
+      ? [`trùng bám -${p.bugMark.dmg} · ${p.bugMark.t}L`, 'Mỗi lần dùng thẻ sẽ nhận thêm sát thương trực tiếp', 'bad ch-bug']
+      : null,
+    p.koto
+      ? [`koto · ${p.koto.t}L`, 'Bị điều khiển tấn công đồng đội', 'bad ch-koto']
+      : null,
   ].filter(Boolean);
 
   const auCount = showSecret ? p.hand.filter((c) => c.au).length : 0;
@@ -271,6 +290,63 @@ function renderSidePets(pets) {
   </div>`;
 }
 
+function renderDebuffVisuals(p) {
+  if (!p || p.dead) return '';
+  const layers = [];
+
+  if (p.stun > 0) {
+    layers.push(`
+      <div class="db-ov db-ov-stun" aria-hidden="true">
+        <svg class="db-stun-halo" viewBox="0 0 120 34" xmlns="http://www.w3.org/2000/svg">
+          <ellipse cx="60" cy="18" rx="46" ry="11" fill="none" stroke="#fde047" stroke-width="2" stroke-dasharray="7 5"/>
+          <g class="db-stun-star s1">
+            <polygon points="14,18 17,12 20,18 26,20 20,22 17,28 14,22 8,20" fill="#fef08a"/>
+          </g>
+          <g class="db-stun-star s2">
+            <polygon points="60,3 62.5,8 68,9.5 62.5,11 60,16 57.5,11 52,9.5 57.5,8" fill="#38bdf8"/>
+          </g>
+          <g class="db-stun-star s3">
+            <polygon points="103,14 105.5,19 111,20.5 105.5,22 103,27 100.5,22 95,20.5 100.5,19" fill="#fde047"/>
+          </g>
+        </svg>
+        <span class="db-stun-tag">CHOÁNG</span>
+      </div>`);
+  }
+
+  if (p.bleed > 1e9) {
+    layers.push(`
+      <div class="db-ov db-ov-amaterasu" aria-hidden="true">
+        <i class="ama-flame f1"></i><i class="ama-flame f2"></i><i class="ama-flame f3"></i><i class="ama-flame f4"></i><i class="ama-flame f5"></i>
+      </div>`);
+  } else if (p.bleed > 0) {
+    layers.push(`
+      <div class="db-ov db-ov-bleed" aria-hidden="true">
+        <i class="bld-drop d1"></i><i class="bld-drop d2"></i><i class="bld-drop d3"></i><i class="bld-drop d4"></i>
+      </div>`);
+  }
+
+  if (p.bugMark) {
+    layers.push(`
+      <div class="db-ov db-ov-bug" aria-hidden="true">
+        <i class="bug-dot b1"></i><i class="bug-dot b2"></i><i class="bug-dot b3"></i><i class="bug-dot b4"></i>
+      </div>`);
+  }
+
+  if (p.koto) {
+    layers.push(`
+      <div class="db-ov db-ov-koto" aria-hidden="true">
+        <svg class="db-koto-eye" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="50" cy="50" r="42" fill="none" stroke="#dc2626" stroke-width="2.5" stroke-dasharray="10 6"/>
+          <circle cx="50" cy="50" r="28" fill="none" stroke="#a855f7" stroke-width="2"/>
+          <path d="M50 14 Q68 38 50 50 Q32 38 50 14 Z M82 68 Q56 64 50 50 Q66 44 82 68 Z M18 68 Q34 44 50 50 Q44 64 18 68 Z" fill="#dc2626" fill-opacity="0.45"/>
+          <circle cx="50" cy="50" r="6" fill="#09090b" stroke="#fca5a5" stroke-width="1.5"/>
+        </svg>
+      </div>`);
+  }
+
+  return layers.join('');
+}
+
 export function renderSeat(G, p, i, cur, showSecret, isMe, flList = []) {
   const selCard = G.sel != null ? cur.hand[G.sel] : null;
   const canTarget = selCard && isValidTarget(G, selCard, i, G.cur);
@@ -278,17 +354,25 @@ export function renderSeat(G, p, i, cur, showSecret, isMe, flList = []) {
   const ch = renderChips(p, isMe && showSecret);
   const handCount = p.handCount != null ? p.handCount : p.hand.length;
   const totArmor = totalArmor(p);
+  const hasCurseDrain = Array.isArray(p.buffs) && p.buffs.some((b) => b.maxHpDrain);
   const statusClasses = [
-    p.bleed ? 'is-bleed' : '',
+    p.bleed > 1e9 ? 'is-amaterasu' : p.bleed > 0 ? 'is-bleed' : '',
     totArmor > 0 ? 'has-armor' : '',
     p.buffs.length ? 'has-buff' : '',
     p.immune > 0 ? 'is-immune' : '',
     p.corpse ? 'is-corpse' : '',
     p.stun > 0 ? 'is-stun' : '',
+    p.bugMark ? 'is-bug' : '',
+    p.koto ? 'is-koto' : '',
+    hasCurseDrain ? 'is-cursed' : '',
+    !p.dead && p.sp <= 2 ? 'is-low-sp' : '',
+    ...(p.marks || []).map((m) => `has-mark-${m}`),
   ]
     .filter(Boolean)
     .join(' ');
-  const orbs = p.marks.map((m) => `<span class="mark-orb orb-${m}" title="Ấn ${m}"></span>`).join('');
+  const orbs = p.marks
+    .map((m) => `<span class="mark-orb orb-${m}" title="Ấn ${EL_BADGE[m] || m}">${EL_KANJI[m] || ''}</span>`)
+    .join('');
 
   let targetPreviewHtml = '';
   if (canTarget && selCard) {
@@ -346,12 +430,14 @@ export function renderSeat(G, p, i, cur, showSecret, isMe, flList = []) {
     <div class="st ${isMe ? 'me' : ''} ${i === G.cur ? 'cur' : ''} ${p.dead ? 'dead' : ''} ${canTarget ? 'tg' : ''} ${statusClasses} ${
     fl.some((e) => e.c === 'hp') ? 'hit' : ''
   } ${fl.some((e) => e.c === 'ko') ? 'ko-flash' : ''}" data-seat-idx="${i}" onclick="appActions.targetPlayer(${i})">
+      ${renderDebuffVisuals(p)}
       ${targetPreviewHtml}
       ${fl
         .map((e, j) => {
           const dx = ((j % 3) - 1) * 38;
           const dy = -Math.floor(j / 3) * 26;
-          return `<span class="fl ${e.c}" style="--dx:${dx}px;--dy:${dy}px;animation-delay:${j * 0.28}s">${esc(e.tx)}</span>`;
+          const fxAttr = e.fx ? ` data-fx="${esc(e.fx)}"` : '';
+          return `<span class="fl ${e.c}"${fxAttr} style="--dx:${dx}px;--dy:${dy}px;animation-delay:${j * 0.28}s">${esc(e.tx)}</span>`;
         })
         .join('')}
       <div class="st-head">

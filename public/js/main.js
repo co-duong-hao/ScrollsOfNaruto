@@ -366,13 +366,14 @@ function playFxEvents(events, onDone) {
       state.cast = autoCast;
       state.fl = fl;
       const customSfx = [...new Set(fl.map((e) => e.sfx).filter(Boolean))];
-      customSfx.forEach((name) => SFX.play(name));
+      customSfx.slice(0, 2).forEach((name) => SFX.play(name));
       if (autoCast && !customSfx.length) {
         const autoProfile = getCardFxProfile(autoCast);
         SFX.play(autoProfile?.sfxCast || 'seal');
       }
+      const hasDirectHit = fl.some((e) => e.c === 'hp' && !e.fx);
       if (fl.some((e) => e.c === 'ko')) SFX.play('ko');
-      else if (!customSfx.length && fl.some((e) => e.c === 'hp')) {
+      else if (hasDirectHit && (cs || !customSfx.length)) {
         SFX.play(profile?.sfxImpact || 'hit_deep');
       } else if (!customSfx.length && fl.some((e) => e.c === 'dg')) SFX.play('dodge');
       else if (!customSfx.length && fl.some((e) => e.c === 'ar')) SFX.play('armor');

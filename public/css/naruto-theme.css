@@ -1014,7 +1014,350 @@ img {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .arena-seal {
-    animation: none;
+  .arena-seal,
+  .db-ov *,
+  .st.is-bleed,
+  .st.is-amaterasu,
+  .st.is-stun,
+  .st.is-bug,
+  .st.is-koto,
+  .st.is-cursed,
+  .st.is-low-sp .sp-bar,
+  .mark-orb {
+    animation: none !important;
   }
+}
+
+/* ==========================================================================
+   8. NEGATIVE STATUS (DEBUFF) LIVE SEAT AURAS, OVERLAYS & FLOATING BADGES
+   ========================================================================== */
+
+/* Keep all seat text/bars crisp above decorative debuff watermarks */
+.st > .st-head,
+.st > .hp,
+.st > .chakra-row,
+.st > .rw,
+.st > .sum {
+  position: relative;
+  z-index: 2;
+}
+
+/* Upgraded Elemental Kanji Seal Orbs on Seat Header */
+.mark-orb {
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-jp);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  color: #fff !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.78);
+  animation: orbPulse 1.8s ease-in-out infinite alternate;
+}
+.orb-hỏa {
+  background: radial-gradient(circle at 35% 30%, #fde047, #ea580c 60%, #9a3412);
+  box-shadow: 0 0 10px #ff5a1f, inset 0 0 4px #fef08a;
+}
+.orb-thủy {
+  background: radial-gradient(circle at 35% 30%, #e0f2fe, #0284c7 60%, #0c4a6e);
+  box-shadow: 0 0 10px #38bdf8, inset 0 0 4px #bae6fd;
+}
+.orb-lôi {
+  background: radial-gradient(circle at 35% 30%, #ffffff, #eab308 60%, #854d0e);
+  box-shadow: 0 0 10px #facc15, inset 0 0 4px #fef08a;
+  color: #111827 !important;
+}
+.orb-phong {
+  background: radial-gradient(circle at 35% 30%, #dcfce7, #16a34a 60%, #14532d);
+  box-shadow: 0 0 10px #4ade80, inset 0 0 4px #bbf7d0;
+}
+@keyframes orbPulse {
+  from { transform: scale(0.95); filter: brightness(0.95); }
+  to { transform: scale(1.1); filter: brightness(1.18); }
+}
+
+/* Elemental Mark Seat Rim Glows */
+.st.has-mark-hỏa { border-color: rgba(255, 90, 31, 0.75); box-shadow: inset 0 0 16px rgba(234, 88, 12, 0.25), 0 0 14px rgba(255, 90, 31, 0.35); }
+.st.has-mark-thủy { border-color: rgba(56, 189, 248, 0.75); box-shadow: inset 0 0 16px rgba(14, 165, 233, 0.25), 0 0 14px rgba(56, 189, 248, 0.35); }
+.st.has-mark-lôi { border-color: rgba(250, 204, 21, 0.78); box-shadow: inset 0 0 16px rgba(234, 179, 8, 0.22), 0 0 14px rgba(250, 204, 21, 0.35); }
+.st.has-mark-phong { border-color: rgba(74, 222, 128, 0.75); box-shadow: inset 0 0 16px rgba(22, 163, 74, 0.22), 0 0 14px rgba(74, 222, 128, 0.35); }
+
+/* Persistent Debuff Overlay Container */
+.db-ov {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  z-index: 1;
+  overflow: hidden;
+}
+
+/* 1. BLEED (Chảy máu) — Pulsing crimson vignette + falling blood drops */
+.st.is-bleed {
+  border-color: #ef4444;
+  animation: bleedPulse 1.7s ease-in-out infinite alternate;
+}
+@keyframes bleedPulse {
+  from { box-shadow: inset 0 0 16px rgba(220, 38, 38, 0.32), 0 0 14px rgba(239, 68, 68, 0.5); }
+  to { box-shadow: inset 0 0 28px rgba(185, 28, 28, 0.52), 0 0 24px rgba(239, 68, 68, 0.85); }
+}
+.db-ov-bleed::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 18px;
+  background: linear-gradient(180deg, rgba(220, 38, 38, 0.45), transparent);
+}
+.bld-drop {
+  position: absolute;
+  top: -8px;
+  width: 5px;
+  height: 13px;
+  border-radius: 50% 50% 50% 50% / 65% 65% 35% 35%;
+  background: linear-gradient(180deg, #fca5a5, #dc2626 55%, #7f1d1d);
+  box-shadow: 0 0 6px #ef4444;
+  opacity: 0;
+  animation: bloodFall 1.9s ease-in infinite;
+}
+.bld-drop.d1 { left: 14%; animation-delay: 0s; }
+.bld-drop.d2 { left: 38%; animation-delay: 0.65s; height: 11px; }
+.bld-drop.d3 { left: 68%; animation-delay: 1.1s; }
+.bld-drop.d4 { left: 88%; animation-delay: 0.35s; height: 10px; }
+@keyframes bloodFall {
+  0% { transform: translateY(0) scaleY(0.7); opacity: 0; }
+  15% { opacity: 0.92; }
+  85% { opacity: 0.72; }
+  100% { transform: translateY(130px) scaleY(1.25); opacity: 0; }
+}
+
+/* 2. AMATERASU (Chảy máu ∞) — Obsidian-crimson eternal rising flames */
+.st.is-amaterasu {
+  border-color: #dc2626;
+  background: linear-gradient(165deg, rgba(20, 7, 10, 0.92), rgba(8, 5, 10, 0.96));
+  animation: amaPulse 1.3s ease-in-out infinite alternate;
+}
+@keyframes amaPulse {
+  from { box-shadow: inset 0 0 24px rgba(153, 27, 27, 0.55), 0 0 18px rgba(15, 23, 42, 0.95), 0 0 24px rgba(220, 38, 38, 0.75); }
+  to { box-shadow: inset 0 0 34px rgba(220, 38, 38, 0.65), 0 0 26px #000, 0 0 32px rgba(239, 68, 68, 0.95); }
+}
+.ama-flame {
+  position: absolute;
+  bottom: -6px;
+  width: 14px;
+  height: 28px;
+  border-radius: 50% 50% 35% 35%;
+  background: radial-gradient(ellipse at 50% 65%, #09090b 35%, #7f1d1d 75%, transparent 100%);
+  box-shadow: 0 0 10px #dc2626, 0 -4px 12px rgba(239, 68, 68, 0.75);
+  animation: amaRise 1.35s ease-out infinite;
+}
+.ama-flame.f1 { left: 10%; animation-delay: 0s; }
+.ama-flame.f2 { left: 30%; animation-delay: 0.35s; height: 34px; }
+.ama-flame.f3 { left: 52%; animation-delay: 0.7s; height: 30px; }
+.ama-flame.f4 { left: 72%; animation-delay: 0.2s; height: 32px; }
+.ama-flame.f5 { left: 88%; animation-delay: 0.55s; }
+@keyframes amaRise {
+  0% { transform: translateY(6px) scale(0.85, 0.8); opacity: 0.2; }
+  30% { opacity: 0.95; }
+  100% { transform: translateY(-48px) scale(0.45, 1.35); opacity: 0; }
+}
+
+/* 3. STUN (Choáng) — Floating spinning star halo above seat + crackling amber-electric lock */
+.st.is-stun {
+  border-color: #facc15;
+  filter: saturate(0.75);
+  animation: stunBorder 0.95s ease-in-out infinite alternate;
+}
+@keyframes stunBorder {
+  from { box-shadow: inset 0 0 18px rgba(250, 204, 21, 0.28), 0 0 14px rgba(250, 204, 21, 0.65); }
+  to { box-shadow: inset 0 0 26px rgba(56, 189, 248, 0.32), 0 0 22px rgba(250, 204, 21, 0.95); }
+}
+.db-ov-stun {
+  overflow: visible;
+  z-index: 6;
+}
+.db-stun-halo {
+  position: absolute;
+  top: -21px;
+  left: 50%;
+  width: 112px;
+  height: 32px;
+  transform: translateX(-50%);
+  filter: drop-shadow(0 0 7px rgba(250, 204, 21, 0.9));
+  animation: stunBob 1.35s ease-in-out infinite alternate;
+}
+.db-stun-star {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: stunTwinkle 0.8s ease-in-out infinite alternate;
+}
+.db-stun-star.s2 { animation-delay: 0.25s; }
+.db-stun-star.s3 { animation-delay: 0.5s; }
+.db-stun-tag {
+  position: absolute;
+  top: -10px;
+  right: 10px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #f59e0b, #fde047);
+  color: #111827;
+  font-size: 9.5px;
+  font-weight: 900;
+  letter-spacing: 0.8px;
+  box-shadow: 0 2px 10px rgba(250, 204, 21, 0.85);
+}
+@keyframes stunBob {
+  from { transform: translateX(-50%) translateY(0) rotate(-3deg); }
+  to { transform: translateX(-50%) translateY(-4px) rotate(3deg); }
+}
+@keyframes stunTwinkle {
+  from { transform: scale(0.8) rotate(0deg); opacity: 0.72; }
+  to { transform: scale(1.22) rotate(35deg); opacity: 1; }
+}
+
+/* 4. BUG MARK (Trùng Bám Đuổi) — Toxic lime-purple border & crawling Aburame beetles */
+.st.is-bug {
+  border-color: #84cc16;
+  animation: bugPulse 1.5s ease-in-out infinite alternate;
+}
+@keyframes bugPulse {
+  from { box-shadow: inset 0 0 16px rgba(101, 163, 13, 0.28), 0 0 12px rgba(132, 204, 22, 0.55); }
+  to { box-shadow: inset 0 0 24px rgba(147, 51, 234, 0.3), 0 0 20px rgba(132, 204, 22, 0.85); }
+}
+.bug-dot {
+  position: absolute;
+  width: 7px;
+  height: 5px;
+  border-radius: 50%;
+  background: #09090b;
+  border: 1.4px solid #a3e635;
+  box-shadow: 0 0 7px #84cc16;
+  animation: bugOrbit 3.4s linear infinite;
+}
+.bug-dot.b1 { top: 8%; left: 10%; animation-delay: 0s; }
+.bug-dot.b2 { top: 20%; left: 82%; animation-delay: -0.9s; }
+.bug-dot.b3 { top: 76%; left: 18%; animation-delay: -1.8s; border-color: #c084fc; }
+.bug-dot.b4 { top: 70%; left: 78%; animation-delay: -2.6s; }
+@keyframes bugOrbit {
+  0% { transform: translate(0, 0) rotate(0deg); }
+  25% { transform: translate(16px, -7px) rotate(90deg); }
+  50% { transform: translate(4px, 11px) rotate(180deg); }
+  75% { transform: translate(-14px, 4px) rotate(270deg); }
+  100% { transform: translate(0, 0) rotate(360deg); }
+}
+
+/* 5. KOTOAMATSUKAMI / SHINTENSHIN (Bị Điều Khiển) — Rotating crimson-violet hypnotic Sharingan seal */
+.st.is-koto {
+  border-color: #c084fc;
+  animation: kotoPulse 1.6s ease-in-out infinite alternate;
+}
+@keyframes kotoPulse {
+  from { box-shadow: inset 0 0 20px rgba(220, 38, 38, 0.3), 0 0 16px rgba(168, 85, 247, 0.65); }
+  to { box-shadow: inset 0 0 30px rgba(168, 85, 247, 0.42), 0 0 26px rgba(220, 38, 38, 0.85); }
+}
+.db-koto-eye {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 112px;
+  height: 112px;
+  transform: translate(-50%, -50%);
+  opacity: 0.24;
+  animation: kotoSpin 9s linear infinite;
+}
+@keyframes kotoSpin {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* 6. CURSED SEAL HP DRAIN (Chú Ấn) & LOW CHAKRA WARNING */
+.st.is-cursed {
+  box-shadow: inset 0 0 22px rgba(126, 34, 206, 0.45), 0 0 16px rgba(168, 85, 247, 0.55);
+}
+.st.is-low-sp .sp-bar.is-low {
+  animation: lowSpWarn 0.9s ease-in-out infinite alternate;
+}
+@keyframes lowSpWarn {
+  from { border-color: rgba(249, 115, 22, 0.65); box-shadow: 0 0 4px rgba(239, 68, 68, 0.3); }
+  to { border-color: #ef4444; box-shadow: 0 0 12px rgba(239, 68, 68, 0.85); }
+}
+
+/* Color-Coded Debuff Chips */
+.ch.ch-bleed { background: #7f1d1dcc; border-color: #f87171; color: #fee2e2; }
+.ch.ch-amaterasu { background: #09090be6; border-color: #ef4444; color: #fca5a5; box-shadow: 0 0 8px rgba(220, 38, 38, 0.7); }
+.ch.ch-stun { background: #78350fcc; border-color: #facc15; color: #fef08a; font-weight: 700; }
+.ch.ch-bug { background: #365314cc; border-color: #a3e635; color: #ecfccb; }
+.ch.ch-koto { background: #581c87cc; border-color: #f472b6; color: #fce7f3; }
+.ch.ch-mark-hỏa { background: #9a3412cc; border-color: #fb923c; color: #ffedd5; }
+.ch.ch-mark-thủy { background: #075985cc; border-color: #38bdf8; color: #e0f2fe; }
+.ch.ch-mark-lôi { background: #713f12cc; border-color: #facc15; color: #fef9c3; }
+.ch.ch-mark-phong { background: #14532dcc; border-color: #4ade80; color: #dcfce7; }
+
+/* Floating Debuff Callout Badges (.fl.db) */
+.fl.db {
+  font-size: 16.5px;
+  font-weight: 800;
+  padding: 2px 10px;
+  border-radius: 999px;
+  color: #fff;
+  background: rgba(127, 29, 29, 0.92);
+  border: 1.5px solid #fca5a5;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.65);
+}
+.fl.db[data-fx="amaterasu_apply"],
+.fl.db[data-fx="amaterasu_tick"] {
+  background: linear-gradient(135deg, #09090b, #7f1d1d);
+  border-color: #ef4444;
+  color: #fecaca;
+  box-shadow: 0 0 16px rgba(220, 38, 38, 0.9);
+}
+.fl.db[data-fx="stun_apply"],
+.fl.db[data-fx="stun_skip"] {
+  background: linear-gradient(135deg, #b45309, #eab308);
+  border-color: #fef08a;
+  color: #111827;
+  text-shadow: none;
+  box-shadow: 0 0 16px rgba(250, 204, 21, 0.9);
+}
+.fl.db[data-fx="bug_apply"],
+.fl.db[data-fx="bug_bite"] {
+  background: linear-gradient(135deg, #365314, #4d7c0f);
+  border-color: #bef264;
+  color: #f7fee7;
+}
+.fl.db[data-fx="koto_apply"],
+.fl.db[data-fx="koto_redirect"] {
+  background: linear-gradient(135deg, #581c87, #be123c);
+  border-color: #f9a8d4;
+  color: #fdf2f8;
+  box-shadow: 0 0 16px rgba(192, 132, 252, 0.85);
+}
+.fl.db[data-fx="sp_drain"],
+.fl.db[data-fx="sp_empty"] {
+  background: linear-gradient(135deg, #1e3a8a, #4c1d95);
+  border-color: #7dd3fc;
+  color: #e0f2fe;
+}
+.fl.db[data-fx="dodge_down"] {
+  background: linear-gradient(135deg, #0f172a, #0369a1);
+  border-color: #7dd3fc;
+  color: #e0f2fe;
+}
+.fl.db[data-fx="curse_drain"] {
+  background: linear-gradient(135deg, #3b0764, #1e1b4b);
+  border-color: #c084fc;
+  color: #f3e8ff;
+}
+.fl.db[data-fx="mark_hỏa"] { background: #c2410c; border-color: #fed7aa; }
+.fl.db[data-fx="mark_thủy"] { background: #0369a1; border-color: #bae6fd; }
+.fl.db[data-fx="mark_lôi"] { background: #a16207; border-color: #fef08a; }
+.fl.db[data-fx="mark_phong"] { background: #15803d; border-color: #bbf7d0; }
+.fl.db[data-fx="card_burn"],
+.fl.db[data-fx="card_steal"] {
+  background: linear-gradient(135deg, #9a3412, #d97706);
+  border-color: #fde68a;
+  color: #fffbeb;
 }

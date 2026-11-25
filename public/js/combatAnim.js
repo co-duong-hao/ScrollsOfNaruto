@@ -154,14 +154,46 @@ export const CombatAnim = {
       this.triggerImpactFrame(tbEl, hasKo ? 'ko' : 'srank');
     }
 
-    // Directional recoil per target seat
+    // Directional recoil & debuff-specific reactions per target seat
     const seen = new Set();
     flEvents.forEach((ev) => {
       if (ev.t == null || ev.t < 0 || seen.has(ev.t)) return;
-      if (!['hp', 'ko', 'rx', 'ar', 'pt'].includes(ev.c)) return;
+      if (!['hp', 'ko', 'rx', 'ar', 'pt', 'db'].includes(ev.c)) return;
       seen.add(ev.t);
       const tgt = seatEl(tbEl, ev.t);
       if (!tgt) return;
+
+      // Dedicated debuff physical reaction when seat is afflicted/ticking without a heavy attack blow
+      if (ev.c === 'db' || (ev.fx && !cast)) {
+        g.killTweensOf(tgt);
+        if (ev.fx === 'stun_apply' || ev.fx === 'stun_skip' || ev.fx === 'sp_empty') {
+          g.timeline()
+            .to(tgt, { rotation: -3.2, x: -7, duration: 0.06, ease: 'power2.out' })
+            .to(tgt, { rotation: 3.2, x: 7, duration: 0.07, ease: 'power2.inOut' })
+            .to(tgt, { rotation: -2.2, x: -5, duration: 0.07, ease: 'power2.inOut' })
+            .to(tgt, { rotation: 1.5, x: 3, duration: 0.07, ease: 'power2.inOut' })
+            .to(tgt, { rotation: 0, x: 0, duration: 0.14, ease: 'power2.out' });
+        } else if (ev.fx === 'koto_apply' || ev.fx === 'koto_redirect') {
+          g.timeline()
+            .to(tgt, { scale: 1.04, rotation: -1.6, duration: 0.14, ease: 'sine.out' })
+            .to(tgt, { scale: 0.97, rotation: 1.6, duration: 0.16, ease: 'sine.inOut' })
+            .to(tgt, { scale: 1, rotation: 0, duration: 0.18, ease: 'sine.out' });
+        } else if (
+          ev.fx === 'bleed_tick' ||
+          ev.fx === 'amaterasu_tick' ||
+          ev.fx === 'bug_bite' ||
+          ev.fx === 'curse_drain'
+        ) {
+          g.timeline()
+            .to(tgt, { y: 6, scale: 0.97, duration: 0.09, ease: 'power3.out' })
+            .to(tgt, { y: 0, scale: 1, duration: 0.3, ease: 'elastic.out(1, 0.5)' });
+        } else {
+          g.timeline()
+            .to(tgt, { scale: 0.96, duration: 0.09, ease: 'power2.out' })
+            .to(tgt, { scale: 1, duration: 0.24, ease: 'back.out(1.6)' });
+        }
+        return;
+      }
 
       let rx = 0;
       let ry = -12;
